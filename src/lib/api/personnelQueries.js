@@ -12,10 +12,34 @@ export const QUERY_KEYS = {
  * @returns {Object} 쿼리 결과 객체
  */
 export const useWorkers = () => {
+  console.log("[personnelQueries] useWorkers 훅 호출됨");
+  
+  const queryFn = async () => {
+    console.log("[personnelQueries] queryFn 실행 - fetchWorkers 호출 직전");
+    try {
+      const data = await fetchWorkers();
+      console.log("[personnelQueries] fetchWorkers 반환 데이터:", data);
+      return data;
+    } catch (error) {
+      console.error("[personnelQueries] fetchWorkers 에러:", error);
+      throw error;
+    }
+  };
+  
   return useQuery({
     queryKey: [QUERY_KEYS.WORKERS],
-    queryFn: fetchWorkers,
-    staleTime: 1000 * 60 * 5, // 5분 동안 데이터를 fresh로 유지
+    queryFn: queryFn,
+    staleTime: 0, // 항상 stale 상태로 유지하여 데이터 재요청이 가능하게 함
+    cacheTime: 1000, // 캐시 유지 시간을 최소화 (1초)
+    retry: 3,
+    refetchOnMount: 'always', // 컴포넌트 마운트 시 항상 새로고침
+    refetchOnWindowFocus: true, // 창이 포커스될 때 새로고침
+    onError: (error) => {
+      console.error("[personnelQueries] 작업자 목록 가져오기 에러:", error);
+    },
+    onSuccess: (data) => {
+      console.log("[personnelQueries] 작업자 목록 가져오기 성공:", data);
+    }
   });
 };
 

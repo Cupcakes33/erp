@@ -21,9 +21,18 @@ window.require = (module) => {
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      refetchOnWindowFocus: false,
-      retry: 1,
-      staleTime: 300000, // 5분
+      refetchOnWindowFocus: true,
+      retry: 3,
+      staleTime: 0, // 데이터가 항상 stale 상태가 되도록 설정
+      cacheTime: 1000, // 캐시 시간을 1초로 짧게 설정
+      suspense: false,
+      useErrorBoundary: false,
+      refetchInterval: false, // 자동 리페치 비활성화
+      refetchIntervalInBackground: false,
+      refetchOnMount: "always", // 컴포넌트 마운트마다 항상 새로 가져오도록 설정
+      onError: (err) => {
+        console.error("Query Error:", err);
+      },
     },
   },
 });

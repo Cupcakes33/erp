@@ -70,22 +70,26 @@ const mockWorks = [
  * @returns {Promise<Array>} 작업 배열
  */
 export const fetchWorks = async () => {
-  // 개발 환경에서는 모의 데이터 사용
-  if (import.meta.env.DEV) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([...mockWorks])
-      }, MOCK_DELAY)
-    })
-  }
-
-  // 실제 API 호출
+  // 디버깅을 위한 로그
+  console.log("[workAPI] fetchWorks 함수 호출됨");
+  
+  // 강제로 모의 데이터 사용
+  console.log("[workAPI] mock 데이터 사용 - mockWorks:", mockWorks);
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const result = [...mockWorks]; // 배열 복사본 생성
+      console.log("[workAPI] 반환할 데이터:", result);
+      resolve(result);
+    }, 500);
+  });
+  
+  // 아래 코드는 실행되지 않음
   try {
-    const response = await axios.get(`${API_URL}/works`)
-    return response.data
+    const response = await axios.get(`${API_URL}/works`);
+    return response.data;
   } catch (error) {
-    console.error('작업 목록 가져오기 실패:', error)
-    throw error
+    console.error('작업 목록 가져오기 실패:', error);
+    throw error;
   }
 }
 

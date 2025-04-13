@@ -11,7 +11,7 @@ import {
   FormInput,
   FormSelect,
 } from "../../components/molecules";
-import { PlusCircle, Search, Edit, Eye } from "lucide-react";
+import { PlusCircle, Search, Edit, Eye, UserCheck, UserX } from "lucide-react";
 
 /**
  * 인사 관리 목록 페이지
@@ -23,15 +23,38 @@ const PersonnelList = () => {
   const toggleStatusMutation = useToggleWorkerStatus();
   const [searchTerm, setSearchTerm] = useState("");
 
+  // 디버깅을 위한 데이터 로그
+  console.log("[PersonnelList] 작업자 데이터:", workers);
+
+  // 테이블에 표시할 컬럼 선택 상태
+  const [visibleColumns, setVisibleColumns] = useState([
+    "id",
+    "name",
+    "birthDate",
+    "phone",
+    "position",
+    "status",
+    "actions",
+  ]);
+
   // 필터링 적용 (상태 필터 + 검색어)
   const filteredWorkers = workers.filter((worker) => {
+    // '재직'/'퇴사' 상태를 사용하도록 필터링 로직 수정
     const matchesStatus =
-      filterOptions.status === "all" || worker.status === filterOptions.status;
+      filterOptions.status === "all" ||
+      (filterOptions.status === "active" && worker.status === "재직") ||
+      (filterOptions.status === "inactive" && worker.status === "퇴사");
+
     const matchesSearch =
       searchTerm === "" ||
       worker.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       worker.position?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      worker.phone?.toLowerCase().includes(searchTerm.toLowerCase());
+      worker.phone?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      worker.birthDate?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (worker.email &&
+        worker.email.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (worker.department &&
+        worker.department.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return matchesStatus && matchesSearch;
   });
@@ -41,13 +64,9 @@ const PersonnelList = () => {
     navigate("/personnel/create");
   };
 
-  // 작업자 편집 페이지로 이동
-  const handleEdit = (workerId) => {
-    navigate(`/personnel/${workerId}/edit`);
-  };
-
   // 작업자 상태 토글 (재직/퇴사)
-  const handleToggleStatus = (workerId) => {
+  const handleToggleStatus = (workerId, e) => {
+    e.stopPropagation();
     toggleStatusMutation.mutate(workerId);
   };
 
@@ -56,23 +75,29 @@ const PersonnelList = () => {
     navigate(`/personnel/${worker.id}`);
   };
 
-  // 테이블 컬럼 정의
-  const columns = [
-    { header: "ID", accessor: "id", className: "w-16" },
-    { header: "이름", accessor: "name" },
-    { header: "생년월일", accessor: "birthDate" },
-    { header: "연락처", accessor: "phone" },
-    { header: "직급", accessor: "position" },
+  // 모든 가능한 컬럼 정의
+  const allColumns = [
+    { accessorKey: "id", header: "ID", className: "w-16" },
+    { accessorKey: "name", header: "이름" },
+    { accessorKey: "birthDate", header: "생년월일" },
+    { accessorKey: "phone", header: "연락처" },
+    { accessorKey: "position", header: "직급" },
+    { accessorKey: "department", header: "부서" },
+    { accessorKey: "email", header: "이메일" },
+    { accessorKey: "address", header: "주소" },
+    { accessorKey: "hireDate", header: "입사일" },
+    { accessorKey: "notes", header: "메모" },
     {
+      accessorKey: "status",
       header: "상태",
-      accessor: "status",
-      cell: (row) => {
+      cell: ({ row }) => {
         let statusColor;
-        switch (row.status) {
-          case "active":
+        const status = row.getValue("status");
+        switch (status) {
+          case "재직":
             statusColor = "bg-green-100 text-green-800";
             break;
-          case "inactive":
+          case "퇴사":
             statusColor = "bg-red-100 text-red-800";
             break;
           default:
@@ -82,39 +107,67 @@ const PersonnelList = () => {
           <span
             className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusColor}`}
           >
-            {row.status === "active" ? "재직중" : "퇴사"}
+            {status}
           </span>
         );
       },
     },
     {
+      accessorKey: "actions",
       header: "액션",
-      cell: (row) => (
-        <div className="flex space-x-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/personnel/${row.id}`);
-            }}
-            className="p-1 text-blue-600 hover:text-blue-800"
-            title="상세보기"
-          >
-            <Eye className="w-5 h-5" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/personnel/${row.id}/edit`);
-            }}
-            className="p-1 text-gray-600 hover:text-gray-800"
-            title="수정하기"
-          >
-            <Edit className="w-5 h-5" />
-          </button>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const rowData = row.original;
+        return (
+          <div className="flex space-x-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/personnel/${rowData.id}`);
+              }}
+              className="p-1 text-blue-600 hover:text-blue-800"
+              title="상세보기"
+            >
+              <Eye className="w-5 h-5" />
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/personnel/${rowData.id}/edit`);
+              }}
+              className="p-1 text-gray-600 hover:text-gray-800"
+              title="수정하기"
+            >
+              <Edit className="w-5 h-5" />
+            </button>
+            <button
+              onClick={(e) => handleToggleStatus(rowData.id, e)}
+              className={`p-1 ${
+                rowData.status === "재직"
+                  ? "text-orange-600 hover:text-orange-800"
+                  : "text-green-600 hover:text-green-800"
+              }`}
+              title={rowData.status === "재직" ? "퇴사 처리" : "재직 처리"}
+            >
+              {rowData.status === "재직" ? (
+                <UserX className="w-5 h-5" />
+              ) : (
+                <UserCheck className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+        );
+      },
     },
   ];
+
+  // 현재 화면에 표시할 컬럼들
+  const columns = allColumns.filter((column) =>
+    visibleColumns.includes(column.accessorKey)
+  );
+
+  // 추가 디버깅 로그
+  console.log("PersonnelList 컴포넌트 columns:", columns);
+  console.log("PersonnelList 필터링된 데이터:", filteredWorkers);
 
   return (
     <div className="container mx-auto px-4 py-6">
@@ -159,7 +212,7 @@ const PersonnelList = () => {
           <FormInput
             type="text"
             className="pl-10"
-            placeholder="이름, 직급, 연락처로 검색..."
+            placeholder="이름, 직급, 연락처, 생년월일, 이메일, 부서 등으로 검색..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />

@@ -1,24 +1,81 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWorks } from "../../lib/api/workQueries";
-import DataTable from "../../components/molecules/DataTable";
-import { FormButton, FormInput } from "../../components/molecules";
-import {
-  Eye,
-  Pencil,
-  Plus,
-  Search,
-  FileUp,
-  Filter,
-  RefreshCw,
-} from "lucide-react";
-import { formatDate } from "../../lib/utils/dateUtils";
+import { DataTable, FormButton, FormInput } from "../../components/molecules";
+import { Eye, Pencil, Plus, Search, FileUp, RefreshCw } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const WorkList = () => {
   const navigate = useNavigate();
-  const { data: works, isLoading, refetch } = useWorks();
+  const queryClient = useQueryClient();
+
+  // 데이터 상태 관리
+  const worksQuery = useWorks();
+  const { data: works, isLoading, refetch, error } = worksQuery;
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [filteredWorks, setFilteredWorks] = useState([]);
+
+  // 컴포넌트 마운트 시 강제로 데이터 로드
+  useEffect(() => {
+    console.log("[WorkList] 컴포넌트 마운트됨");
+
+    // React Query 캐시 초기화
+    queryClient.invalidateQueries({ queryKey: ["works"] });
+
+    // 즉시 데이터 리로드
+    refetch().then((result) => {
+      console.log("[WorkList] 리페치 결과:", result);
+    });
+  }, []);
+
+  // 쿼리 상태 변경 모니터링
+  useEffect(() => {
+    console.log("[WorkList] 쿼리 상태 변경됨:", {
+      isLoading,
+      isError: worksQuery.isError,
+      data: works,
+      dataUpdatedAt: worksQuery.dataUpdatedAt,
+      status: worksQuery.status,
+    });
+  }, [worksQuery.status, isLoading, works]);
+
+  // works 데이터가 변경될 때마다 필터링 로직 적용
+  useEffect(() => {
+    console.log("[WorkList] works 변경됨:", works);
+    if (works && Array.isArray(works)) {
+      console.log("[WorkList] works는 배열이고 길이:", works.length);
+      const filtered = works.filter((work) => {
+        return (
+          searchTerm === "" ||
+          (work.id &&
+            work.id
+              .toString()
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())) ||
+          (work.typeId &&
+            work.typeId
+              .toString()
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())) ||
+          (work.typeName &&
+            work.typeName
+              .toString()
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())) ||
+          (work.specification &&
+            work.specification
+              .toString()
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase()))
+        );
+      });
+      console.log("[WorkList] 필터링된 데이터:", filtered);
+      setFilteredWorks(filtered);
+    } else {
+      console.log("[WorkList] works가 없거나 배열이 아님");
+      setFilteredWorks([]);
+    }
+  }, [works, searchTerm]);
 
   const handleNavigateToCreate = () => {
     navigate("/works/create");
@@ -36,73 +93,106 @@ const WorkList = () => {
     navigate(`/works/${workId}/edit`);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "완료":
-        return "bg-green-100 text-green-800";
-      case "진행중":
-        return "bg-blue-100 text-blue-800";
-      case "대기중":
-        return "bg-yellow-100 text-yellow-800";
-      case "취소됨":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+  // 강제 리로드 함수
+  const handleForceRefetch = () => {
+    console.log("[WorkList] 강제 리로드 시작");
+    queryClient.invalidateQueries({ queryKey: ["works"] });
+    refetch({ force: true }).then((result) => {
+      console.log("[WorkList] 강제 리로드 결과:", result);
+    });
   };
 
+  // 수동 데이터 설정 함수
+  const handleDebugData = () => {
+    console.log("[WorkList] 디버그 데이터 설정");
+    const mockData = [
+      {
+        id: "W-001",
+        typeId: "TP-001",
+        typeName: "아스팔트 포장",
+        specification: "두께 50mm",
+        unit: "㎡",
+        materialCost: 15000,
+        laborCost: 25000,
+        expenseCost: 5000,
+        totalCost: 45000,
+      },
+      {
+        id: "W-002",
+        typeId: "TP-002",
+        typeName: "보도블럭 설치",
+        specification: "300x300mm",
+        unit: "㎡",
+        materialCost: 20000,
+        laborCost: 30000,
+        expenseCost: 3000,
+        totalCost: 53000,
+      },
+    ];
+    setFilteredWorks(mockData);
+    console.log("[WorkList] 수동으로 mock 데이터 설정됨:", mockData);
+  };
+
+  // 데이터 테이블 컬럼 정의
   const columns = [
     {
       header: "ID",
       accessorKey: "id",
-      cell: ({ row }) => <div className="font-medium">{row.original.id}</div>,
     },
     {
-      header: "작업명",
-      accessorKey: "name",
-      cell: ({ row }) => <div className="font-medium">{row.original.name}</div>,
+      header: "공종 ID",
+      accessorKey: "typeId",
     },
     {
-      header: "위치",
-      accessorKey: "location",
-    },
-    {
-      header: "담당자",
-      accessorKey: "assignedTo",
-    },
-    {
-      header: "시작일",
-      accessorKey: "startDate",
-      cell: ({ row }) => <div>{formatDate(row.original.startDate)}</div>,
-    },
-    {
-      header: "상태",
-      accessorKey: "status",
+      header: "공종명",
+      accessorKey: "typeName",
       cell: ({ row }) => (
-        <span
-          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
-            row.original.status
-          )}`}
-        >
-          {row.original.status}
-        </span>
+        <div className="font-medium">{row.getValue("typeName")}</div>
       ),
     },
     {
-      header: "진행률",
-      accessorKey: "completionRate",
+      header: "규격",
+      accessorKey: "specification",
+    },
+    {
+      header: "단위",
+      accessorKey: "unit",
+    },
+    {
+      header: "재료비",
+      accessorKey: "materialCost",
       cell: ({ row }) => (
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
-          <div
-            className="bg-blue-600 h-2.5 rounded-full"
-            style={{ width: `${row.original.completionRate}%` }}
-          ></div>
+        <div className="text-right">
+          {Number(row.getValue("materialCost")).toLocaleString()}원
         </div>
       ),
     },
     {
-      header: "관련 지시",
-      accessorKey: "instructionId",
+      header: "노무비",
+      accessorKey: "laborCost",
+      cell: ({ row }) => (
+        <div className="text-right">
+          {Number(row.getValue("laborCost")).toLocaleString()}원
+        </div>
+      ),
+    },
+    {
+      header: "경비",
+      accessorKey: "expenseCost",
+      cell: ({ row }) => (
+        <div className="text-right">
+          {Number(row.getValue("expenseCost")).toLocaleString()}원
+        </div>
+      ),
+    },
+    {
+      header: "합계",
+      accessorKey: "totalCost",
+      cell: ({ row }) => (
+        <div className="font-medium text-right">
+          {Number(row.getValue("totalCost")).toLocaleString()}원
+        </div>
+      ),
     },
     {
       header: "액션",
@@ -132,22 +222,8 @@ const WorkList = () => {
     },
   ];
 
-  // 검색 필터링을 적용한 작업 목록
-  const filteredWorks = works
-    ? works.filter((work) => {
-        const matchesSearch =
-          searchTerm === "" ||
-          work.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          work.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          work.assignedTo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          work.id.toLowerCase().includes(searchTerm.toLowerCase());
-
-        const matchesStatus =
-          statusFilter === "all" || work.status === statusFilter;
-
-        return matchesSearch && matchesStatus;
-      })
-    : [];
+  // 현재 데이터 상태 표시
+  console.log("[WorkList] 렌더링 - filteredWorks:", filteredWorks);
 
   return (
     <div className="container px-4 py-6 mx-auto">
@@ -179,7 +255,7 @@ const WorkList = () => {
             <div className="relative flex-1">
               <FormInput
                 type="text"
-                placeholder="작업명, 위치, 담당자, ID로 검색..."
+                placeholder="ID, 공종ID, 공종명, 규격으로 검색..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -190,18 +266,6 @@ const WorkList = () => {
             </div>
 
             <div className="flex gap-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              >
-                <option value="all">모든 상태</option>
-                <option value="대기중">대기중</option>
-                <option value="진행중">진행중</option>
-                <option value="완료">완료</option>
-                <option value="취소됨">취소됨</option>
-              </select>
-
               <FormButton
                 variant="outline"
                 onClick={() => refetch()}
@@ -215,13 +279,23 @@ const WorkList = () => {
 
           <DataTable
             columns={columns}
-            data={filteredWorks}
+            data={filteredWorks || []}
             loading={isLoading}
-            onRowClick={(row) => handleNavigateToDetail(row.original.id)}
-            emptyMessage="등록된 작업이 없습니다."
+            onRowClick={(row) => handleNavigateToDetail(row.id)}
+            emptyMessage={
+              isLoading ? "데이터 로딩 중..." : "등록된 작업이 없습니다."
+            }
             title="작업 목록"
-            subtitle={`전체 ${filteredWorks.length}개`}
+            subtitle={`전체 ${filteredWorks ? filteredWorks.length : 0}개`}
           />
+
+          {/* 데이터 상태 표시 (디버깅용) */}
+          {error && (
+            <div className="p-4 mt-4 text-red-700 border border-red-300 rounded-md bg-red-50">
+              <p className="font-medium">에러 발생:</p>
+              <p>{error.message}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

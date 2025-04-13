@@ -25,7 +25,6 @@ import {
 import { ArrowLeft, Edit, Trash, CheckCircle, Clock, Link } from "lucide-react";
 import Button from "../../components/atoms/Button";
 import Card from "../../components/atoms/Card";
-import Table from "../../components/molecules/Table";
 import Input from "../../components/atoms/Input";
 import TextArea from "../../components/atoms/TextArea";
 

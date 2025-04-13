@@ -20,12 +20,36 @@ export const QUERY_KEYS = {
  * @returns {Object} 쿼리 결과 객체
  */
 export const useInstructions = () => {
+  console.log("[instructionQueries] useInstructions 훅 호출됨");
+  
+  const queryFn = async () => {
+    console.log("[instructionQueries] queryFn 실행 - fetchInstructions 호출 직전");
+    try {
+      const data = await fetchInstructions();
+      console.log("[instructionQueries] fetchInstructions 반환 데이터:", data);
+      return data;
+    } catch (error) {
+      console.error("[instructionQueries] fetchInstructions 에러:", error);
+      throw error;
+    }
+  };
+  
   return useQuery({
     queryKey: [QUERY_KEYS.INSTRUCTIONS],
-    queryFn: fetchInstructions,
-    staleTime: 1000 * 60 * 5, // 5분 동안 데이터를 fresh로 유지
-  })
-}
+    queryFn: queryFn,
+    staleTime: 0, // 항상 stale 상태로 유지하여 데이터 재요청이 가능하게 함
+    cacheTime: 1000, // 캐시 유지 시간을 최소화 (1초)
+    retry: 3,
+    refetchOnMount: 'always', // 컴포넌트 마운트 시 항상 새로고침
+    refetchOnWindowFocus: true, // 창이 포커스될 때 새로고침
+    onError: (error) => {
+      console.error("[instructionQueries] 지시 목록 가져오기 에러:", error);
+    },
+    onSuccess: (data) => {
+      console.log("[instructionQueries] 지시 목록 가져오기 성공:", data);
+    }
+  });
+};
 
 /**
  * 특정 지시 정보를 가져오는 쿼리 훅
@@ -33,13 +57,37 @@ export const useInstructions = () => {
  * @returns {Object} 쿼리 결과 객체
  */
 export const useInstruction = (id) => {
+  console.log("[instructionQueries] useInstruction 훅 호출됨, id:", id);
+  
+  const queryFn = async () => {
+    console.log("[instructionQueries] instruction queryFn 실행 - fetchInstructionById 호출 직전");
+    try {
+      const data = await fetchInstructionById(id);
+      console.log("[instructionQueries] fetchInstructionById 반환 데이터:", data);
+      return data;
+    } catch (error) {
+      console.error("[instructionQueries] fetchInstructionById 에러:", error);
+      throw error;
+    }
+  };
+  
   return useQuery({
     queryKey: [QUERY_KEYS.INSTRUCTION, id],
-    queryFn: () => fetchInstructionById(id),
-    staleTime: 1000 * 60 * 5, // 5분 동안 데이터를 fresh로 유지
+    queryFn: queryFn,
+    staleTime: 0, // 항상 stale 상태로 유지하여 데이터 재요청이 가능하게 함
+    cacheTime: 1000, // 캐시 유지 시간을 최소화 (1초)
+    retry: 3,
+    refetchOnMount: 'always', // 컴포넌트 마운트 시 항상 새로고침
+    refetchOnWindowFocus: true, // 창이 포커스될 때 새로고침
     enabled: !!id, // id가 있을 때만 쿼리 실행
-  })
-}
+    onError: (error) => {
+      console.error(`[instructionQueries] 지시 ID ${id} 가져오기 에러:`, error);
+    },
+    onSuccess: (data) => {
+      console.log(`[instructionQueries] 지시 ID ${id} 가져오기 성공:`, data);
+    },
+  });
+};
 
 /**
  * 새 지시를 생성하는 뮤테이션 훅

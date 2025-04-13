@@ -1,16 +1,10 @@
 import React from "react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { FormCard as Card } from "./index";
+import { DataTable as DataTableComponent } from "@/components/ui/data-table";
 
 /**
- * DataTable - shadcn/ui 테이블 컴포넌트를 활용한 데이터 테이블
+ * DataTable - TanStack Table 기반 데이터 테이블
+ * 정렬, 필터링, 페이지네이션 등 고급 기능 지원
  */
 const DataTable = ({
   columns = [],
@@ -22,78 +16,90 @@ const DataTable = ({
   footer,
   onRowClick,
   className = "",
+  globalFilter,
+  setGlobalFilter,
+  enableSelection = false,
+  enableSorting = true,
+  enableMultiSort = true,
+  enablePagination = true,
+  enableGlobalFilter = true,
+  onSelectionChange,
   ...props
 }) => {
+  // columns 구조 검증 및 필요시 변환
+  const normalizedColumns = columns.map((column) => {
+    // accessorKey가 없고 accessor가 있는 경우 변환
+    if (!column.accessorKey && column.accessor) {
+      return {
+        ...column,
+        accessorKey: column.accessor,
+        header: column.header || column.title,
+        cell: column.cell
+          ? ({ row }) => {
+              // row.original을 사용하는 이전 방식의 cell 함수 지원
+              const value = row.getValue(column.accessor);
+              return column.cell({ ...row.original, [column.accessor]: value });
+            }
+          : undefined,
+      };
+    }
+
+    // 이미 올바른 형식을 갖추고 있는 경우
+    return column;
+  });
+
+  console.log("DataTable wrapper - 원본 columns:", columns);
+  console.log("DataTable wrapper - 정규화된 columns:", normalizedColumns);
+
+  // 선택 열 설정 (필요시)
+  const selectionColumn = enableSelection
+    ? {
+        id: "select",
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            checked={
+              table.getIsAllPageRowsSelected() ||
+              (table.getIsSomePageRowsSelected() && "indeterminate")
+            }
+            onChange={table.getToggleAllPageRowsSelectedHandler()}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+          />
+        ),
+        cell: ({ row }) => (
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            onChange={row.getToggleSelectedHandler()}
+            onClick={(e) => e.stopPropagation()}
+            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+          />
+        ),
+        enableSorting: false,
+      }
+    : undefined;
+
   return (
-    <Card
+    <DataTableComponent
+      columns={normalizedColumns}
+      data={data}
+      loading={loading}
+      emptyMessage={emptyMessage}
+      onRowClick={onRowClick}
       title={title}
       subtitle={subtitle}
       footer={footer}
+      globalFilter={globalFilter}
+      setGlobalFilter={setGlobalFilter}
+      enableSorting={enableSorting}
+      enableMultiSort={enableMultiSort}
+      enablePagination={enablePagination}
+      enableGlobalFilter={enableGlobalFilter}
+      selectionColumn={selectionColumn}
       className={className}
+      containerClassName=""
       {...props}
-    >
-      <div className="relative">
-        {loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white bg-opacity-70">
-            <div className="p-4 bg-white rounded-md shadow-md">
-              <p className="text-gray-600">로딩 중...</p>
-            </div>
-          </div>
-        )}
-
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                {columns.map((column, index) => (
-                  <TableHead
-                    key={index}
-                    className={column.className}
-                    style={column.style}
-                  >
-                    {column.header}
-                  </TableHead>
-                ))}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={columns.length}
-                    className="py-6 text-center text-gray-500"
-                  >
-                    {emptyMessage}
-                  </TableCell>
-                </TableRow>
-              ) : (
-                data.map((row, rowIndex) => (
-                  <TableRow
-                    key={rowIndex}
-                    onClick={() => onRowClick && onRowClick(row)}
-                    className={
-                      onRowClick ? "cursor-pointer hover:bg-gray-50" : ""
-                    }
-                  >
-                    {columns.map((column, colIndex) => (
-                      <TableCell
-                        key={colIndex}
-                        className={column.cellClassName}
-                        style={column.cellStyle}
-                      >
-                        {column.cell
-                          ? column.cell(row)
-                          : row[column.accessor] || "-"}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-    </Card>
+    />
   );
 };
 

@@ -14,4 +14,5 @@ export * from './SweetAlert';
 export { default as SweetAlert } from './SweetAlert';
 
 // 데이터 테이블 내보내기
-export { default as DataTable } from './DataTable'; 
+export { default as DataTable } from './DataTable';
+export { default as Table } from './TableAdapter'; 

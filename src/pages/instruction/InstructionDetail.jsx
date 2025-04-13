@@ -9,13 +9,27 @@ import {
 } from "../../lib/api/instructionQueries";
 import {
   FormButton,
+  FormInput,
   FormCard,
+  FormTextArea,
+  FormGroup,
+  Table,
+  DataTable,
   showConfirm,
   showSuccess,
   showDeleteConfirm,
+  showTextAreaPrompt,
 } from "../../components/molecules";
-import { ArrowLeft, Edit, Trash, CheckCircle, XCircle } from "lucide-react";
-import Table from "../../components/molecules/Table";
+import {
+  ArrowLeft,
+  Edit,
+  Trash,
+  CheckCircle,
+  XCircle,
+  Clock,
+} from "lucide-react";
+import Button from "../../components/atoms/Button";
+import Card from "../../components/atoms/Card";
 
 const InstructionDetail = () => {
   const { id } = useParams();
@@ -88,7 +102,7 @@ const InstructionDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-6">
+      <div className="container px-4 py-6 mx-auto">
         <div className="flex items-center justify-center h-64">
           <div className="w-12 h-12 border-b-2 border-blue-500 rounded-full animate-spin"></div>
         </div>
@@ -98,8 +112,8 @@ const InstructionDetail = () => {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+      <div className="container px-4 py-6 mx-auto">
+        <div className="px-4 py-3 text-red-700 bg-red-100 border border-red-400 rounded">
           <p>지시 정보를 불러오는 중 오류가 발생했습니다.</p>
           <FormButton onClick={handleBack} className="mt-2">
             목록으로 돌아가기
@@ -111,8 +125,8 @@ const InstructionDetail = () => {
 
   if (!instruction) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+      <div className="container px-4 py-6 mx-auto">
+        <div className="px-4 py-3 text-yellow-700 bg-yellow-100 border border-yellow-400 rounded">
           <p>지시 정보를 찾을 수 없습니다.</p>
           <FormButton onClick={handleBack} className="mt-2">
             목록으로 돌아가기
@@ -145,7 +159,7 @@ const InstructionDetail = () => {
     {
       title: "상태",
       dataIndex: "status",
-      render: (row) => {
+      render: (rowData) => {
         const statusClasses = {
           대기중: "bg-blue-100 text-blue-800",
           진행중: "bg-yellow-100 text-yellow-800",
@@ -156,10 +170,10 @@ const InstructionDetail = () => {
         return (
           <span
             className={`px-2 py-1 text-xs rounded-full ${
-              statusClasses[row.status] || "bg-gray-100"
+              statusClasses[rowData.status] || "bg-gray-100"
             }`}
           >
-            {row.status}
+            {rowData.status}
           </span>
         );
       },
@@ -183,8 +197,8 @@ const InstructionDetail = () => {
   const isCanceled = instruction.status === "취소";
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <div className="flex justify-between items-center mb-6">
+    <div className="container px-4 py-6 mx-auto">
+      <div className="flex items-center justify-between mb-6">
         <div className="flex items-center">
           <FormButton
             variant="outline"
@@ -217,11 +231,11 @@ const InstructionDetail = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         <FormCard className="p-6">
-          <h2 className="text-xl font-semibold mb-4">기본 정보</h2>
+          <h2 className="mb-4 text-xl font-semibold">기본 정보</h2>
           <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
                 <p className="text-sm text-gray-500">ID</p>
                 <p className="font-medium">{instruction.id}</p>
@@ -267,7 +281,7 @@ const InstructionDetail = () => {
         </FormCard>
 
         <FormCard className="p-6">
-          <h2 className="text-xl font-semibold mb-4">상세 내용</h2>
+          <h2 className="mb-4 text-xl font-semibold">상세 내용</h2>
           <div className="whitespace-pre-line">{instruction.description}</div>
         </FormCard>
       </div>
@@ -275,12 +289,19 @@ const InstructionDetail = () => {
       <div className="grid grid-cols-1 gap-6 mb-6">
         <FormCard className="p-6">
           <h3 className="mb-4 text-lg font-medium text-gray-800">작업 목록</h3>
-          <Table
-            columns={workColumns}
+          <DataTable
+            columns={workColumns.map((col) => ({
+              accessorKey: col.dataIndex,
+              header: col.title,
+              cell: col.render
+                ? ({ row }) => col.render(row.original)
+                : undefined,
+            }))}
             data={instruction.works || []}
+            loading={isLoading}
             emptyMessage="등록된 작업이 없습니다."
-            onRowClick={(work) => navigate(`/works/${work.id}`)}
-            className="min-w-full divide-y divide-gray-200"
+            onRowClick={(row) => navigate(`/works/${row.id}`)}
+            enablePagination={instruction.works?.length > 10}
           />
           <div className="flex justify-end mt-4">
             <FormButton
@@ -297,21 +318,37 @@ const InstructionDetail = () => {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <FormCard className="p-6">
           <h3 className="mb-4 text-lg font-medium text-gray-800">필요 자재</h3>
-          <Table
-            columns={materialColumns}
+          <DataTable
+            columns={materialColumns.map((col) => ({
+              accessorKey: col.dataIndex,
+              header: col.title,
+              cell: col.render
+                ? ({ row }) => col.render(row.original)
+                : undefined,
+            }))}
             data={instruction.materials || []}
+            loading={isLoading}
             emptyMessage="등록된 자재가 없습니다."
-            className="min-w-full divide-y divide-gray-200"
+            enablePagination={false}
+            enableGlobalFilter={false}
           />
         </FormCard>
 
         <FormCard className="p-6">
           <h3 className="mb-4 text-lg font-medium text-gray-800">작업 이력</h3>
-          <Table
-            columns={historyColumns}
+          <DataTable
+            columns={historyColumns.map((col) => ({
+              accessorKey: col.dataIndex,
+              header: col.title,
+              cell: col.render
+                ? ({ row }) => col.render(row.original)
+                : undefined,
+            }))}
             data={instruction.history || []}
+            loading={isLoading}
             emptyMessage="작업 이력이 없습니다."
-            className="min-w-full divide-y divide-gray-200"
+            enablePagination={false}
+            enableGlobalFilter={false}
           />
         </FormCard>
       </div>

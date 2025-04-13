@@ -20,16 +20,20 @@ const MOCK_DELAY = 500;
  * @returns {Promise<Array>} 작업자 배열
  */
 export const fetchWorkers = async () => {
-  // 개발 환경에서는 모의 데이터 사용
-  if (import.meta.env.DEV) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([...mockWorkers]);
-      }, MOCK_DELAY);
-    });
-  }
-
-  // 실제 API 호출
+  // 디버깅을 위한 로그
+  console.log("[personnelAPI] fetchWorkers 함수 호출됨");
+  
+  // 강제로 모의 데이터 사용
+  console.log("[personnelAPI] mock 데이터 사용 - mockWorkers:", mockWorkers);
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const result = [...mockWorkers]; // 배열 복사본 생성
+      console.log("[personnelAPI] 반환할 데이터:", result);
+      resolve(result);
+    }, 500);
+  });
+  
+  // 아래 코드는 실행되지 않음
   try {
     const response = await axios.get(`${API_URL}/personnel`);
     return response.data;
@@ -45,21 +49,26 @@ export const fetchWorkers = async () => {
  * @returns {Promise<Object>} 작업자 정보
  */
 export const fetchWorkerById = async (id) => {
-  // 개발 환경에서는 모의 데이터 사용
-  if (import.meta.env.DEV) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const worker = mockWorkers.find(w => w.id === id);
-        if (worker) {
-          resolve({ ...worker });
-        } else {
-          reject(new Error('작업자를 찾을 수 없습니다.'));
-        }
-      }, MOCK_DELAY);
-    });
-  }
-
-  // 실제 API 호출
+  // 디버깅을 위한 로그
+  console.log("[personnelAPI] fetchWorkerById 함수 호출됨, id:", id);
+  
+  // 강제로 모의 데이터 사용
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // Number로 변환 (id가 문자열로 전달될 수 있음)
+      const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+      const worker = mockWorkers.find(w => w.id === numId);
+      console.log("[personnelAPI] 찾은 작업자 데이터:", worker);
+      if (worker) {
+        resolve({ ...worker });
+      } else {
+        console.error("[personnelAPI] 작업자를 찾을 수 없음, id:", id);
+        reject(new Error('작업자를 찾을 수 없습니다.'));
+      }
+    }, 500);
+  });
+  
+  // 아래 코드는 실행되지 않음
   try {
     const response = await axios.get(`${API_URL}/personnel/${id}`);
     return response.data;
@@ -75,22 +84,24 @@ export const fetchWorkerById = async (id) => {
  * @returns {Promise<Object>} 생성된 작업자 정보
  */
 export const createWorker = async (workerData) => {
-  // 개발 환경에서는 모의 데이터 사용
-  if (import.meta.env.DEV) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const newId = Math.max(...mockWorkers.map(w => w.id)) + 1;
-        const newWorker = {
-          id: newId,
-          ...workerData
-        };
-        mockWorkers.push(newWorker);
-        resolve({ ...newWorker });
-      }, MOCK_DELAY);
-    });
-  }
-
-  // 실제 API 호출
+  // 디버깅을 위한 로그
+  console.log("[personnelAPI] createWorker 함수 호출됨, 데이터:", workerData);
+  
+  // 강제로 모의 데이터 사용
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const newId = Math.max(...mockWorkers.map(w => w.id)) + 1;
+      const newWorker = {
+        id: newId,
+        ...workerData
+      };
+      mockWorkers.push(newWorker);
+      console.log("[personnelAPI] 새 작업자 생성됨:", newWorker);
+      resolve({ ...newWorker });
+    }, 500);
+  });
+  
+  // 아래 코드는 실행되지 않음
   try {
     const response = await axios.post(`${API_URL}/personnel`, workerData);
     return response.data;
@@ -107,22 +118,27 @@ export const createWorker = async (workerData) => {
  * @returns {Promise<Object>} 수정된 작업자 정보
  */
 export const updateWorker = async (id, workerData) => {
-  // 개발 환경에서는 모의 데이터 사용
-  if (import.meta.env.DEV) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const index = mockWorkers.findIndex(w => w.id === id);
-        if (index !== -1) {
-          mockWorkers[index] = { ...mockWorkers[index], ...workerData };
-          resolve({ ...mockWorkers[index] });
-        } else {
-          reject(new Error('작업자를 찾을 수 없습니다.'));
-        }
-      }, MOCK_DELAY);
-    });
-  }
-
-  // 실제 API 호출
+  // 디버깅을 위한 로그
+  console.log("[personnelAPI] updateWorker 함수 호출됨, id:", id, "데이터:", workerData);
+  
+  // 강제로 모의 데이터 사용
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // Number로 변환 (id가 문자열로 전달될 수 있음)
+      const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+      const index = mockWorkers.findIndex(w => w.id === numId);
+      if (index !== -1) {
+        mockWorkers[index] = { ...mockWorkers[index], ...workerData };
+        console.log("[personnelAPI] 작업자 업데이트됨:", mockWorkers[index]);
+        resolve({ ...mockWorkers[index] });
+      } else {
+        console.error("[personnelAPI] 작업자를 찾을 수 없음, id:", id);
+        reject(new Error('작업자를 찾을 수 없습니다.'));
+      }
+    }, 500);
+  });
+  
+  // 아래 코드는 실행되지 않음
   try {
     const response = await axios.put(`${API_URL}/personnel/${id}`, workerData);
     return response.data;
@@ -138,23 +154,28 @@ export const updateWorker = async (id, workerData) => {
  * @returns {Promise<Object>} 수정된 작업자 정보
  */
 export const toggleWorkerStatus = async (id) => {
-  // 개발 환경에서는 모의 데이터 사용
-  if (import.meta.env.DEV) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const index = mockWorkers.findIndex(w => w.id === id);
-        if (index !== -1) {
-          const newStatus = mockWorkers[index].status === '재직' ? '퇴사' : '재직';
-          mockWorkers[index] = { ...mockWorkers[index], status: newStatus };
-          resolve({ ...mockWorkers[index] });
-        } else {
-          reject(new Error('작업자를 찾을 수 없습니다.'));
-        }
-      }, MOCK_DELAY);
-    });
-  }
-
-  // 실제 API 호출
+  // 디버깅을 위한 로그
+  console.log("[personnelAPI] toggleWorkerStatus 함수 호출됨, id:", id);
+  
+  // 강제로 모의 데이터 사용
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // Number로 변환 (id가 문자열로 전달될 수 있음)
+      const numId = typeof id === 'string' ? parseInt(id, 10) : id;
+      const index = mockWorkers.findIndex(w => w.id === numId);
+      if (index !== -1) {
+        const newStatus = mockWorkers[index].status === '재직' ? '퇴사' : '재직';
+        mockWorkers[index] = { ...mockWorkers[index], status: newStatus };
+        console.log("[personnelAPI] 작업자 상태 변경됨:", mockWorkers[index]);
+        resolve({ ...mockWorkers[index] });
+      } else {
+        console.error("[personnelAPI] 작업자를 찾을 수 없음, id:", id);
+        reject(new Error('작업자를 찾을 수 없습니다.'));
+      }
+    }, 500);
+  });
+  
+  // 아래 코드는 실행되지 않음
   try {
     const worker = await fetchWorkerById(id);
     const newStatus = worker.status === '재직' ? '퇴사' : '재직';
