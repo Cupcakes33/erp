@@ -7,10 +7,15 @@ import {
   useToggleInstructionFavorite,
   useDeleteInstruction,
 } from "../../lib/api/instructionQueries";
-import Button from "../../components/atoms/Button";
-import Card from "../../components/atoms/Card";
+import {
+  FormButton,
+  FormCard,
+  showConfirm,
+  showSuccess,
+  showDeleteConfirm,
+} from "../../components/molecules";
+import { ArrowLeft, Edit, Trash, CheckCircle, XCircle } from "lucide-react";
 import Table from "../../components/molecules/Table";
-import Modal from "../../components/molecules/Modal";
 
 const InstructionDetail = () => {
   const { id } = useParams();
@@ -22,18 +27,48 @@ const InstructionDetail = () => {
   const toggleFavoriteMutation = useToggleInstructionFavorite();
   const deleteInstructionMutation = useDeleteInstruction();
 
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-
   const handleEdit = () => {
     navigate(`/instructions/${id}/edit`);
   };
 
+  const handleBack = () => {
+    navigate("/instructions");
+  };
+
   const handleDelete = async () => {
-    try {
-      await deleteInstructionMutation.mutateAsync(id);
-      navigate("/instructions");
-    } catch (error) {
-      console.error("지시 삭제 실패:", error);
+    const result = await showDeleteConfirm(
+      "지시 삭제 확인",
+      "이 작업은 되돌릴 수 없으며, 관련된 모든 작업에 영향을 줄 수 있습니다."
+    );
+
+    if (result.isConfirmed) {
+      try {
+        await deleteInstructionMutation.mutateAsync(id);
+        navigate("/instructions");
+      } catch (error) {
+        console.error("지시 삭제 실패:", error);
+      }
+    }
+  };
+
+  const handleComplete = async () => {
+    const result = await showConfirm({
+      title: "지시 완료 처리",
+      message:
+        "이 지시를 완료 처리하시겠습니까? 지시가 완료되면 더 이상 수정할 수 없습니다.",
+      confirmText: "완료 처리",
+      icon: "success",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await updateInstructionMutation.mutateAsync({
+          id,
+          data: { ...instruction, status: "완료" },
+        });
+      } catch (error) {
+        console.error("지시 완료 처리 실패:", error);
+      }
     }
   };
 
@@ -53,26 +88,36 @@ const InstructionDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-12 h-12 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="w-12 h-12 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 text-red-700 bg-red-100 rounded-md">
-        {error instanceof Error
-          ? error.message
-          : "데이터를 불러오는 중 오류가 발생했습니다."}
+      <div className="container mx-auto px-4 py-6">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p>지시 정보를 불러오는 중 오류가 발생했습니다.</p>
+          <FormButton onClick={handleBack} className="mt-2">
+            목록으로 돌아가기
+          </FormButton>
+        </div>
       </div>
     );
   }
 
   if (!instruction) {
     return (
-      <div className="p-4 text-yellow-700 bg-yellow-100 rounded-md">
-        지시 정보를 찾을 수 없습니다.
+      <div className="container mx-auto px-4 py-6">
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+          <p>지시 정보를 찾을 수 없습니다.</p>
+          <FormButton onClick={handleBack} className="mt-2">
+            목록으로 돌아가기
+          </FormButton>
+        </div>
       </div>
     );
   }
@@ -134,140 +179,101 @@ const InstructionDetail = () => {
     { title: "담당자", dataIndex: "user" },
   ];
 
+  const isCompleted = instruction.status === "완료";
+  const isCanceled = instruction.status === "취소";
+
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">지시 상세</h1>
-        <div className="flex space-x-2">
-          <Button
+    <div className="container mx-auto px-4 py-6">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center">
+          <FormButton
             variant="outline"
-            onClick={() => navigate("/instructions")}
-            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            size="sm"
+            onClick={handleBack}
+            className="mr-4"
           >
+            <ArrowLeft className="w-4 h-4 mr-2" />
             목록으로
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleEdit}
-            className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
-          >
-            수정
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => setShowDeleteModal(true)}
-            className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700"
-          >
-            삭제
-          </Button>
+          </FormButton>
+          <h1 className="text-2xl font-bold">{instruction.title}</h1>
+        </div>
+        <div className="flex space-x-2">
+          {!isCompleted && !isCanceled && (
+            <>
+              <FormButton onClick={handleComplete} variant="success" size="sm">
+                <CheckCircle className="w-4 h-4 mr-2" />
+                완료 처리
+              </FormButton>
+              <FormButton onClick={handleEdit} variant="primary" size="sm">
+                <Edit className="w-4 h-4 mr-2" />
+                수정
+              </FormButton>
+              <FormButton onClick={handleDelete} variant="danger" size="sm">
+                <Trash className="w-4 h-4 mr-2" />
+                삭제
+              </FormButton>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-3">
-        <Card className="p-6 bg-white rounded-lg shadow-md lg:col-span-2">
-          <div className="mb-4">
-            <h2 className="mb-2 text-xl font-bold text-gray-800">
-              {instruction.title}
-            </h2>
-            <div className="flex items-center mb-4 space-x-4">
-              <span className="text-gray-500">ID: {instruction.id}</span>
-              <span
-                className={`px-2 py-1 text-xs rounded-full ${
-                  statusOptions.find((s) => s.value === instruction.status)
-                    ?.color || "bg-gray-100"
-                }`}
-              >
-                {instruction.status}
-              </span>
-              <span
-                className={`font-medium ${
-                  priorityColors[instruction.priority] || ""
-                }`}
-              >
-                우선순위: {instruction.priority}
-              </span>
-            </div>
-            <p className="mb-4 text-gray-700">{instruction.description}</p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2">
-            <div>
-              <p className="text-sm text-gray-500">위치</p>
-              <p className="text-gray-800">{instruction.location}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">담당자</p>
-              <p className="text-gray-800">{instruction.assignedTo}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">생성일</p>
-              <p className="text-gray-800">{instruction.createdAt}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">마감일</p>
-              <p className="text-gray-800">{instruction.dueDate}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">예산</p>
-              <p className="text-gray-800">
-                ₩{instruction.budget?.toLocaleString()}
-              </p>
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="mb-2 text-lg font-medium text-gray-800">
-              상태 변경
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {statusOptions.map((option) => (
-                <Button
-                  key={option.value}
-                  variant={
-                    instruction.status === option.value ? "primary" : "outline"
-                  }
-                  size="sm"
-                  onClick={() => handleStatusChange(option.value)}
-                  disabled={instruction.status === option.value}
-                  className={
-                    instruction.status === option.value
-                      ? "bg-blue-600 text-white px-3 py-1 rounded-md text-sm"
-                      : "border border-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm hover:bg-gray-50"
-                  }
-                >
-                  {option.label}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-white rounded-lg shadow-md">
-          <h3 className="mb-4 text-lg font-medium text-gray-800">첨부 파일</h3>
-          {instruction.attachments?.length > 0 ? (
-            <ul className="space-y-2">
-              {instruction.attachments.map((attachment, index) => (
-                <li key={index} className="flex items-center">
-                  <span className="mr-2">📎</span>
-                  <a
-                    href={attachment.url}
-                    className="text-blue-600 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <FormCard className="p-6">
+          <h2 className="text-xl font-semibold mb-4">기본 정보</h2>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">ID</p>
+                <p className="font-medium">{instruction.id}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">위치</p>
+                <p className="font-medium">{instruction.location}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">상태</p>
+                <p className="font-medium">
+                  <span
+                    className={`inline-block px-2 py-1 text-xs rounded-full ${getStatusClass(
+                      instruction.status
+                    )}`}
                   >
-                    {attachment.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">첨부 파일이 없습니다.</p>
-          )}
-        </Card>
+                    {instruction.status}
+                  </span>
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">우선순위</p>
+                <p className="font-medium">
+                  <span
+                    className={`inline-block px-2 py-1 text-xs rounded-full ${getPriorityClass(
+                      instruction.priority
+                    )}`}
+                  >
+                    {instruction.priority}
+                  </span>
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">생성일</p>
+                <p className="font-medium">{instruction.createdAt}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">마감일</p>
+                <p className="font-medium">{instruction.dueDate}</p>
+              </div>
+            </div>
+          </div>
+        </FormCard>
+
+        <FormCard className="p-6">
+          <h2 className="text-xl font-semibold mb-4">상세 내용</h2>
+          <div className="whitespace-pre-line">{instruction.description}</div>
+        </FormCard>
       </div>
 
       <div className="grid grid-cols-1 gap-6 mb-6">
-        <Card className="p-6 bg-white rounded-lg shadow-md">
+        <FormCard className="p-6">
           <h3 className="mb-4 text-lg font-medium text-gray-800">작업 목록</h3>
           <Table
             columns={workColumns}
@@ -277,19 +283,19 @@ const InstructionDetail = () => {
             className="min-w-full divide-y divide-gray-200"
           />
           <div className="flex justify-end mt-4">
-            <Button
+            <FormButton
               variant="outline"
               size="sm"
               className="px-3 py-1 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
             >
               작업 추가
-            </Button>
+            </FormButton>
           </div>
-        </Card>
+        </FormCard>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="p-6 bg-white rounded-lg shadow-md">
+        <FormCard className="p-6">
           <h3 className="mb-4 text-lg font-medium text-gray-800">필요 자재</h3>
           <Table
             columns={materialColumns}
@@ -297,9 +303,9 @@ const InstructionDetail = () => {
             emptyMessage="등록된 자재가 없습니다."
             className="min-w-full divide-y divide-gray-200"
           />
-        </Card>
+        </FormCard>
 
-        <Card className="p-6 bg-white rounded-lg shadow-md">
+        <FormCard className="p-6">
           <h3 className="mb-4 text-lg font-medium text-gray-800">작업 이력</h3>
           <Table
             columns={historyColumns}
@@ -307,37 +313,8 @@ const InstructionDetail = () => {
             emptyMessage="작업 이력이 없습니다."
             className="min-w-full divide-y divide-gray-200"
           />
-        </Card>
+        </FormCard>
       </div>
-
-      <Modal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="지시 삭제"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteModal(false)}
-              className="px-4 py-2 mr-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              취소
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleDelete}
-              className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700"
-            >
-              삭제
-            </Button>
-          </>
-        }
-      >
-        <p className="text-gray-800">정말로 이 지시를 삭제하시겠습니까?</p>
-        <p className="mt-2 text-sm text-gray-500">
-          이 작업은 되돌릴 수 없으며, 관련된 모든 작업 데이터도 함께 삭제됩니다.
-        </p>
-      </Modal>
     </div>
   );
 };

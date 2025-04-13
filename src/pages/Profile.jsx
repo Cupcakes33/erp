@@ -1,98 +1,253 @@
-import React from "react";
+import React, { useState } from "react";
+import { FormButton, FormInput, FormCard } from "../components/molecules";
 import { useAuthStore } from "../lib/zustand";
-import Button from "../components/atoms/Button";
 
 const Profile = () => {
-  const { logout } = useAuthStore();
+  const { user } = useAuthStore((state) => ({
+    user: state.user,
+  }));
 
-  const handleLogout = () => {
-    logout();
+  const [profile, setProfile] = useState({
+    username: user?.username || "admin",
+    name: user?.name || "관리자",
+    email: "admin@example.com",
+    department: "유지보수팀",
+    position: "팀장",
+    phone: "010-1234-5678",
+  });
+
+  const [isEditing, setIsEditing] = useState(false);
+  const [password, setPassword] = useState({
+    current: "",
+    new: "",
+    confirm: "",
+  });
+  const [errors, setErrors] = useState({});
+
+  const handleProfileChange = (e) => {
+    const { name, value } = e.target;
+    setProfile((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  const handlePasswordChange = (e) => {
+    const { name, value } = e.target;
+    setPassword((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear errors when typing
+    if (errors[name]) {
+      setErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
+  };
+
+  const validatePassword = () => {
+    const newErrors = {};
+
+    if (!password.current) {
+      newErrors.current = "현재 비밀번호를 입력하세요";
+    }
+
+    if (!password.new) {
+      newErrors.new = "새 비밀번호를 입력하세요";
+    } else if (password.new.length < 8) {
+      newErrors.new = "비밀번호는 8자 이상이어야 합니다";
+    }
+
+    if (!password.confirm) {
+      newErrors.confirm = "비밀번호 확인을 입력하세요";
+    } else if (password.new !== password.confirm) {
+      newErrors.confirm = "비밀번호가 일치하지 않습니다";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleEditToggle = () => {
+    setIsEditing((prev) => !prev);
+  };
+
+  const handleUpdateProfile = (e) => {
+    e.preventDefault();
+    // 프로필 업데이트 로직 (실제로는 API 호출)
+    setIsEditing(false);
+    alert("프로필이 업데이트되었습니다");
+  };
+
+  const handleUpdatePassword = (e) => {
+    e.preventDefault();
+    if (validatePassword()) {
+      // 비밀번호 변경 로직 (실제로는 API 호출)
+      alert("비밀번호가 변경되었습니다");
+      setPassword({
+        current: "",
+        new: "",
+        confirm: "",
+      });
+    }
   };
 
   return (
-    <div>
-      <h1 className="mb-6 text-2xl font-bold">사용자 프로필</h1>
+    <div className="container px-4 py-8 mx-auto">
+      <h1 className="mb-6 text-2xl font-bold">내 프로필</h1>
 
-      <div className="p-6 mb-6 bg-white rounded-lg shadow">
-        <div className="flex items-center mb-6">
-          <div className="flex items-center justify-center w-20 h-20 mr-6 text-4xl bg-gray-200 rounded-full">
-            👤
-          </div>
-          <div>
-            <h2 className="text-xl font-bold">관리자</h2>
-            <p className="text-gray-600">admin</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2">
-          <div>
-            <p className="text-sm text-gray-500">이메일</p>
-            <p>admin@example.com</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">부서</p>
-            <p>관리부서</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">역할</p>
-            <p>시스템 관리자</p>
-          </div>
-          <div>
-            <p className="text-sm text-gray-500">가입일</p>
-            <p>2025-01-01</p>
-          </div>
-        </div>
-
-        <div className="flex justify-end">
-          <Button variant="outline" className="mr-2">
-            프로필 수정
-          </Button>
-          <Button variant="danger" onClick={handleLogout}>
-            로그아웃
-          </Button>
-        </div>
-      </div>
-
-      <div className="p-6 bg-white rounded-lg shadow">
-        <h3 className="mb-4 text-lg font-bold">계정 설정</h3>
-
-        <div className="mb-4">
-          <div className="flex items-center justify-between py-3 border-b">
-            <div>
-              <p className="font-medium">비밀번호 변경</p>
-              <p className="text-sm text-gray-500">
-                주기적으로 비밀번호를 변경하여 계정 보안을 유지하세요
-              </p>
+      <div className="flex flex-col gap-6 md:flex-row">
+        {/* 프로필 정보 카드 */}
+        <FormCard className="flex-1">
+          <form onSubmit={handleUpdateProfile}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold">기본 정보</h2>
+              <FormButton
+                type="button"
+                variant={isEditing ? "danger" : "primary"}
+                onClick={handleEditToggle}
+              >
+                {isEditing ? "취소" : "수정"}
+              </FormButton>
             </div>
-            <Button variant="outline" size="sm">
-              변경
-            </Button>
-          </div>
 
-          <div className="flex items-center justify-between py-3 border-b">
-            <div>
-              <p className="font-medium">알림 설정</p>
-              <p className="text-sm text-gray-500">
-                시스템 알림 수신 여부를 설정합니다
-              </p>
+            <div className="mb-4">
+              <FormInput
+                id="username"
+                name="username"
+                label="아이디"
+                placeholder="아이디"
+                value={profile.username}
+                onChange={handleProfileChange}
+                disabled={!isEditing || profile.username === "admin"}
+              />
             </div>
-            <Button variant="outline" size="sm">
-              설정
-            </Button>
-          </div>
 
-          <div className="flex items-center justify-between py-3">
-            <div>
-              <p className="font-medium">로그인 기록</p>
-              <p className="text-sm text-gray-500">
-                최근 로그인 활동을 확인합니다
-              </p>
+            <div className="mb-4">
+              <FormInput
+                id="name"
+                name="name"
+                label="이름"
+                placeholder="이름"
+                value={profile.name}
+                onChange={handleProfileChange}
+                disabled={!isEditing}
+              />
             </div>
-            <Button variant="outline" size="sm">
-              보기
-            </Button>
-          </div>
-        </div>
+
+            <div className="mb-4">
+              <FormInput
+                id="email"
+                name="email"
+                type="email"
+                label="이메일"
+                placeholder="이메일"
+                value={profile.email}
+                onChange={handleProfileChange}
+                disabled={!isEditing}
+              />
+            </div>
+
+            <div className="mb-4">
+              <FormInput
+                id="department"
+                name="department"
+                label="부서"
+                placeholder="부서"
+                value={profile.department}
+                onChange={handleProfileChange}
+                disabled={!isEditing}
+              />
+            </div>
+
+            <div className="mb-4">
+              <FormInput
+                id="position"
+                name="position"
+                label="직책"
+                placeholder="직책"
+                value={profile.position}
+                onChange={handleProfileChange}
+                disabled={!isEditing}
+              />
+            </div>
+
+            <div className="mb-4">
+              <FormInput
+                id="phone"
+                name="phone"
+                label="연락처"
+                placeholder="연락처"
+                value={profile.phone}
+                onChange={handleProfileChange}
+                disabled={!isEditing}
+              />
+            </div>
+
+            {isEditing && (
+              <div className="flex justify-end">
+                <FormButton type="submit" variant="success">
+                  저장
+                </FormButton>
+              </div>
+            )}
+          </form>
+        </FormCard>
+
+        {/* 비밀번호 변경 카드 */}
+        <FormCard className="flex-1">
+          <form onSubmit={handleUpdatePassword}>
+            <h2 className="mb-4 text-xl font-bold">비밀번호 변경</h2>
+
+            <div className="mb-4">
+              <FormInput
+                id="current-password"
+                name="current"
+                type="password"
+                label="현재 비밀번호"
+                placeholder="현재 비밀번호"
+                value={password.current}
+                onChange={handlePasswordChange}
+                error={errors.current}
+              />
+            </div>
+
+            <div className="mb-4">
+              <FormInput
+                id="new-password"
+                name="new"
+                type="password"
+                label="새 비밀번호"
+                placeholder="새 비밀번호 (8자 이상)"
+                value={password.new}
+                onChange={handlePasswordChange}
+                error={errors.new}
+              />
+            </div>
+
+            <div className="mb-6">
+              <FormInput
+                id="confirm-password"
+                name="confirm"
+                type="password"
+                label="비밀번호 확인"
+                placeholder="비밀번호 확인"
+                value={password.confirm}
+                onChange={handlePasswordChange}
+                error={errors.confirm}
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <FormButton type="submit" variant="primary">
+                비밀번호 변경
+              </FormButton>
+            </div>
+          </form>
+        </FormCard>
       </div>
     </div>
   );

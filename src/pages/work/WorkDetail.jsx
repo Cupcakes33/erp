@@ -6,12 +6,27 @@ import {
   useDeleteWork,
   useAddDailyReport,
 } from "../../lib/api/workQueries";
+import {
+  useInstruction,
+  useInstructions,
+} from "../../lib/api/instructionQueries";
+import {
+  FormButton,
+  FormInput,
+  FormCard,
+  FormTextArea,
+  FormGroup,
+  DataTable,
+  showConfirm,
+  showDeleteConfirm,
+  showTextAreaPrompt,
+  showMultiInputForm,
+} from "../../components/molecules";
+import { ArrowLeft, Edit, Trash, CheckCircle, Clock, Link } from "lucide-react";
 import Button from "../../components/atoms/Button";
 import Card from "../../components/atoms/Card";
 import Table from "../../components/molecules/Table";
-import Modal from "../../components/molecules/Modal";
 import Input from "../../components/atoms/Input";
-import FormGroup from "../../components/molecules/FormGroup";
 import TextArea from "../../components/atoms/TextArea";
 
 const WorkDetail = () => {
@@ -22,6 +37,9 @@ const WorkDetail = () => {
   const updateWorkMutation = useUpdateWork();
   const deleteWorkMutation = useDeleteWork();
   const addDailyReportMutation = useAddDailyReport();
+  const { data: instruction } = useInstruction(
+    currentWork?.instructionId ? currentWork.instructionId : ""
+  );
 
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
@@ -32,17 +50,30 @@ const WorkDetail = () => {
     completionRate: "",
     issues: "",
   });
+  const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [completionNote, setCompletionNote] = useState("");
 
   const handleEdit = () => {
     navigate(`/works/${id}/edit`);
   };
 
+  const handleBack = () => {
+    navigate("/works");
+  };
+
   const handleDelete = async () => {
-    try {
-      await deleteWorkMutation.mutateAsync(id);
-      navigate("/works");
-    } catch (error) {
-      console.error("작업 삭제 실패:", error);
+    const result = await showDeleteConfirm(
+      "작업 삭제 확인",
+      "이 작업은 되돌릴 수 없습니다."
+    );
+
+    if (result.isConfirmed) {
+      try {
+        await deleteWorkMutation.mutateAsync(id);
+        navigate("/works");
+      } catch (error) {
+        console.error("작업 삭제 실패:", error);
+      }
     }
   };
 
@@ -69,78 +100,196 @@ const WorkDetail = () => {
   };
 
   const handleAddReport = async () => {
-    try {
-      // 숫자 필드 변환
-      const reportData = {
-        ...reportForm,
-        workHours: Number(reportForm.workHours),
-        completionRate: Number(reportForm.completionRate),
-      };
+    // 보고서 추가 폼 표시
+    const today = new Date().toISOString().split("T")[0];
+    const reportFormHtml = `
+      <div class="space-y-4">
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            날짜 <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="date"
+            type="date"
+            value="${today}"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            작업 시간 (시간) <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="workHours"
+            type="number"
+            min="0"
+            max="24"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            작업 내용 <span class="text-red-500">*</span>
+          </label>
+          <textarea
+            id="description"
+            rows="3"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          ></textarea>
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            진행률 (%) <span class="text-red-500">*</span>
+          </label>
+          <input
+            id="completionRate"
+            type="number"
+            min="0"
+            max="100"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md"
+            required
+          />
+        </div>
+        
+        <div class="mb-4">
+          <label class="block text-sm font-medium text-gray-700 mb-1">
+            이슈 사항
+          </label>
+          <textarea
+            id="issues"
+            rows="2"
+            class="w-full px-3 py-2 border border-gray-300 rounded-md"
+          ></textarea>
+        </div>
+      </div>
+    `;
 
-      await addDailyReportMutation.mutateAsync({
-        workId: id,
-        reportData,
-      });
+    const result = await showMultiInputForm({
+      title: "일일 작업 보고서 추가",
+      html: reportFormHtml,
+      confirmText: "보고서 추가",
+      preConfirm: () => {
+        const date = document.getElementById("date").value;
+        const workHours = document.getElementById("workHours").value;
+        const description = document.getElementById("description").value;
+        const completionRate = document.getElementById("completionRate").value;
+        const issues = document.getElementById("issues").value;
 
-      // 모달 닫기 및 폼 초기화
-      setShowReportModal(false);
-      setReportForm({
-        date: new Date().toISOString().split("T")[0],
-        workHours: "",
-        description: "",
-        completionRate: "",
-        issues: "",
-      });
-    } catch (error) {
-      console.error("일일 보고서 추가 실패:", error);
+        if (!date || !workHours || !description || !completionRate) {
+          return false;
+        }
+
+        return {
+          date,
+          workHours: Number(workHours),
+          description,
+          completionRate: Number(completionRate),
+          issues,
+        };
+      },
+    });
+
+    if (result.isConfirmed && result.value) {
+      try {
+        await addDailyReportMutation.mutateAsync({
+          workId: id,
+          reportData: result.value,
+        });
+      } catch (error) {
+        console.error("일일 보고서 추가 실패:", error);
+      }
+    }
+  };
+
+  const handleComplete = async () => {
+    const result = await showTextAreaPrompt(
+      "작업 완료 처리",
+      "작업 완료에 대한 특이사항이나 메모를 입력하세요 (선택사항)"
+    );
+
+    if (result.isConfirmed) {
+      try {
+        await updateWorkMutation.mutateAsync({
+          id,
+          data: {
+            ...currentWork,
+            status: "완료",
+            completionRate: 100,
+            completionNote: result.value || "",
+          },
+        });
+      } catch (error) {
+        console.error("작업 완료 처리 실패:", error);
+      }
     }
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-12 h-12 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+      <div className="container mx-auto px-4 py-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="w-12 h-12 border-b-2 border-blue-500 rounded-full animate-spin"></div>
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="p-4 text-red-700 bg-red-100 rounded-md">
-        {error instanceof Error
-          ? error.message
-          : "데이터를 불러오는 중 오류가 발생했습니다."}
+      <div className="container mx-auto px-4 py-6">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          <p>작업 정보를 불러오는 중 오류가 발생했습니다.</p>
+          <FormButton onClick={handleBack} className="mt-2">
+            목록으로 돌아가기
+          </FormButton>
+        </div>
       </div>
     );
   }
 
   if (!currentWork) {
     return (
-      <div className="p-4 text-yellow-700 bg-yellow-100 rounded-md">
-        작업 정보를 찾을 수 없습니다.
+      <div className="container mx-auto px-4 py-6">
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
+          <p>작업 정보를 찾을 수 없습니다.</p>
+          <FormButton onClick={handleBack} className="mt-2">
+            목록으로 돌아가기
+          </FormButton>
+        </div>
       </div>
     );
   }
 
   const statusOptions = [
-    { value: "대기중", label: "대기중", color: "bg-blue-100 text-blue-800" },
+    {
+      value: "대기중",
+      label: "대기중",
+      color: "bg-yellow-100 text-yellow-800",
+    },
     {
       value: "진행중",
       label: "진행중",
-      color: "bg-yellow-100 text-yellow-800",
+      color: "bg-blue-100 text-blue-800",
     },
     { value: "완료", label: "완료", color: "bg-green-100 text-green-800" },
     { value: "취소", label: "취소", color: "bg-red-100 text-red-800" },
   ];
 
   const materialColumns = [
-    { title: "자재명", dataIndex: "name" },
-    { title: "총 수량", dataIndex: "quantity" },
-    { title: "사용 수량", dataIndex: "used" },
-    { title: "단위", dataIndex: "unit" },
+    { header: "자재명", accessor: "name" },
+    { header: "총 수량", accessor: "quantity" },
+    { header: "사용 수량", accessor: "used" },
+    { header: "단위", accessor: "unit" },
     {
-      title: "사용률",
-      render: (row) => {
+      header: "사용률",
+      accessor: "usageRate",
+      cell: (row) => {
         const usageRate = (row.used / row.quantity) * 100;
         return (
           <div className="flex items-center">
@@ -158,341 +307,206 @@ const WorkDetail = () => {
   ];
 
   const reportColumns = [
-    { title: "날짜", dataIndex: "date" },
-    { title: "작업 시간", dataIndex: "workHours" },
-    { title: "작업 내용", dataIndex: "description" },
+    { header: "날짜", accessor: "date" },
+    { header: "작업 시간", accessor: "workHours" },
+    { header: "작업 내용", accessor: "description" },
     {
-      title: "진행률",
-      dataIndex: "completionRate",
-      render: (row) => `${row.completionRate}%`,
+      header: "진행률",
+      accessor: "completionRate",
+      cell: (row) => `${row.completionRate}%`,
     },
-    { title: "이슈 사항", dataIndex: "issues" },
+    { header: "이슈 사항", accessor: "issues" },
   ];
 
   const historyColumns = [
-    { title: "날짜", dataIndex: "date" },
-    { title: "작업", dataIndex: "action" },
-    { title: "담당자", dataIndex: "user" },
+    { header: "날짜", accessor: "date" },
+    { header: "작업", accessor: "action" },
+    { header: "담당자", accessor: "user" },
   ];
 
+  const isCompleted = currentWork.status === "완료";
+  const isCanceled = currentWork.status === "취소";
+
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">작업 상세</h1>
-        <div className="flex space-x-2">
-          <Button
+    <div className="container mx-auto px-4 py-6">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex items-center">
+          <FormButton
             variant="outline"
-            onClick={() => navigate("/works")}
-            className="px-4 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
+            size="sm"
+            onClick={handleBack}
+            className="mr-4"
           >
+            <ArrowLeft className="w-4 h-4 mr-2" />
             목록으로
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handleEdit}
-            className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
-          >
-            수정
-          </Button>
-          <Button
-            variant="danger"
-            onClick={() => setShowDeleteModal(true)}
-            className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700"
-          >
-            삭제
-          </Button>
+          </FormButton>
+          <h1 className="text-2xl font-bold">{currentWork.name}</h1>
+        </div>
+        <div className="flex space-x-2">
+          {!isCompleted && !isCanceled && (
+            <>
+              <FormButton onClick={handleComplete} variant="success" size="sm">
+                <CheckCircle className="w-4 h-4 mr-2" />
+                완료 처리
+              </FormButton>
+              <FormButton onClick={handleEdit} variant="primary" size="sm">
+                <Edit className="w-4 h-4 mr-2" />
+                수정
+              </FormButton>
+              <FormButton onClick={handleDelete} variant="danger" size="sm">
+                <Trash className="w-4 h-4 mr-2" />
+                삭제
+              </FormButton>
+            </>
+          )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 mb-6 lg:grid-cols-3">
-        <Card className="p-6 bg-white rounded-lg shadow-md lg:col-span-2">
-          <div className="mb-4">
-            <h2 className="mb-2 text-xl font-bold text-gray-800">
-              {currentWork.name}
-            </h2>
-            <div className="flex items-center mb-4 space-x-4">
-              <span className="text-gray-500">ID: {currentWork.id}</span>
-              <span
-                className={`px-2 py-1 text-xs rounded-full ${
-                  statusOptions.find((s) => s.value === currentWork.status)
-                    ?.color || "bg-gray-100"
-                }`}
-              >
-                {currentWork.status}
-              </span>
-            </div>
-            <p className="mb-4 text-gray-700">{currentWork.description}</p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-4 mb-6 md:grid-cols-2">
-            <div>
-              <p className="text-sm text-gray-500">지시 정보</p>
-              <p>
-                <a
-                  href={`/instructions/${currentWork.instructionId}`}
-                  className="text-blue-600 hover:underline"
-                >
-                  {currentWork.instructionId} - {currentWork.instructionTitle}
-                </a>
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">위치</p>
-              <p className="text-gray-800">{currentWork.location}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">담당자</p>
-              <p className="text-gray-800">{currentWork.assignedTo}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">시작일</p>
-              <p className="text-gray-800">{currentWork.startDate || "-"}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">종료일</p>
-              <p className="text-gray-800">{currentWork.endDate || "-"}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">작업 시간</p>
-              <p className="text-gray-800">{currentWork.workHours || 0}시간</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">비용</p>
-              <p className="text-gray-800">
-                ₩{currentWork.cost?.toLocaleString() || "0"}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-500">진행률</p>
-              <div className="flex items-center mt-1">
-                <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <FormCard className="p-6">
+          <h2 className="text-xl font-semibold mb-4">기본 정보</h2>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-500">ID</p>
+                <p className="font-medium">{currentWork.id}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">상태</p>
+                <p className="font-medium">
+                  <span
+                    className={`inline-block px-2 py-1 text-xs rounded-full ${
+                      statusOptions.find((s) => s.value === currentWork.status)
+                        ?.color || "bg-gray-100"
+                    }`}
+                  >
+                    {currentWork.status}
+                  </span>
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">위치</p>
+                <p className="font-medium">{currentWork.location}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">담당자</p>
+                <p className="font-medium">{currentWork.assignedTo || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">시작일</p>
+                <p className="font-medium">{currentWork.startDate || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">마감일</p>
+                <p className="font-medium">{currentWork.endDate || "-"}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">진행률</p>
+                <div className="w-full bg-gray-200 rounded-full h-2.5 mt-1">
                   <div
-                    className="h-2.5 rounded-full bg-blue-500"
-                    style={{ width: `${currentWork.completionRate}%` }}
+                    className="bg-blue-600 h-2.5 rounded-full"
+                    style={{ width: `${currentWork.completionRate || 0}%` }}
                   ></div>
                 </div>
-                <span className="text-gray-800">
-                  {currentWork.completionRate}%
-                </span>
+                <p className="text-xs text-right mt-1">
+                  {currentWork.completionRate || 0}%
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">생성일</p>
+                <p className="font-medium">{currentWork.createdAt || "-"}</p>
               </div>
             </div>
           </div>
+        </FormCard>
 
-          <div className="mb-6">
-            <h3 className="mb-2 text-lg font-medium text-gray-800">
-              상태 변경
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {statusOptions.map((option) => (
-                <Button
-                  key={option.value}
-                  variant={
-                    currentWork.status === option.value ? "primary" : "outline"
-                  }
-                  size="sm"
-                  onClick={() => handleStatusChange(option.value)}
-                  disabled={currentWork.status === option.value}
-                  className={
-                    currentWork.status === option.value
-                      ? "bg-blue-600 text-white px-3 py-1 rounded-md text-sm"
-                      : "border border-gray-300 text-gray-700 px-3 py-1 rounded-md text-sm hover:bg-gray-50"
+        <FormCard className="p-6">
+          <h2 className="text-xl font-semibold mb-4">상세 내용</h2>
+          <div className="whitespace-pre-line">
+            {currentWork.description || "상세 내용이 없습니다."}
+          </div>
+
+          {currentWork.instructionId && instruction && (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="flex items-center mb-2">
+                <Link className="w-4 h-4 text-blue-500 mr-2" />
+                <h3 className="text-lg font-medium">연결된 지시</h3>
+              </div>
+              <div className="p-3 bg-gray-50 rounded-md">
+                <p
+                  className="font-medium text-blue-600 hover:underline cursor-pointer"
+                  onClick={() =>
+                    navigate(`/instructions/${currentWork.instructionId}`)
                   }
                 >
-                  {option.label}
-                </Button>
-              ))}
+                  {instruction.title}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  ID: {instruction.id}
+                </p>
+              </div>
             </div>
-          </div>
-        </Card>
-
-        <Card className="p-6 bg-white rounded-lg shadow-md">
-          <h3 className="mb-4 text-lg font-medium text-gray-800">첨부 파일</h3>
-          {currentWork.attachments?.length > 0 ? (
-            <ul className="space-y-2">
-              {currentWork.attachments.map((attachment, index) => (
-                <li key={index} className="flex items-center">
-                  <span className="mr-2">📎</span>
-                  <a
-                    href={attachment.url}
-                    className="text-blue-600 hover:underline"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    {attachment.name}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">첨부 파일이 없습니다.</p>
           )}
-        </Card>
+
+          {currentWork.completionNote && (
+            <div className="mt-6 pt-4 border-t border-gray-200">
+              <div className="flex items-center mb-2">
+                <CheckCircle className="w-4 h-4 text-green-500 mr-2" />
+                <h3 className="text-lg font-medium">완료 노트</h3>
+              </div>
+              <div className="p-3 bg-green-50 rounded-md">
+                <p className="text-sm">{currentWork.completionNote}</p>
+                <p className="text-xs text-gray-500 mt-1">
+                  완료일: {currentWork.completedAt || "-"}
+                </p>
+              </div>
+            </div>
+          )}
+        </FormCard>
       </div>
 
       <div className="grid grid-cols-1 gap-6 mb-6">
-        <Card className="p-6 bg-white rounded-lg shadow-md">
+        <FormCard className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-medium text-gray-800">
               일일 작업 보고서
             </h3>
-            <Button
+            <FormButton
               variant="primary"
               size="sm"
-              onClick={() => setShowReportModal(true)}
+              onClick={handleAddReport}
               className="px-3 py-1 text-sm text-white bg-blue-600 rounded-md hover:bg-blue-700"
             >
               보고서 추가
-            </Button>
+            </FormButton>
           </div>
-          <Table
+          <DataTable
             columns={reportColumns}
             data={currentWork.dailyReports || []}
             emptyMessage="등록된 일일 보고서가 없습니다."
-            className="min-w-full divide-y divide-gray-200"
           />
-        </Card>
+        </FormCard>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="p-6 bg-white rounded-lg shadow-md">
+        <FormCard className="p-6">
           <h3 className="mb-4 text-lg font-medium text-gray-800">사용 자재</h3>
-          <Table
+          <DataTable
             columns={materialColumns}
             data={currentWork.materials || []}
             emptyMessage="등록된 자재가 없습니다."
-            className="min-w-full divide-y divide-gray-200"
           />
-        </Card>
+        </FormCard>
 
-        <Card className="p-6 bg-white rounded-lg shadow-md">
+        <FormCard className="p-6">
           <h3 className="mb-4 text-lg font-medium text-gray-800">작업 이력</h3>
-          <Table
+          <DataTable
             columns={historyColumns}
             data={currentWork.history || []}
             emptyMessage="작업 이력이 없습니다."
-            className="min-w-full divide-y divide-gray-200"
           />
-        </Card>
+        </FormCard>
       </div>
-
-      {/* 삭제 확인 모달 */}
-      <Modal
-        isOpen={showDeleteModal}
-        onClose={() => setShowDeleteModal(false)}
-        title="작업 삭제"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteModal(false)}
-              className="px-4 py-2 mr-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              취소
-            </Button>
-            <Button
-              variant="danger"
-              onClick={handleDelete}
-              className="px-4 py-2 text-white bg-red-600 rounded-md hover:bg-red-700"
-            >
-              삭제
-            </Button>
-          </>
-        }
-      >
-        <p className="text-gray-800">정말로 이 작업을 삭제하시겠습니까?</p>
-        <p className="mt-2 text-sm text-gray-500">
-          이 작업은 되돌릴 수 없으며, 관련된 모든 보고서 데이터도 함께
-          삭제됩니다.
-        </p>
-      </Modal>
-
-      {/* 일일 보고서 추가 모달 */}
-      <Modal
-        isOpen={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        title="일일 작업 보고서 추가"
-        footer={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => setShowReportModal(false)}
-              className="px-4 py-2 mr-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              취소
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleAddReport}
-              className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
-            >
-              보고서 추가
-            </Button>
-          </>
-        }
-      >
-        <div className="space-y-4">
-          <FormGroup label="날짜" htmlFor="date" required>
-            <Input
-              id="date"
-              name="date"
-              type="date"
-              value={reportForm.date}
-              onChange={handleReportFormChange}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </FormGroup>
-
-          <FormGroup label="작업 시간 (시간)" htmlFor="workHours" required>
-            <Input
-              id="workHours"
-              name="workHours"
-              type="number"
-              value={reportForm.workHours}
-              onChange={handleReportFormChange}
-              required
-              min="0"
-              max="24"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </FormGroup>
-
-          <FormGroup label="작업 내용" htmlFor="description" required>
-            <TextArea
-              id="description"
-              name="description"
-              value={reportForm.description}
-              onChange={handleReportFormChange}
-              required
-              rows={3}
-            />
-          </FormGroup>
-
-          <FormGroup label="진행률 (%)" htmlFor="completionRate" required>
-            <Input
-              id="completionRate"
-              name="completionRate"
-              type="number"
-              value={reportForm.completionRate}
-              onChange={handleReportFormChange}
-              required
-              min="0"
-              max="100"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </FormGroup>
-
-          <FormGroup label="이슈 사항" htmlFor="issues">
-            <TextArea
-              id="issues"
-              name="issues"
-              value={reportForm.issues}
-              onChange={handleReportFormChange}
-              rows={2}
-            />
-          </FormGroup>
-        </div>
-      </Modal>
     </div>
   );
 };

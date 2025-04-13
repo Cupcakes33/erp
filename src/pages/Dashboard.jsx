@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
-import Card from "../components/atoms/Card";
-import Button from "../components/atoms/Button";
+import { FormCard, FormButton } from "../components/molecules";
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -148,7 +147,7 @@ const Dashboard = () => {
         <>
           {/* 통계 카드 */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <Card className="bg-blue-50 border-blue-200">
+            <FormCard className="bg-blue-50 border-blue-200">
               <div className="flex items-center">
                 <div className="p-3 rounded-full bg-blue-500 text-white mr-4">
                   <svg
@@ -171,9 +170,9 @@ const Dashboard = () => {
                   <p className="text-xl font-bold">{stats.totalInstructions}</p>
                 </div>
               </div>
-            </Card>
+            </FormCard>
 
-            <Card className="bg-yellow-50 border-yellow-200">
+            <FormCard className="bg-yellow-50 border-yellow-200">
               <div className="flex items-center">
                 <div className="p-3 rounded-full bg-yellow-500 text-white mr-4">
                   <svg
@@ -198,9 +197,9 @@ const Dashboard = () => {
                   </p>
                 </div>
               </div>
-            </Card>
+            </FormCard>
 
-            <Card className="bg-green-50 border-green-200">
+            <FormCard className="bg-green-50 border-green-200">
               <div className="flex items-center">
                 <div className="p-3 rounded-full bg-green-500 text-white mr-4">
                   <svg
@@ -225,9 +224,9 @@ const Dashboard = () => {
                   </p>
                 </div>
               </div>
-            </Card>
+            </FormCard>
 
-            <Card className="bg-purple-50 border-purple-200">
+            <FormCard className="bg-purple-50 border-purple-200">
               <div className="flex items-center">
                 <div className="p-3 rounded-full bg-purple-500 text-white mr-4">
                   <svg
@@ -250,199 +249,172 @@ const Dashboard = () => {
                   <p className="text-xl font-bold">{stats.totalWorks}</p>
                 </div>
               </div>
-            </Card>
+            </FormCard>
           </div>
 
           {/* 작업 상태 통계 */}
-          <Card className="mb-8">
-            <h2 className="text-lg font-medium mb-4">작업 상태</h2>
-            <div className="flex flex-col md:flex-row justify-between">
-              <div className="flex-1 text-center p-4">
-                <div className="text-3xl font-bold text-yellow-500">
-                  {stats.pendingWorks}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <FormCard className="bg-gray-50 border-gray-200">
+              <div className="flex flex-col items-center">
+                <div className="mb-2 p-2 rounded-full bg-gray-500 text-white">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
                 </div>
-                <div className="text-sm text-gray-600 mt-1">대기 중</div>
+                <p className="text-3xl font-bold mb-1">{stats.pendingWorks}</p>
+                <p className="text-sm text-gray-600">대기 중인 작업</p>
               </div>
-              <div className="flex-1 text-center p-4">
-                <div className="text-3xl font-bold text-blue-500">
+            </FormCard>
+
+            <FormCard className="bg-blue-50 border-blue-200">
+              <div className="flex flex-col items-center">
+                <div className="mb-2 p-2 rounded-full bg-blue-500 text-white">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+                    />
+                  </svg>
+                </div>
+                <p className="text-3xl font-bold mb-1">
                   {stats.inProgressWorks}
-                </div>
-                <div className="text-sm text-gray-600 mt-1">진행 중</div>
+                </p>
+                <p className="text-sm text-gray-600">진행 중인 작업</p>
               </div>
-              <div className="flex-1 text-center p-4">
-                <div className="text-3xl font-bold text-green-500">
+            </FormCard>
+
+            <FormCard className="bg-green-50 border-green-200">
+              <div className="flex flex-col items-center">
+                <div className="mb-2 p-2 rounded-full bg-green-500 text-white">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <p className="text-3xl font-bold mb-1">
                   {stats.completedWorks}
-                </div>
-                <div className="text-sm text-gray-600 mt-1">완료</div>
+                </p>
+                <p className="text-sm text-gray-600">완료된 작업</p>
               </div>
-            </div>
-          </Card>
+            </FormCard>
+          </div>
 
           {/* 최근 지시 및 작업 */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium">최근 지시</h2>
-                <Button variant="outline" size="sm" as="a" href="/instructions">
-                  모두 보기
-                </Button>
+            <FormCard
+              title="최근 지시"
+              footer={
+                <FormButton variant="outline" size="sm" fullWidth>
+                  모든 지시 보기
+                </FormButton>
+              }
+            >
+              <div className="divide-y">
+                {recentInstructions.map((instruction) => (
+                  <div
+                    key={instruction.id}
+                    className="py-3 flex justify-between items-center hover:bg-gray-50 cursor-pointer"
+                  >
+                    <div>
+                      <p className="font-bold text-gray-900">
+                        {instruction.title}
+                      </p>
+                      <p className="text-sm text-gray-500">
+                        {instruction.id} • 마감일: {instruction.dueDate}
+                      </p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <span
+                        className={`inline-block px-2 py-1 text-xs rounded-full ${getPriorityClass(
+                          instruction.priority
+                        )}`}
+                      >
+                        {instruction.priority}
+                      </span>
+                      <span
+                        className={`inline-block px-2 py-1 text-xs rounded-full ${getStatusClass(
+                          instruction.status
+                        )}`}
+                      >
+                        {instruction.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
               </div>
+            </FormCard>
 
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+            <FormCard
+              title="최근 작업"
+              footer={
+                <FormButton variant="outline" size="sm" fullWidth>
+                  모든 작업 보기
+                </FormButton>
+              }
+            >
+              <div className="divide-y">
+                {recentWorks.map((work) => (
+                  <div
+                    key={work.id}
+                    className="py-3 hover:bg-gray-50 cursor-pointer"
+                  >
+                    <div className="flex justify-between items-center mb-1">
+                      <p className="font-bold text-gray-900">{work.name}</p>
+                      <span
+                        className={`inline-block px-2 py-1 text-xs rounded-full ${getStatusClass(
+                          work.status
+                        )}`}
                       >
-                        ID
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        제목
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        우선순위
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        상태
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        마감일
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {recentInstructions.map((instruction) => (
-                      <tr key={instruction.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                          {instruction.id}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {instruction.title}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityClass(
-                              instruction.priority
-                            )}`}
-                          >
-                            {instruction.priority}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
-                              instruction.status
-                            )}`}
-                          >
-                            {instruction.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {instruction.dueDate}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                        {work.status}
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <p className="text-gray-500">
+                        {work.id} • 담당: {work.assignedTo}
+                      </p>
+                      <p className="text-gray-500">
+                        진행률: {work.completionRate}%
+                      </p>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                      <div
+                        className="bg-blue-600 h-2 rounded-full"
+                        style={{ width: `${work.completionRate}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                ))}
               </div>
-            </Card>
-
-            <Card>
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-medium">최근 작업</h2>
-                <Button variant="outline" size="sm" as="a" href="/works">
-                  모두 보기
-                </Button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        ID
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        작업명
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        상태
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        진행률
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        담당자
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {recentWorks.map((work) => (
-                      <tr key={work.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                          {work.id}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {work.name}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
-                              work.status
-                            )}`}
-                          >
-                            {work.status}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="w-full bg-gray-200 rounded-full h-2.5">
-                            <div
-                              className="bg-blue-600 h-2.5 rounded-full"
-                              style={{ width: `${work.completionRate}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-xs text-gray-500 mt-1">
-                            {work.completionRate}%
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {work.assignedTo}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
+            </FormCard>
           </div>
         </>
       )}

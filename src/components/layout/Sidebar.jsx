@@ -1,13 +1,28 @@
-import React from "react";
-import { NavLink } from "react-router-dom";
+import React, { useState } from "react";
+import { NavLink, useLocation } from "react-router-dom";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import {
+  Home,
+  ClipboardList,
+  Calendar,
+  Users,
+  User,
+  Banknote,
+  ChevronDown,
+  LogOut,
+} from "lucide-react";
 
 const Sidebar = () => {
+  const location = useLocation();
+
+  // 메뉴 아이템 데이터
   const menuItems = [
-    { title: "대시보드", path: "/", icon: "home" },
+    { title: "대시보드", path: "/", icon: Home },
     {
       title: "지시 관리",
       path: "/instructions",
-      icon: "clipboard-list",
+      icon: ClipboardList,
       subItems: [
         { title: "지시 목록", path: "/instructions" },
         { title: "지시 생성", path: "/instructions/create" },
@@ -18,7 +33,7 @@ const Sidebar = () => {
     {
       title: "작업 관리",
       path: "/works",
-      icon: "tools",
+      icon: Calendar,
       subItems: [
         { title: "작업 목록", path: "/works" },
         { title: "작업 생성", path: "/works/create" },
@@ -29,108 +44,27 @@ const Sidebar = () => {
     {
       title: "인사 관리",
       path: "/personnel",
-      icon: "users",
+      icon: Users,
       subItems: [
         { title: "작업자 목록", path: "/personnel" },
         { title: "작업자 추가", path: "/personnel/create" },
       ],
     },
-    { title: "프로필", path: "/profile", icon: "user" },
+    {
+      title: "기성 관리",
+      path: "/payments",
+      icon: Banknote,
+      subItems: [
+        { title: "공종별 조회", path: "/payments/by-type" },
+        { title: "주소별 조회", path: "/payments/by-address" },
+        { title: "기성별 조회", path: "/payments/by-payment" },
+      ],
+    },
+    { title: "프로필", path: "/profile", icon: User },
   ];
 
-  // 아이콘 렌더링 함수
-  const renderIcon = (iconName) => {
-    switch (iconName) {
-      case "home":
-        return (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" />
-          </svg>
-        );
-      case "clipboard-list":
-        return (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-            <path
-              fillRule="evenodd"
-              d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z"
-              clipRule="evenodd"
-            />
-          </svg>
-        );
-      case "tools":
-        return (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-              clipRule="evenodd"
-            />
-          </svg>
-        );
-      case "users":
-        return (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
-          </svg>
-        );
-      case "cash":
-        return (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M4 4a2 2 0 00-2 2v4a2 2 0 002 2V6h10a2 2 0 00-2-2H4zm2 6a2 2 0 012-2h8a2 2 0 012 2v4a2 2 0 01-2 2H8a2 2 0 01-2-2v-4zm6 4a2 2 0 100-4 2 2 0 000 4z"
-              clipRule="evenodd"
-            />
-          </svg>
-        );
-      case "user":
-        return (
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-              clipRule="evenodd"
-            />
-          </svg>
-        );
-      default:
-        return null;
-    }
-  };
-
   // 서브메뉴 토글 상태 관리
-  const [openSubMenus, setOpenSubMenus] = React.useState({});
+  const [openSubMenus, setOpenSubMenus] = useState({});
 
   const toggleSubMenu = (title) => {
     setOpenSubMenus((prev) => ({
@@ -139,8 +73,32 @@ const Sidebar = () => {
     }));
   };
 
+  // 로그아웃 핸들러
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    window.location.href = "/login";
+  };
+
+  // 경로가 정확히 일치하는지 확인하는 함수
+  const isExactPath = (path) => {
+    if (path === "/") {
+      return location.pathname === "/";
+    }
+    return location.pathname === path;
+  };
+
+  // 하위 경로를 포함하는지 확인하는 함수
+  const isSubPath = (path) => {
+    if (path === "/") {
+      return location.pathname === "/";
+    }
+    return (
+      location.pathname.startsWith(path + "/") || location.pathname === path
+    );
+  };
+
   return (
-    <div className="flex flex-col w-64 min-h-screen text-white bg-gray-800">
+    <div className="fixed flex flex-col w-64 h-screen text-white bg-gray-800">
       <div className="p-4 border-b border-gray-700">
         <h1 className="text-xl font-bold">보수작업관리시스템</h1>
       </div>
@@ -151,31 +109,26 @@ const Sidebar = () => {
             <li key={item.title}>
               {item.subItems ? (
                 <div>
-                  <button
-                    className="flex items-center w-full px-4 py-2 text-left transition-colors hover:bg-gray-700"
+                  <Button
+                    variant="ghost"
+                    className={cn(
+                      "flex items-center justify-between w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 hover:text-white",
+                      isSubPath(item.path) && "bg-gray-700 text-white",
+                      openSubMenus[item.title] && "bg-gray-700 text-white"
+                    )}
                     onClick={() => toggleSubMenu(item.title)}
                   >
-                    <span className="mr-3">{renderIcon(item.icon)}</span>
-                    <span>{item.title}</span>
-                    <span className="ml-auto">
-                      <svg
-                        className={`w-4 h-4 transition-transform ${
-                          openSubMenus[item.title] ? "transform rotate-180" : ""
-                        }`}
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M19 9l-7 7-7-7"
-                        ></path>
-                      </svg>
-                    </span>
-                  </button>
+                    <div className="flex items-center">
+                      <item.icon className="w-5 h-5 mr-3" />
+                      <span>{item.title}</span>
+                    </div>
+                    <ChevronDown
+                      className={cn(
+                        "w-4 h-4 transition-transform",
+                        openSubMenus[item.title] && "transform rotate-180"
+                      )}
+                    />
+                  </Button>
 
                   {openSubMenus[item.title] && (
                     <ul className="pl-8 mt-1 space-y-1">
@@ -184,12 +137,14 @@ const Sidebar = () => {
                           <NavLink
                             to={subItem.path}
                             className={({ isActive }) =>
-                              `block px-4 py-2 text-sm ${
+                              cn(
+                                "block px-4 py-2 text-sm rounded transition-colors",
                                 isActive
-                                  ? "bg-gray-700 text-white"
-                                  : "text-gray-300 hover:bg-gray-700"
-                              }`
+                                  ? "bg-blue-700 text-white"
+                                  : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                              )
                             }
+                            end
                           >
                             {subItem.title}
                           </NavLink>
@@ -202,14 +157,16 @@ const Sidebar = () => {
                 <NavLink
                   to={item.path}
                   className={({ isActive }) =>
-                    `flex items-center px-4 py-2 ${
+                    cn(
+                      "flex items-center px-4 py-2 rounded transition-colors",
                       isActive
-                        ? "bg-gray-700 text-white"
-                        : "text-gray-300 hover:bg-gray-700"
-                    }`
+                        ? "bg-blue-700 text-white"
+                        : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                    )
                   }
+                  end
                 >
-                  <span className="mr-3">{renderIcon(item.icon)}</span>
+                  <item.icon className="w-5 h-5 mr-3" />
                   <span>{item.title}</span>
                 </NavLink>
               )}
@@ -219,27 +176,14 @@ const Sidebar = () => {
       </nav>
 
       <div className="p-4 border-t border-gray-700">
-        <button
-          className="flex items-center w-full px-4 py-2 text-gray-300 rounded hover:bg-gray-700"
-          onClick={() => {
-            localStorage.removeItem("token");
-            window.location.href = "/login";
-          }}
+        <Button
+          variant="ghost"
+          className="flex items-center justify-start w-full px-4 py-2 text-gray-300 rounded hover:bg-gray-700 hover:text-white"
+          onClick={handleLogout}
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="w-5 h-5 mr-3"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V7.414l-5-5H3zm7 2a1 1 0 00-1 1v1H5a1 1 0 000 2h4v1a1 1 0 002 0V9h4a1 1 0 000-2h-4V6a1 1 0 00-1-1z"
-              clipRule="evenodd"
-            />
-          </svg>
+          <LogOut className="w-5 h-5 mr-3" />
           <span>로그아웃</span>
-        </button>
+        </Button>
       </div>
     </div>
   );

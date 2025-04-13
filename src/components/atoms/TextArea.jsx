@@ -24,12 +24,6 @@ const TextArea = ({
     : "";
   const widthClass = fullWidth ? "w-full" : "";
 
-  const handleChange = (e) => {
-    if (onChange) {
-      onChange(e);
-    }
-  };
-
   return (
     <div className={`mb-4 ${widthClass}`}>
       {label && (
@@ -45,17 +39,16 @@ const TextArea = ({
         id={id}
         name={name}
         value={value}
-        onChange={handleChange}
+        onChange={onChange}
         placeholder={placeholder}
-        rows={rows}
         disabled={disabled}
         required={required}
+        rows={rows}
         className={`
           ${baseClasses}
           ${errorClasses}
           ${disabledClasses}
           ${className}
-          ${widthClass}
         `}
       />
       {error && <p className="mt-1 text-sm text-red-500">{error}</p>}

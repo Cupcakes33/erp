@@ -4,43 +4,38 @@ import {
   useInstruction,
   useUpdateInstruction,
 } from "../../lib/api/instructionQueries";
-import Button from "../../components/atoms/Button";
-import Input from "../../components/atoms/Input";
-import Select from "../../components/atoms/Select";
-import TextArea from "../../components/atoms/TextArea";
-import Card from "../../components/atoms/Card";
-import FormGroup from "../../components/molecules/FormGroup";
+import {
+  FormButton,
+  FormInput,
+  FormSelect,
+  FormTextArea,
+  FormCard,
+} from "../../components/molecules";
+import { ArrowLeft } from "lucide-react";
 
 const InstructionEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const { data: instruction, isLoading, error } = useInstruction(id);
+  const { data: instruction, isLoading: isLoadingInstruction } =
+    useInstruction(id);
   const updateInstructionMutation = useUpdateInstruction();
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     location: "",
-    priority: "",
+    priority: "중간",
+    status: "대기중",
     dueDate: "",
-    assignedTo: "",
-    budget: "",
   });
 
   const [errors, setErrors] = useState({});
 
+  // 지시 데이터 로드 시 폼 초기화
   useEffect(() => {
     if (instruction) {
-      // 폼 데이터 초기화
       setFormData({
-        title: instruction.title || "",
-        description: instruction.description || "",
-        location: instruction.location || "",
-        priority: instruction.priority || "",
-        dueDate: instruction.dueDate || "",
-        assignedTo: instruction.assignedTo || "",
-        budget: instruction.budget ? String(instruction.budget) : "",
+        ...instruction,
       });
     }
   }, [instruction]);
@@ -52,11 +47,11 @@ const InstructionEdit = () => {
       [name]: value,
     });
 
-    // 입력 시 해당 필드의 에러 메시지 제거
+    // 입력 시 해당 필드의 오류 메시지 삭제
     if (errors[name]) {
       setErrors({
         ...errors,
-        [name]: null,
+        [name]: "",
       });
     }
   };
@@ -65,23 +60,19 @@ const InstructionEdit = () => {
     const newErrors = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = "제목을 입력해주세요.";
+      newErrors.title = "제목을 입력해주세요";
+    }
+
+    if (!formData.description.trim()) {
+      newErrors.description = "내용을 입력해주세요";
     }
 
     if (!formData.location.trim()) {
-      newErrors.location = "위치를 입력해주세요.";
-    }
-
-    if (!formData.priority) {
-      newErrors.priority = "우선순위를 선택해주세요.";
+      newErrors.location = "위치를 입력해주세요";
     }
 
     if (!formData.dueDate) {
-      newErrors.dueDate = "마감일을 입력해주세요.";
-    }
-
-    if (formData.budget && isNaN(Number(formData.budget))) {
-      newErrors.budget = "예산은 숫자로 입력해주세요.";
+      newErrors.dueDate = "마감일을 선택해주세요";
     }
 
     setErrors(newErrors);
@@ -96,197 +87,163 @@ const InstructionEdit = () => {
     }
 
     try {
-      // 숫자 필드 변환
-      const instructionData = {
-        ...formData,
-        budget: formData.budget ? Number(formData.budget) : undefined,
-      };
-
       await updateInstructionMutation.mutateAsync({
         id,
-        data: instructionData,
+        data: formData,
       });
-
       navigate(`/instructions/${id}`);
     } catch (error) {
+      console.error("지시 수정 실패:", error);
       setErrors({
-        ...errors,
-        submit: error.message || "지시 수정 중 오류가 발생했습니다.",
+        submit: "지시를 수정하는 중 오류가 발생했습니다.",
       });
     }
   };
 
-  if (isLoading && !instruction) {
+  const handleCancel = () => {
+    navigate(`/instructions/${id}`);
+  };
+
+  if (isLoadingInstruction) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center h-64">
+        <div className="w-12 h-12 border-b-2 border-blue-500 rounded-full animate-spin"></div>
       </div>
     );
   }
 
-  if (error) {
+  if (!instruction) {
     return (
-      <div className="bg-red-100 text-red-700 p-4 rounded-md">
-        {error instanceof Error
-          ? error.message
-          : "데이터를 불러오는 중 오류가 발생했습니다."}
+      <div className="p-4 bg-yellow-100 text-yellow-700 rounded-md">
+        지시 정보를 찾을 수 없습니다.
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">지시 수정</h1>
-        <Button
+    <div className="container mx-auto px-4 py-6">
+      <div className="flex items-center mb-6">
+        <FormButton
           variant="outline"
-          onClick={() => navigate(`/instructions/${id}`)}
-          className="border border-gray-300 text-gray-700 hover:bg-gray-50 px-4 py-2 rounded-md"
+          size="sm"
+          onClick={handleCancel}
+          className="mr-4"
         >
-          취소
-        </Button>
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          돌아가기
+        </FormButton>
+        <h1 className="text-2xl font-bold">지시 수정</h1>
       </div>
 
-      <Card className="bg-white shadow-md rounded-lg p-6">
+      <FormCard>
         <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <FormGroup
-                label="제목"
-                htmlFor="title"
-                required
-                error={errors.title}
-              >
-                <Input
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  placeholder="지시 제목을 입력하세요"
-                  required
-                  error={errors.title}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </FormGroup>
-            </div>
-
-            <div className="md:col-span-2">
-              <FormGroup label="설명" htmlFor="description">
-                <TextArea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="지시에 대한 상세 설명을 입력하세요"
-                  rows={4}
-                />
-              </FormGroup>
-            </div>
-
-            <FormGroup
-              label="위치"
-              htmlFor="location"
-              required
-              error={errors.location}
-            >
-              <Input
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                placeholder="작업 위치를 입력하세요"
-                required
-                error={errors.location}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </FormGroup>
-
-            <FormGroup
-              label="우선순위"
-              htmlFor="priority"
-              required
-              error={errors.priority}
-            >
-              <Select
-                id="priority"
-                name="priority"
-                value={formData.priority}
-                onChange={handleChange}
-                required
-                error={errors.priority}
-                options={[
-                  { value: "", label: "우선순위 선택" },
-                  { value: "높음", label: "높음" },
-                  { value: "중간", label: "중간" },
-                  { value: "낮음", label: "낮음" },
-                ]}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </FormGroup>
-
-            <FormGroup
-              label="마감일"
-              htmlFor="dueDate"
-              required
-              error={errors.dueDate}
-            >
-              <Input
-                id="dueDate"
-                name="dueDate"
-                type="date"
-                value={formData.dueDate}
-                onChange={handleChange}
-                required
-                error={errors.dueDate}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </FormGroup>
-
-            <FormGroup label="담당자" htmlFor="assignedTo">
-              <Input
-                id="assignedTo"
-                name="assignedTo"
-                value={formData.assignedTo}
-                onChange={handleChange}
-                placeholder="담당자 이름"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </FormGroup>
-
-            <FormGroup label="예산 (원)" htmlFor="budget" error={errors.budget}>
-              <Input
-                id="budget"
-                name="budget"
-                type="text"
-                value={formData.budget}
-                onChange={handleChange}
-                placeholder="예산 금액"
-                error={errors.budget}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </FormGroup>
-          </div>
-
           {errors.submit && (
-            <div className="bg-red-100 text-red-700 p-4 rounded-md my-4">
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
               {errors.submit}
             </div>
           )}
 
-          <div className="flex justify-end mt-6">
-            <Button
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <FormInput
+                id="title"
+                name="title"
+                label="제목"
+                placeholder="지시 제목을 입력하세요"
+                value={formData.title}
+                onChange={handleChange}
+                error={errors.title}
+                required
+              />
+            </div>
+
+            <div>
+              <FormInput
+                id="location"
+                name="location"
+                label="위치"
+                placeholder="작업 위치를 입력하세요"
+                value={formData.location}
+                onChange={handleChange}
+                error={errors.location}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <FormTextArea
+              id="description"
+              name="description"
+              label="상세 내용"
+              placeholder="지시 내용을 상세하게 입력하세요"
+              value={formData.description}
+              onChange={handleChange}
+              error={errors.description}
+              rows={5}
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div>
+              <FormSelect
+                id="status"
+                name="status"
+                label="상태"
+                value={formData.status}
+                onChange={handleChange}
+                options={[
+                  { value: "대기중", label: "대기중" },
+                  { value: "진행중", label: "진행중" },
+                  { value: "완료", label: "완료" },
+                  { value: "취소", label: "취소" },
+                ]}
+              />
+            </div>
+
+            <div>
+              <FormSelect
+                id="priority"
+                name="priority"
+                label="우선순위"
+                value={formData.priority}
+                onChange={handleChange}
+                options={[
+                  { value: "높음", label: "높음" },
+                  { value: "중간", label: "중간" },
+                  { value: "낮음", label: "낮음" },
+                ]}
+              />
+            </div>
+
+            <div>
+              <FormInput
+                id="dueDate"
+                name="dueDate"
+                label="마감일"
+                type="date"
+                value={formData.dueDate}
+                onChange={handleChange}
+                error={errors.dueDate}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-2">
+            <FormButton type="button" variant="outline" onClick={handleCancel}>
+              취소
+            </FormButton>
+            <FormButton
               type="submit"
-              variant="primary"
               disabled={updateInstructionMutation.isLoading}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {updateInstructionMutation.isLoading
-                ? "저장 중..."
-                : "변경사항 저장"}
-            </Button>
+              {updateInstructionMutation.isLoading ? "처리 중..." : "저장"}
+            </FormButton>
           </div>
         </form>
-      </Card>
+      </FormCard>
     </div>
   );
 };

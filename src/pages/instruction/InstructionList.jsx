@@ -1,16 +1,18 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useInstructions } from "../../lib/api/instructionQueries";
-import Table from "../../components/molecules/Table";
-import Button from "../../components/atoms/Button";
-import Card from "../../components/atoms/Card";
-import Input from "../../components/atoms/Input";
-import Select from "../../components/atoms/Select";
+import {
+  DataTable,
+  FormButton,
+  FormCard,
+  FormInput,
+  FormSelect,
+} from "../../components/molecules";
+import { PlusCircle, Search, FileDown, FileUp } from "lucide-react";
 
 const InstructionList = () => {
   const navigate = useNavigate();
   const { data: instructions = [], isLoading, error } = useInstructions();
-
   const [filters, setFilters] = useState({
     status: "",
     priority: "",
@@ -29,8 +31,16 @@ const InstructionList = () => {
     navigate(`/instructions/${instruction.id}`);
   };
 
-  const handleCreateClick = () => {
+  const handleAddClick = () => {
     navigate("/instructions/create");
+  };
+
+  const handleImportClick = () => {
+    navigate("/instructions/import");
+  };
+
+  const handleExportClick = () => {
+    navigate("/instructions/export");
   };
 
   // 필터링된 지시 목록
@@ -54,84 +64,96 @@ const InstructionList = () => {
     return matchesStatus && matchesPriority && matchesSearch;
   });
 
+  // 상태에 따른 배경색 클래스 반환
+  const getStatusClass = (status) => {
+    switch (status) {
+      case "대기중":
+        return "bg-yellow-100 text-yellow-800";
+      case "진행중":
+        return "bg-blue-100 text-blue-800";
+      case "완료":
+        return "bg-green-100 text-green-800";
+      case "취소":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  // 우선순위에 따른 배경색 클래스 반환
+  const getPriorityClass = (priority) => {
+    switch (priority) {
+      case "높음":
+        return "bg-red-100 text-red-800";
+      case "중간":
+        return "bg-yellow-100 text-yellow-800";
+      case "낮음":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
+
+  // 테이블 컬럼 정의
   const columns = [
-    { title: "지시 ID", dataIndex: "id", width: "120px" },
-    { title: "제목", dataIndex: "title" },
-    { title: "위치", dataIndex: "location" },
+    { header: "ID", accessor: "id", className: "font-medium text-blue-600" },
+    { header: "제목", accessor: "title" },
+    { header: "위치", accessor: "location" },
     {
-      title: "상태",
-      dataIndex: "status",
-      render: (row) => {
-        const statusClasses = {
-          대기중: "bg-blue-100 text-blue-800",
-          진행중: "bg-yellow-100 text-yellow-800",
-          완료: "bg-green-100 text-green-800",
-          취소: "bg-red-100 text-red-800",
-        };
-
-        return (
-          <span
-            className={`px-2 py-1 text-xs rounded-full ${
-              statusClasses[row.status] || "bg-gray-100"
-            }`}
-          >
-            {row.status}
-          </span>
-        );
-      },
+      header: "상태",
+      accessor: "status",
+      cell: (row) => (
+        <span
+          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(
+            row.status
+          )}`}
+        >
+          {row.status}
+        </span>
+      ),
     },
     {
-      title: "우선순위",
-      dataIndex: "priority",
-      render: (row) => {
-        const priorityClasses = {
-          높음: "text-red-600",
-          중간: "text-yellow-600",
-          낮음: "text-green-600",
-        };
-
-        return (
-          <span
-            className={`font-medium ${priorityClasses[row.priority] || ""}`}
-          >
-            {row.priority}
-          </span>
-        );
-      },
+      header: "우선순위",
+      accessor: "priority",
+      cell: (row) => (
+        <span
+          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityClass(
+            row.priority
+          )}`}
+        >
+          {row.priority}
+        </span>
+      ),
     },
-    { title: "담당자", dataIndex: "assignedTo" },
-    { title: "생성일", dataIndex: "createdAt" },
-    { title: "마감일", dataIndex: "dueDate" },
+    { header: "생성일", accessor: "createdAt" },
+    { header: "마감일", accessor: "dueDate" },
   ];
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">지시 관리</h1>
-        <Button
-          variant="primary"
-          onClick={handleCreateClick}
-          className="px-4 py-2 text-white bg-blue-600 rounded-md hover:bg-blue-700"
-        >
-          새 지시 생성
-        </Button>
+    <div className="container mx-auto px-4 py-6">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">지시 목록</h1>
+        <div className="flex space-x-2">
+          <FormButton variant="outline" onClick={handleExportClick} size="sm">
+            <FileDown className="w-4 h-4 mr-2" />
+            내보내기
+          </FormButton>
+          <FormButton variant="outline" onClick={handleImportClick} size="sm">
+            <FileUp className="w-4 h-4 mr-2" />
+            가져오기
+          </FormButton>
+          <FormButton onClick={handleAddClick}>
+            <PlusCircle className="w-4 h-4 mr-2" />
+            지시 추가
+          </FormButton>
+        </div>
       </div>
 
-      <Card className="p-4 mb-6 bg-white rounded-lg shadow-md">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <Input
-            id="search"
-            name="search"
-            placeholder="지시 ID, 제목, 위치 검색"
-            value={filters.search}
-            onChange={handleFilterChange}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-
-          <Select
-            id="status"
+      <FormCard className="mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <FormSelect
             name="status"
-            placeholder="상태 선택"
+            label="상태"
             value={filters.status}
             onChange={handleFilterChange}
             options={[
@@ -141,13 +163,10 @@ const InstructionList = () => {
               { value: "완료", label: "완료" },
               { value: "취소", label: "취소" },
             ]}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
-
-          <Select
-            id="priority"
+          <FormSelect
             name="priority"
-            placeholder="우선순위 선택"
+            label="우선순위"
             value={filters.priority}
             onChange={handleFilterChange}
             options={[
@@ -156,29 +175,25 @@ const InstructionList = () => {
               { value: "중간", label: "중간" },
               { value: "낮음", label: "낮음" },
             ]}
-            className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+          <FormInput
+            name="search"
+            label="검색"
+            placeholder="제목, ID 또는 위치로 검색"
+            value={filters.search}
+            onChange={handleFilterChange}
+            prefix={<Search className="w-4 h-4 text-gray-400" />}
           />
         </div>
-      </Card>
+      </FormCard>
 
-      {error && (
-        <div className="p-4 mb-6 text-red-700 bg-red-100 rounded-md">
-          {error instanceof Error
-            ? error.message
-            : "데이터를 불러오는 중 오류가 발생했습니다."}
-        </div>
-      )}
-
-      <Card className="overflow-hidden bg-white rounded-lg shadow-md">
-        <Table
-          columns={columns}
-          data={filteredInstructions}
-          isLoading={isLoading}
-          emptyMessage="조회된 지시가 없습니다."
-          onRowClick={handleRowClick}
-          className="min-w-full divide-y divide-gray-200"
-        />
-      </Card>
+      <DataTable
+        columns={columns}
+        data={filteredInstructions}
+        loading={isLoading}
+        onRowClick={handleRowClick}
+        emptyMessage="지시 정보가 없습니다."
+      />
     </div>
   );
 };

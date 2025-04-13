@@ -1,197 +1,229 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWorks } from "../../lib/api/workQueries";
-import Table from "../../components/molecules/Table";
-import Button from "../../components/atoms/Button";
-import Card from "../../components/atoms/Card";
-import Input from "../../components/atoms/Input";
-import Select from "../../components/atoms/Select";
+import DataTable from "../../components/molecules/DataTable";
+import { FormButton, FormInput } from "../../components/molecules";
+import {
+  Eye,
+  Pencil,
+  Plus,
+  Search,
+  FileUp,
+  Filter,
+  RefreshCw,
+} from "lucide-react";
+import { formatDate } from "../../lib/utils/dateUtils";
 
 const WorkList = () => {
   const navigate = useNavigate();
-  const { data: works = [], isLoading, error } = useWorks();
+  const { data: works, isLoading, refetch } = useWorks();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  const [filters, setFilters] = useState({
-    status: "",
-    assignedTo: "",
-    search: "",
-  });
-
-  const handleFilterChange = (e) => {
-    const { name, value } = e.target;
-    setFilters({
-      ...filters,
-      [name]: value,
-    });
-  };
-
-  const handleRowClick = (work) => {
-    navigate(`/works/${work.id}`);
-  };
-
-  const handleCreateClick = () => {
+  const handleNavigateToCreate = () => {
     navigate("/works/create");
   };
 
-  // 필터링된 작업 목록
-  const filteredWorks = works.filter((work) => {
-    const matchesStatus = filters.status
-      ? work.status === filters.status
-      : true;
-    const matchesAssignedTo = filters.assignedTo
-      ? work.assignedTo === filters.assignedTo
-      : true;
-    const matchesSearch = filters.search
-      ? work.name?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        work.id?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        work.location?.toLowerCase().includes(filters.search.toLowerCase()) ||
-        work.instructionTitle
-          ?.toLowerCase()
-          .includes(filters.search.toLowerCase())
-      : true;
+  const handleNavigateToImport = () => {
+    navigate("/works/import");
+  };
 
-    return matchesStatus && matchesAssignedTo && matchesSearch;
-  });
+  const handleNavigateToDetail = (workId) => {
+    navigate(`/works/${workId}`);
+  };
 
-  // 담당자 목록 추출 (중복 제거)
-  const assignedToOptions = [
-    { value: "", label: "모든 담당자" },
-    ...Array.from(new Set(works.map((work) => work.assignedTo)))
-      .filter(Boolean)
-      .map((name) => ({ value: name, label: name })),
-  ];
+  const handleNavigateToEdit = (workId) => {
+    navigate(`/works/${workId}/edit`);
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "완료":
+        return "bg-green-100 text-green-800";
+      case "진행중":
+        return "bg-blue-100 text-blue-800";
+      case "대기중":
+        return "bg-yellow-100 text-yellow-800";
+      case "취소됨":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   const columns = [
-    { title: "작업 ID", dataIndex: "id", width: "120px" },
-    { title: "작업명", dataIndex: "name" },
-    { title: "지시 ID", dataIndex: "instructionId", width: "120px" },
-    { title: "지시 제목", dataIndex: "instructionTitle" },
-    { title: "위치", dataIndex: "location" },
     {
-      title: "상태",
-      dataIndex: "status",
-      render: (row) => {
-        const statusClasses = {
-          대기중: "bg-blue-100 text-blue-800",
-          진행중: "bg-yellow-100 text-yellow-800",
-          완료: "bg-green-100 text-green-800",
-          취소: "bg-red-100 text-red-800",
-        };
-
-        return (
-          <span
-            className={`px-2 py-1 text-xs rounded-full ${
-              statusClasses[row.status] || "bg-gray-100"
-            }`}
+      header: "ID",
+      accessorKey: "id",
+      cell: ({ row }) => <div className="font-medium">{row.original.id}</div>,
+    },
+    {
+      header: "작업명",
+      accessorKey: "name",
+      cell: ({ row }) => <div className="font-medium">{row.original.name}</div>,
+    },
+    {
+      header: "위치",
+      accessorKey: "location",
+    },
+    {
+      header: "담당자",
+      accessorKey: "assignedTo",
+    },
+    {
+      header: "시작일",
+      accessorKey: "startDate",
+      cell: ({ row }) => <div>{formatDate(row.original.startDate)}</div>,
+    },
+    {
+      header: "상태",
+      accessorKey: "status",
+      cell: ({ row }) => (
+        <span
+          className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(
+            row.original.status
+          )}`}
+        >
+          {row.original.status}
+        </span>
+      ),
+    },
+    {
+      header: "진행률",
+      accessorKey: "completionRate",
+      cell: ({ row }) => (
+        <div className="w-full bg-gray-200 rounded-full h-2.5">
+          <div
+            className="bg-blue-600 h-2.5 rounded-full"
+            style={{ width: `${row.original.completionRate}%` }}
+          ></div>
+        </div>
+      ),
+    },
+    {
+      header: "관련 지시",
+      accessorKey: "instructionId",
+    },
+    {
+      header: "액션",
+      id: "actions",
+      cell: ({ row }) => (
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNavigateToDetail(row.original.id);
+            }}
+            className="p-1 text-blue-600 hover:text-blue-800"
           >
-            {row.status}
-          </span>
-        );
-      },
+            <Eye size={16} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNavigateToEdit(row.original.id);
+            }}
+            className="p-1 text-gray-600 hover:text-gray-800"
+          >
+            <Pencil size={16} />
+          </button>
+        </div>
+      ),
     },
-    {
-      title: "진행률",
-      dataIndex: "completionRate",
-      render: (row) => {
-        let bgColorClass = "bg-blue-500";
-        if (row.completionRate >= 100) {
-          bgColorClass = "bg-green-500";
-        } else if (row.completionRate >= 70) {
-          bgColorClass = "bg-blue-500";
-        } else if (row.completionRate >= 30) {
-          bgColorClass = "bg-yellow-500";
-        } else {
-          bgColorClass = "bg-gray-300";
-        }
-
-        return (
-          <div className="flex items-center">
-            <div className="w-full bg-gray-200 rounded-full h-2.5 mr-2">
-              <div
-                className={`h-2.5 rounded-full ${bgColorClass}`}
-                style={{ width: `${row.completionRate}%` }}
-              ></div>
-            </div>
-            <span>{row.completionRate}%</span>
-          </div>
-        );
-      },
-    },
-    { title: "담당자", dataIndex: "assignedTo" },
-    { title: "시작일", dataIndex: "startDate" },
-    { title: "종료일", dataIndex: "endDate" },
   ];
 
+  // 검색 필터링을 적용한 작업 목록
+  const filteredWorks = works
+    ? works.filter((work) => {
+        const matchesSearch =
+          searchTerm === "" ||
+          work.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          work.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          work.assignedTo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          work.id.toLowerCase().includes(searchTerm.toLowerCase());
+
+        const matchesStatus =
+          statusFilter === "all" || work.status === statusFilter;
+
+        return matchesSearch && matchesStatus;
+      })
+    : [];
+
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">작업 관리</h1>
-        <Button
-          variant="primary"
-          onClick={handleCreateClick}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md"
-        >
-          새 작업 생성
-        </Button>
+    <div className="container px-4 py-6 mx-auto">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold">작업 관리</h1>
+        <div className="flex space-x-2">
+          <FormButton
+            variant="outline"
+            onClick={handleNavigateToImport}
+            className="flex items-center"
+          >
+            <FileUp className="w-4 h-4 mr-2" />
+            데이터 가져오기
+          </FormButton>
+          <FormButton
+            variant="primary"
+            onClick={handleNavigateToCreate}
+            className="flex items-center"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            신규 작업
+          </FormButton>
+        </div>
       </div>
 
-      <Card className="mb-6 bg-white shadow-md rounded-lg p-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Input
-            id="search"
-            name="search"
-            placeholder="작업 ID, 작업명, 지시 제목, 위치 검색"
-            value={filters.search}
-            onChange={handleFilterChange}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+      <div className="mb-6 bg-white rounded-lg shadow">
+        <div className="p-4">
+          <div className="flex flex-col gap-4 mb-4 md:flex-row">
+            <div className="relative flex-1">
+              <FormInput
+                type="text"
+                placeholder="작업명, 위치, 담당자, ID로 검색..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Search className="w-5 h-5 text-gray-400" />
+              </div>
+            </div>
 
-          <Select
-            id="status"
-            name="status"
-            placeholder="상태 선택"
-            value={filters.status}
-            onChange={handleFilterChange}
-            options={[
-              { value: "", label: "모든 상태" },
-              { value: "대기중", label: "대기중" },
-              { value: "진행중", label: "진행중" },
-              { value: "완료", label: "완료" },
-              { value: "취소", label: "취소" },
-            ]}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
+            <div className="flex gap-2">
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 text-sm text-gray-700 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              >
+                <option value="all">모든 상태</option>
+                <option value="대기중">대기중</option>
+                <option value="진행중">진행중</option>
+                <option value="완료">완료</option>
+                <option value="취소됨">취소됨</option>
+              </select>
 
-          <Select
-            id="assignedTo"
-            name="assignedTo"
-            placeholder="담당자 선택"
-            value={filters.assignedTo}
-            onChange={handleFilterChange}
-            options={assignedToOptions}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <FormButton
+                variant="outline"
+                onClick={() => refetch()}
+                className="flex items-center"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                새로고침
+              </FormButton>
+            </div>
+          </div>
+
+          <DataTable
+            columns={columns}
+            data={filteredWorks}
+            loading={isLoading}
+            onRowClick={(row) => handleNavigateToDetail(row.original.id)}
+            emptyMessage="등록된 작업이 없습니다."
+            title="작업 목록"
+            subtitle={`전체 ${filteredWorks.length}개`}
           />
         </div>
-      </Card>
-
-      {error && (
-        <div className="bg-red-100 text-red-700 p-4 rounded-md mb-6">
-          {error instanceof Error
-            ? error.message
-            : "데이터를 불러오는 중 오류가 발생했습니다."}
-        </div>
-      )}
-
-      <Card className="bg-white shadow-md rounded-lg overflow-hidden">
-        <Table
-          columns={columns}
-          data={filteredWorks}
-          isLoading={isLoading}
-          emptyMessage="조회된 작업이 없습니다."
-          onRowClick={handleRowClick}
-          className="min-w-full divide-y divide-gray-200"
-        />
-      </Card>
+      </div>
     </div>
   );
 };
