@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuthStore } from '../store';
+import { useAuthStore } from '../lib/zustand';
 import Card from '../components/atoms/Card';
 import Button from '../components/atoms/Button';
 import Input from '../components/atoms/Input';
@@ -58,16 +58,16 @@ const Login = () => {
   };
   
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <Card className="max-w-md w-full p-8">
-        <div className="text-center mb-8">
+    <div className="flex items-center justify-center min-h-screen px-4 bg-gray-100">
+      <Card className="w-full max-w-md p-8">
+        <div className="mb-8 text-center">
           <h1 className="text-2xl font-bold text-gray-900">보수작업관리시스템</h1>
-          <p className="text-gray-600 mt-2">계정 정보로 로그인하세요</p>
+          <p className="mt-2 text-gray-600">계정 정보로 로그인하세요</p>
         </div>
         
         <form onSubmit={handleSubmit}>
           {error && (
-            <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+            <div className="p-3 mb-4 text-red-700 bg-red-100 rounded">
               {error}
             </div>
           )}
@@ -111,9 +111,9 @@ const Login = () => {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+                className="w-4 h-4 border-gray-300 rounded text-primary focus:ring-primary"
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
+              <label htmlFor="remember-me" className="block ml-2 text-sm text-gray-700">
                 로그인 상태 유지
               </label>
             </div>
@@ -135,7 +135,7 @@ const Login = () => {
           </Button>
         </form>
         
-        <div className="mt-6 text-center text-sm text-gray-600">
+        <div className="mt-6 text-sm text-center text-gray-600">
           <p>테스트 계정: admin / admin</p>
         </div>
       </Card>

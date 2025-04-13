@@ -14,8 +14,10 @@ ERP 시스템을 개발하여 지시, 작업, 인사, 결제 등의 업무 관�
 ## Tech Stack
 
 - **Frontend Framework:** React 17, Vite
-- **State Management:** Zustand, Redux Toolkit
-- **Data Fetching:** React Query (TanStack Query), Axios
+- **State Management:**
+  - **UI/클라이언트 상태:** Zustand
+  - **서버 상태/데이터 페칭:** TanStack Query (React Query)
+- **HTTP 클라이언트:** Axios
 - **Routing:** React Router Dom v6
 - **Styling:** TailwindCSS, PostCSS
 - **File Processing:** xlsx (엑셀 파일 처리)
@@ -27,7 +29,12 @@ ERP 시스템을 개발하여 지시, 작업, 인사, 결제 등의 업무 관�
 
 ## Critical Patterns & Conventions
 
-- **State Management:** Zustand 스토어를 사용하여 전역 상태를 관리합니다. 주요 기능별로 분리된 스토어(인증, 지시, 작업 등)를 사용합니다.
+- **상태 관리 전략:**
+  - **클라이언트 상태:** Zustand를 사용해 UI 상태(인증, 테마, UI 설정 등)를 관리합니다.
+  - **서버 상태:** TanStack Query(React Query)를 사용해 API 호출 및 서버 데이터 관리를 담당합니다.
+- **API 연동 구조:**
+  - `/lib/api/xxxAPI.js`: 각 도메인별 API 호출 함수를 포함 (Axios 기반)
+  - `/lib/api/xxxQueries.js`: 각 도메인별 React Query 커스텀 훅 정의
 - **컴포넌트 구조:** Atomic Design 패턴을 따릅니다 (atoms, molecules, layout 등).
 - **라우팅:** 중첩 라우팅과 레이아웃 컴포넌트를 활용한 구조를 사용합니다.
 - **인증:** JWT 토큰 기반 인증 시스템을 사용합니다.
@@ -46,12 +53,13 @@ ERP 시스템을 개발하여 지시, 작업, 인사, 결제 등의 업무 관�
 
 - **인증 시스템:** 보안을 위해 JWT 토큰 기반 인증이 필요합니다.
 - **반응형 디자인:** 다양한 디바이스에서 작동하는 반응형 UI가 필요합니다.
-- **데이터 가져오기:** 현재는 모의(mock) 데이터를 사용하고 있지만, 실제 API 구현을 준비해야 합니다.
+- **데이터 가져오기:** 개발 환경에서는 모의(mock) 데이터를 사용하되, 실제 API 구현을 준비해야 합니다.
 - **성능 최적화:** 대량의 데이터를 처리할 때 성능 최적화가 필요합니다.
 - **사용자 역할:** 관리자(1개), 담당자(2개), 일반 사용자(2개)의 계정 유형이 필요합니다.
 - **파일 처리:** 엑셀 파일 업로드 및 파싱, 다양한 형식의 문서 출력 기능이 필요합니다.
 - **비밀번호 규칙:** 영어+숫자 5-12자리 구성으로 제한됩니다.
 - **지시 상태 관리:** 접수, 작업중, 작업완료, 결재중, 완료의 5단계 상태가 필요합니다.
+- **API 응답 캐싱:** React Query의 캐싱 기능을 통해 중복 요청 방지 및 UX 향상이 필요합니다.
 
 ---
 

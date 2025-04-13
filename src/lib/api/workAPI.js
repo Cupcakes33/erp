@@ -1,204 +1,282 @@
 import axios from 'axios'
-import api from './index'
 
-// 작업 관리 관련 API 함수
-export const workAPI = {
-  // 작업 목록 조회
-  getWorks: async (params = {}) => {
-    // 백엔드 연동 전 임시 데이터
-    const mockWorks = [
-      {
-        id: 'WRK-2025-089',
-        name: '수도관 교체 작업',
-        instructionId: 'INS-2025-042',
-        instructionTitle: '강북구 수도관 보수',
-        location: '강북구 미아동 123-45',
-        status: '진행중',
-        startDate: '2025-04-12',
-        endDate: '2025-04-15',
-        assignedTo: '김철수',
-        completionRate: 60
-      },
-      {
-        id: 'WRK-2025-088',
-        name: '도로 포장 작업',
-        instructionId: 'INS-2025-041',
-        instructionTitle: '서초구 도로 보수',
-        location: '서초구 서초동 456-78',
-        status: '완료',
-        startDate: '2025-04-09',
-        endDate: '2025-04-11',
-        assignedTo: '박영희',
-        completionRate: 100
-      },
-      {
-        id: 'WRK-2025-087',
-        name: '가로등 설치',
-        instructionId: 'INS-2025-040',
-        instructionTitle: '마포구 가로등 교체',
-        location: '마포구 합정동 789-12',
-        status: '완료',
-        startDate: '2025-04-06',
-        endDate: '2025-04-08',
-        assignedTo: '이민수',
-        completionRate: 100
-      },
-      {
-        id: 'WRK-2025-086',
-        name: '하수구 청소',
-        instructionId: 'INS-2025-039',
-        instructionTitle: '강남구 하수구 정비',
-        location: '강남구 역삼동 234-56',
-        status: '대기중',
-        startDate: null,
-        endDate: null,
-        assignedTo: '최지영',
-        completionRate: 0
-      },
-      {
-        id: 'WRK-2025-085',
-        name: '보도블럭 교체',
-        instructionId: 'INS-2025-038',
-        instructionTitle: '송파구 보도블럭 교체',
-        location: '송파구 잠실동 345-67',
-        status: '진행중',
-        startDate: '2025-04-03',
-        endDate: '2025-04-10',
-        assignedTo: '김철수',
-        completionRate: 75
-      }
-    ]
-    
-    // 실제 구현 시 아래 코드 사용
-    // const response = await api.get('/works', { params })
-    // return response.data
-    
-    return mockWorks
+// API 기본 URL 설정 (실제 환경에서는 .env 파일에서 가져와야 함)
+const API_URL = import.meta.env.VITE_API_URL || '/api'
+
+// mockAPI 지연 시간 설정 (ms)
+const MOCK_DELAY = 500
+
+// 모의 데이터 - 실제 API 연동 전까지 사용
+const mockWorks = [
+  {
+    id: 'W-001',
+    typeId: 'TP-001',
+    typeName: '아스팔트 포장',
+    specification: '두께 50mm',
+    unit: '㎡',
+    materialCost: 15000,
+    laborCost: 25000,
+    expenseCost: 5000,
+    totalCost: 45000
   },
-  
-  // 작업 상세 조회
-  getWorkDetail: async (id) => {
-    // 백엔드 연동 전 임시 데이터
-    const mockWorkDetail = {
-      id: 'WRK-2025-089',
-      name: '수도관 교체 작업',
-      description: '강북구 미아동 123-45 인근 수도관 누수 현상으로 인한 교체 작업',
-      instructionId: 'INS-2025-042',
-      instructionTitle: '강북구 수도관 보수',
-      location: '강북구 미아동 123-45',
-      status: '진행중',
-      startDate: '2025-04-12',
-      endDate: '2025-04-15',
-      assignedTo: '김철수',
-      completionRate: 60,
-      workHours: 24,
-      cost: 1500000,
-      materials: [
-        { name: '수도관 파이프', quantity: 3, unit: '개', used: 2 },
-        { name: '밸브', quantity: 2, unit: '개', used: 1 },
-        { name: '시멘트', quantity: 3, unit: '포대', used: 2 }
-      ],
-      dailyReports: [
-        { 
-          date: '2025-04-12', 
-          workHours: 8, 
-          description: '수도관 파이프 교체 작업 시작', 
-          completionRate: 20,
-          issues: '지하 파이프 접근 어려움'
-        },
-        { 
-          date: '2025-04-13', 
-          workHours: 8, 
-          description: '밸브 교체 및 파이프 연결 작업', 
-          completionRate: 40,
-          issues: ''
-        },
-        { 
-          date: '2025-04-14', 
-          workHours: 8, 
-          description: '누수 테스트 및 보강 작업', 
-          completionRate: 60,
-          issues: '일부 연결부 누수 발견, 재작업 필요'
+  {
+    id: 'W-002',
+    typeId: 'TP-002',
+    typeName: '보도블럭 설치',
+    specification: '300x300mm',
+    unit: '㎡',
+    materialCost: 20000,
+    laborCost: 30000,
+    expenseCost: 3000,
+    totalCost: 53000
+  },
+  {
+    id: 'W-003',
+    typeId: 'TP-003',
+    typeName: '가로등 교체',
+    specification: 'LED 100W',
+    unit: '개',
+    materialCost: 150000,
+    laborCost: 50000,
+    expenseCost: 10000,
+    totalCost: 210000
+  },
+  {
+    id: 'W-004',
+    typeId: 'TP-004',
+    typeName: '맨홀 정비',
+    specification: '직경 600mm',
+    unit: '개',
+    materialCost: 70000,
+    laborCost: 40000,
+    expenseCost: 5000,
+    totalCost: 115000
+  },
+  {
+    id: 'W-005',
+    typeId: 'TP-005',
+    typeName: '수도관 교체',
+    specification: '직경 100mm',
+    unit: 'm',
+    materialCost: 25000,
+    laborCost: 35000,
+    expenseCost: 5000,
+    totalCost: 65000
+  }
+]
+
+/**
+ * 모든 작업 목록을 가져오는 함수
+ * @returns {Promise<Array>} 작업 배열
+ */
+export const fetchWorks = async () => {
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve([...mockWorks])
+      }, MOCK_DELAY)
+    })
+  }
+
+  // 실제 API 호출
+  try {
+    const response = await axios.get(`${API_URL}/works`)
+    return response.data
+  } catch (error) {
+    console.error('작업 목록 가져오기 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * 특정 작업 정보를 가져오는 함수
+ * @param {string} id 작업 ID
+ * @returns {Promise<Object>} 작업 정보
+ */
+export const fetchWorkById = async (id) => {
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const work = mockWorks.find(w => w.id === id)
+        if (work) {
+          resolve({ ...work })
+        } else {
+          reject(new Error('작업을 찾을 수 없습니다.'))
         }
-      ],
-      attachments: [
-        { name: '작업사진1.jpg', url: '/attachments/작업사진1.jpg' },
-        { name: '작업보고서.pdf', url: '/attachments/작업보고서.pdf' }
-      ],
-      history: [
-        { date: '2025-04-11', action: '작업 생성', user: '관리자' },
-        { date: '2025-04-12', action: '작업 시작', user: '김철수' },
-        { date: '2025-04-14', action: '진행상황 업데이트', user: '김철수' }
-      ]
-    }
-    
-    // 실제 구현 시 아래 코드 사용
-    // const response = await api.get(`/works/${id}`)
-    // return response.data
-    
-    return mockWorkDetail
-  },
-  
-  // 작업 생성
-  createWork: async (workData) => {
-    // 백엔드 연동 전 임시 로직
-    const newWork = {
-      id: `WRK-2025-${Math.floor(Math.random() * 1000)}`,
-      ...workData,
-      createdAt: new Date().toISOString().split('T')[0],
-      status: '대기중',
-      completionRate: 0
-    }
-    
-    // 실제 구현 시 아래 코드 사용
-    // const response = await api.post('/works', workData)
-    // return response.data
-    
-    return newWork
-  },
-  
-  // 작업 업데이트
-  updateWork: async (id, workData) => {
-    // 백엔드 연동 전 임시 로직
-    const updatedWork = {
-      id,
-      ...workData,
-      updatedAt: new Date().toISOString().split('T')[0]
-    }
-    
-    // 실제 구현 시 아래 코드 사용
-    // const response = await api.put(`/works/${id}`, workData)
-    // return response.data
-    
-    return updatedWork
-  },
-  
-  // 작업 삭제
-  deleteWork: async (id) => {
-    // 백엔드 연동 전 임시 로직
-    const success = true
-    
-    // 실제 구현 시 아래 코드 사용
-    // await api.delete(`/works/${id}`)
-    // return id
-    
+      }, MOCK_DELAY)
+    })
+  }
+
+  // 실제 API 호출
+  try {
+    const response = await axios.get(`${API_URL}/works/${id}`)
+    return response.data
+  } catch (error) {
+    console.error(`작업 ID ${id} 가져오기 실패:`, error)
+    throw error
+  }
+}
+
+/**
+ * 새 작업을 생성하는 함수
+ * @param {Object} workData 작업 데이터
+ * @returns {Promise<Object>} 생성된 작업 정보
+ */
+export const createWork = async (workData) => {
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const newId = `W-${String(mockWorks.length + 1).padStart(3, '0')}`
+        const newWork = {
+          id: newId,
+          ...workData,
+          totalCost: Number(workData.materialCost || 0) + Number(workData.laborCost || 0) + Number(workData.expenseCost || 0)
+        }
+        mockWorks.push(newWork)
+        resolve({ ...newWork })
+      }, MOCK_DELAY)
+    })
+  }
+
+  // 실제 API 호출
+  try {
+    const response = await axios.post(`${API_URL}/works`, workData)
+    return response.data
+  } catch (error) {
+    console.error('작업 생성 실패:', error)
+    throw error
+  }
+}
+
+/**
+ * 작업 정보를 수정하는 함수
+ * @param {string} id 작업 ID
+ * @param {Object} workData 업데이트할 작업 데이터
+ * @returns {Promise<Object>} 수정된 작업 정보
+ */
+export const updateWork = async (id, workData) => {
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const index = mockWorks.findIndex(w => w.id === id)
+        if (index !== -1) {
+          const updatedWork = {
+            ...mockWorks[index],
+            ...workData,
+            totalCost: 
+              Number(workData.materialCost !== undefined ? workData.materialCost : mockWorks[index].materialCost) +
+              Number(workData.laborCost !== undefined ? workData.laborCost : mockWorks[index].laborCost) +
+              Number(workData.expenseCost !== undefined ? workData.expenseCost : mockWorks[index].expenseCost)
+          }
+          mockWorks[index] = updatedWork
+          resolve({ ...updatedWork })
+        } else {
+          reject(new Error('작업을 찾을 수 없습니다.'))
+        }
+      }, MOCK_DELAY)
+    })
+  }
+
+  // 실제 API 호출
+  try {
+    const response = await axios.put(`${API_URL}/works/${id}`, workData)
+    return response.data
+  } catch (error) {
+    console.error(`작업 ID ${id} 수정 실패:`, error)
+    throw error
+  }
+}
+
+/**
+ * 작업을 삭제하는 함수
+ * @param {string} id 작업 ID
+ * @returns {Promise<string>} 삭제된 작업 ID
+ */
+export const deleteWork = async (id) => {
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const index = mockWorks.findIndex(w => w.id === id)
+        if (index !== -1) {
+          mockWorks.splice(index, 1)
+          resolve(id)
+        } else {
+          reject(new Error('작업을 찾을 수 없습니다.'))
+        }
+      }, MOCK_DELAY)
+    })
+  }
+
+  // 실제 API 호출
+  try {
+    await axios.delete(`${API_URL}/works/${id}`)
     return id
-  },
-  
-  // 일일 작업 보고서 추가
-  addDailyReport: async (workId, reportData) => {
-    // 백엔드 연동 전 임시 로직
-    const newReport = {
-      id: Math.floor(Math.random() * 10000),
-      workId,
-      ...reportData,
-      date: reportData.date || new Date().toISOString().split('T')[0]
-    }
-    
-    // 실제 구현 시 아래 코드 사용
-    // const response = await api.post(`/works/${workId}/reports`, reportData)
-    // return response.data
-    
-    return newReport
+  } catch (error) {
+    console.error(`작업 ID ${id} 삭제 실패:`, error)
+    throw error
+  }
+}
+
+/**
+ * 특정 지시에 포함된 작업 목록을 가져오는 함수
+ * @param {string} instructionId 지시 ID
+ * @returns {Promise<Array>} 작업 배열
+ */
+export const fetchWorksByInstruction = async (instructionId) => {
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // 실제로는 백엔드에서 필터링하지만, 여기서는 간단한 모의 구현
+        const filteredWorks = mockWorks.filter((_, index) => index < 3)
+        resolve(filteredWorks)
+      }, MOCK_DELAY)
+    })
+  }
+
+  // 실제 API 호출
+  try {
+    const response = await axios.get(`${API_URL}/instructions/${instructionId}/works`)
+    return response.data
+  } catch (error) {
+    console.error(`지시 ID ${instructionId}의 작업 목록 가져오기 실패:`, error)
+    throw error
+  }
+}
+
+/**
+ * 일일 작업 보고서 추가하는 함수
+ * @param {string} workId 작업 ID
+ * @param {Object} reportData 보고서 데이터
+ * @returns {Promise<Object>} 생성된 보고서 정보
+ */
+export const addDailyReport = async (workId, reportData) => {
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const newReport = {
+          id: Math.floor(Math.random() * 10000),
+          workId,
+          ...reportData,
+          date: reportData.date || new Date().toISOString().split('T')[0]
+        }
+        resolve(newReport)
+      }, MOCK_DELAY)
+    })
+  }
+
+  // 실제 API 호출
+  try {
+    const response = await axios.post(`${API_URL}/works/${workId}/reports`, reportData)
+    return response.data
+  } catch (error) {
+    console.error(`작업 ID ${workId}에 보고서 추가 실패:`, error)
+    throw error
   }
 }
