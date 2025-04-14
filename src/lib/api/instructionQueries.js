@@ -6,169 +6,147 @@ import {
   updateInstruction,
   updateInstructionStatus,
   toggleInstructionFavorite,
-  deleteInstruction
+  deleteInstruction,
+  confirmInstruction
 } from './instructionAPI'
 
 // 쿼리 키
-export const QUERY_KEYS = {
-  INSTRUCTIONS: 'instructions',
-  INSTRUCTION: 'instruction',
-}
+const INSTRUCTIONS_QUERY_KEY = 'instructions';
+const INSTRUCTION_DETAIL_QUERY_KEY = 'instruction';
 
 /**
- * 모든 지시 목록을 가져오는 쿼리 훅
- * @returns {Object} 쿼리 결과 객체
+ * 지시 목록을 조회하는 React Query 훅
+ * @param {Object} params - 검색 및 페이징 파라미터
+ * @param {string} params.status - 상태 필터 
+ * @param {number} params.page - 페이지 번호
+ * @param {number} params.size - 페이지 크기
+ * @returns {UseQueryResult} 쿼리 결과
  */
-export const useInstructions = () => {
-  console.log("[instructionQueries] useInstructions 훅 호출됨");
-  
-  const queryFn = async () => {
-    console.log("[instructionQueries] queryFn 실행 - fetchInstructions 호출 직전");
-    try {
-      const data = await fetchInstructions();
-      console.log("[instructionQueries] fetchInstructions 반환 데이터:", data);
-      return data;
-    } catch (error) {
-      console.error("[instructionQueries] fetchInstructions 에러:", error);
-      throw error;
-    }
-  };
-  
+export const useInstructions = (params = {}) => {
   return useQuery({
-    queryKey: [QUERY_KEYS.INSTRUCTIONS],
-    queryFn: queryFn,
-    staleTime: 0, // 항상 stale 상태로 유지하여 데이터 재요청이 가능하게 함
-    cacheTime: 1000, // 캐시 유지 시간을 최소화 (1초)
-    retry: 3,
-    refetchOnMount: 'always', // 컴포넌트 마운트 시 항상 새로고침
-    refetchOnWindowFocus: true, // 창이 포커스될 때 새로고침
-    onError: (error) => {
-      console.error("[instructionQueries] 지시 목록 가져오기 에러:", error);
-    },
-    onSuccess: (data) => {
-      console.log("[instructionQueries] 지시 목록 가져오기 성공:", data);
+    queryKey: [INSTRUCTIONS_QUERY_KEY, params],
+    queryFn: () => fetchInstructions(params),
+    select: (data) => {
+      // API 응답 형식에 맞게 데이터 변환
+      return data?.data?.instructionList || { instruction: [], totalCount: 0, totalPage: 0, currentPage: 1 };
     }
   });
 };
 
 /**
- * 특정 지시 정보를 가져오는 쿼리 훅
- * @param {string} id 지시 ID
- * @returns {Object} 쿼리 결과 객체
+ * 특정 지시 정보를 조회하는 React Query 훅
+ * @param {number} id 지시 ID
+ * @returns {UseQueryResult} 쿼리 결과
  */
 export const useInstruction = (id) => {
-  console.log("[instructionQueries] useInstruction 훅 호출됨, id:", id);
-  
-  const queryFn = async () => {
-    console.log("[instructionQueries] instruction queryFn 실행 - fetchInstructionById 호출 직전");
-    try {
-      const data = await fetchInstructionById(id);
-      console.log("[instructionQueries] fetchInstructionById 반환 데이터:", data);
-      return data;
-    } catch (error) {
-      console.error("[instructionQueries] fetchInstructionById 에러:", error);
-      throw error;
-    }
-  };
-  
   return useQuery({
-    queryKey: [QUERY_KEYS.INSTRUCTION, id],
-    queryFn: queryFn,
-    staleTime: 0, // 항상 stale 상태로 유지하여 데이터 재요청이 가능하게 함
-    cacheTime: 1000, // 캐시 유지 시간을 최소화 (1초)
-    retry: 3,
-    refetchOnMount: 'always', // 컴포넌트 마운트 시 항상 새로고침
-    refetchOnWindowFocus: true, // 창이 포커스될 때 새로고침
-    enabled: !!id, // id가 있을 때만 쿼리 실행
-    onError: (error) => {
-      console.error(`[instructionQueries] 지시 ID ${id} 가져오기 에러:`, error);
-    },
-    onSuccess: (data) => {
-      console.log(`[instructionQueries] 지시 ID ${id} 가져오기 성공:`, data);
-    },
+    queryKey: [INSTRUCTION_DETAIL_QUERY_KEY, id],
+    queryFn: () => fetchInstructionById(id),
+    enabled: !!id, // ID가 있을 때만 쿼리 실행
+    select: (data) => {
+      // API 응답 형식에 맞게 데이터 변환
+      return data?.data?.instruction || null;
+    }
   });
 };
 
 /**
- * 새 지시를 생성하는 뮤테이션 훅
- * @returns {Object} 뮤테이션 결과 객체
+ * 새 지시를 생성하는 React Query Mutation 훅
+ * @returns {UseMutationResult} 뮤테이션 결과
  */
 export const useCreateInstruction = () => {
-  const queryClient = useQueryClient()
-
+  const queryClient = useQueryClient();
+  
   return useMutation({
-    mutationFn: createInstruction,
+    mutationFn: (instructionData) => createInstruction({ instruction: instructionData }),
     onSuccess: () => {
-      // 성공 시 지시 목록 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.INSTRUCTIONS] })
-    },
-  })
-}
+      // 지시 목록 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: [INSTRUCTIONS_QUERY_KEY] });
+    }
+  });
+};
 
 /**
- * 지시 정보를 수정하는 뮤테이션 훅
- * @returns {Object} 뮤테이션 결과 객체
+ * 지시 정보를 수정하는 React Query Mutation 훅
+ * @returns {UseMutationResult} 뮤테이션 결과
  */
 export const useUpdateInstruction = () => {
-  const queryClient = useQueryClient()
-
+  const queryClient = useQueryClient();
+  
   return useMutation({
-    mutationFn: ({ id, instructionData }) => updateInstruction(id, instructionData),
+    mutationFn: ({ id, instructionData }) => updateInstruction(id, { instruction: instructionData }),
     onSuccess: (data, variables) => {
-      // 성공 시 관련 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.INSTRUCTIONS] })
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.INSTRUCTION, variables.id] })
-    },
-  })
-}
+      // 지시 목록 및 상세 정보 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: [INSTRUCTIONS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [INSTRUCTION_DETAIL_QUERY_KEY, variables.id] });
+    }
+  });
+};
 
 /**
- * 지시 상태를 변경하는 뮤테이션 훅
- * @returns {Object} 뮤테이션 결과 객체
+ * 지시 상태를 변경하는 React Query Mutation 훅
+ * @returns {UseMutationResult} 뮤테이션 결과
  */
 export const useUpdateInstructionStatus = () => {
-  const queryClient = useQueryClient()
-
+  const queryClient = useQueryClient();
+  
   return useMutation({
-    mutationFn: ({ id, status }) => updateInstructionStatus(id, status),
+    mutationFn: ({ id, status }) => updateInstructionStatus(id, { status }),
     onSuccess: (data, variables) => {
-      // 성공 시 관련 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.INSTRUCTIONS] })
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.INSTRUCTION, variables.id] })
-    },
-  })
-}
+      // 지시 목록 및 상세 정보 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: [INSTRUCTIONS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [INSTRUCTION_DETAIL_QUERY_KEY, variables.id] });
+    }
+  });
+};
 
 /**
- * 지시 즐겨찾기를 토글하는 뮤테이션 훅
- * @returns {Object} 뮤테이션 결과 객체
+ * 지시 즐겨찾기를 토글하는 React Query Mutation 훅
+ * @returns {UseMutationResult} 뮤테이션 결과
  */
 export const useToggleInstructionFavorite = () => {
-  const queryClient = useQueryClient()
-
+  const queryClient = useQueryClient();
+  
   return useMutation({
-    mutationFn: toggleInstructionFavorite,
-    onSuccess: (data, id) => {
-      // 성공 시 관련 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.INSTRUCTIONS] })
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.INSTRUCTION, id] })
-    },
-  })
-}
+    mutationFn: (id) => toggleInstructionFavorite(id),
+    onSuccess: (data, variables) => {
+      // 지시 목록 및 상세 정보 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: [INSTRUCTIONS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [INSTRUCTION_DETAIL_QUERY_KEY, variables] });
+    }
+  });
+};
 
 /**
- * 지시를 삭제하는 뮤테이션 훅
- * @returns {Object} 뮤테이션 결과 객체
+ * 지시를 삭제하는 React Query Mutation 훅
+ * @returns {UseMutationResult} 뮤테이션 결과
  */
 export const useDeleteInstruction = () => {
-  const queryClient = useQueryClient()
-
+  const queryClient = useQueryClient();
+  
   return useMutation({
-    mutationFn: deleteInstruction,
-    onSuccess: (_, id) => {
-      // 성공 시 관련 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.INSTRUCTIONS] })
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.INSTRUCTION, id] })
-    },
-  })
-}
+    mutationFn: (id) => deleteInstruction(id),
+    onSuccess: (data, variables) => {
+      // 지시 목록 및 상세 정보 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: [INSTRUCTIONS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [INSTRUCTION_DETAIL_QUERY_KEY, variables] });
+    }
+  });
+};
+
+/**
+ * 지시를 확정하는 React Query Mutation 훅
+ * @returns {UseMutationResult} 뮤테이션 결과
+ */
+export const useConfirmInstruction = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id) => confirmInstruction(id),
+    onSuccess: (data, variables) => {
+      // 지시 목록 및 상세 정보 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: [INSTRUCTIONS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [INSTRUCTION_DETAIL_QUERY_KEY, variables] });
+    }
+  });
+};

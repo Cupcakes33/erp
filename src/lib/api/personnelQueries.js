@@ -1,108 +1,117 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchWorkers, fetchWorkerById, createWorker, updateWorker, toggleWorkerStatus } from './personnelAPI';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { 
+  fetchWorkers, 
+  fetchWorkerById, 
+  createWorker, 
+  updateWorker, 
+  updateWorkerStatus,
+  toggleWorkerStatus 
+} from './personnelAPI';
 
-// 쿼리 키
-export const QUERY_KEYS = {
-  WORKERS: 'workers',
-  WORKER: 'worker',
-};
+// 쿼리 키 상수
+const WORKERS_QUERY_KEY = 'workers';
+const WORKER_DETAIL_QUERY_KEY = 'workerDetail';
 
 /**
- * 모든 작업자 목록을 가져오는 쿼리 훅
- * @returns {Object} 쿼리 결과 객체
+ * 작업자 목록을 가져오는 React Query 훅
+ * @param {Object} params - 검색 및 페이징 파라미터
+ * @param {string} params.keyword - 검색어 (이름)
+ * @param {string} params.status - 상태 필터 (ACTIVE, RESIGNED)
+ * @param {number} params.page - 페이지 번호
+ * @param {number} params.size - 페이지 크기
+ * @returns {UseQueryResult} 쿼리 결과
  */
-export const useWorkers = () => {
-  console.log("[personnelQueries] useWorkers 훅 호출됨");
-  
-  const queryFn = async () => {
-    console.log("[personnelQueries] queryFn 실행 - fetchWorkers 호출 직전");
-    try {
-      const data = await fetchWorkers();
-      console.log("[personnelQueries] fetchWorkers 반환 데이터:", data);
-      return data;
-    } catch (error) {
-      console.error("[personnelQueries] fetchWorkers 에러:", error);
-      throw error;
-    }
-  };
-  
+export const useWorkers = (params = {}) => {
   return useQuery({
-    queryKey: [QUERY_KEYS.WORKERS],
-    queryFn: queryFn,
-    staleTime: 0, // 항상 stale 상태로 유지하여 데이터 재요청이 가능하게 함
-    cacheTime: 1000, // 캐시 유지 시간을 최소화 (1초)
-    retry: 3,
-    refetchOnMount: 'always', // 컴포넌트 마운트 시 항상 새로고침
-    refetchOnWindowFocus: true, // 창이 포커스될 때 새로고침
-    onError: (error) => {
-      console.error("[personnelQueries] 작업자 목록 가져오기 에러:", error);
-    },
-    onSuccess: (data) => {
-      console.log("[personnelQueries] 작업자 목록 가져오기 성공:", data);
+    queryKey: [WORKERS_QUERY_KEY, params],
+    queryFn: () => fetchWorkers(params),
+    select: (data) => {
+      // API 응답 형식에 맞게 데이터 변환
+      return data?.data?.workerList || { worker: [], totalCount: 0, totalPage: 0, currentPage: 1 };
     }
   });
 };
 
 /**
- * 특정 작업자 정보를 가져오는 쿼리 훅
- * @param {number} id 작업자 ID
- * @returns {Object} 쿼리 결과 객체
+ * 특정 작업자 정보를 가져오는 React Query 훅
+ * @param {number} id - 작업자 ID
+ * @returns {UseQueryResult} 쿼리 결과
  */
-export const useWorker = (id) => {
+export const useWorkerDetail = (id) => {
   return useQuery({
-    queryKey: [QUERY_KEYS.WORKER, id],
+    queryKey: [WORKER_DETAIL_QUERY_KEY, id],
     queryFn: () => fetchWorkerById(id),
-    staleTime: 1000 * 60 * 5, // 5분 동안 데이터를 fresh로 유지
-    enabled: !!id, // id가 있을 때만 쿼리 실행
+    enabled: !!id, // ID가 있을 때만 쿼리 실행
+    select: (data) => {
+      // API 응답 형식에 맞게 데이터 변환
+      return data?.data?.worker || null;
+    }
   });
 };
 
 /**
- * 새 작업자를 생성하는 뮤테이션 훅
- * @returns {Object} 뮤테이션 결과 객체
+ * 새 작업자를 생성하는 React Query Mutation 훅
+ * @returns {UseMutationResult} 뮤테이션 결과
  */
 export const useCreateWorker = () => {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
-    mutationFn: createWorker,
+    mutationFn: (workerData) => createWorker({ worker: workerData }),
     onSuccess: () => {
-      // 성공 시 작업자 목록 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WORKERS] });
-    },
+      // 작업자 목록 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: [WORKERS_QUERY_KEY] });
+    }
   });
 };
 
 /**
- * 작업자 정보를 수정하는 뮤테이션 훅
- * @returns {Object} 뮤테이션 결과 객체
+ * 작업자 정보를 수정하는 React Query Mutation 훅
+ * @returns {UseMutationResult} 뮤테이션 결과
  */
 export const useUpdateWorker = () => {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
-    mutationFn: ({ id, workerData }) => updateWorker(id, workerData),
+    mutationFn: ({ id, workerData }) => updateWorker(id, { worker: workerData }),
     onSuccess: (data, variables) => {
-      // 성공 시 관련 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WORKERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WORKER, variables.id] });
-    },
+      // 작업자 목록 및 상세 정보 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: [WORKERS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [WORKER_DETAIL_QUERY_KEY, variables.id] });
+    }
   });
 };
 
 /**
- * 작업자 상태를 변경하는 뮤테이션 훅 (재직/퇴사)
- * @returns {Object} 뮤테이션 결과 객체
+ * 작업자 상태를 변경하는 React Query Mutation 훅
+ * @returns {UseMutationResult} 뮤테이션 결과
+ */
+export const useUpdateWorkerStatus = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, status }) => updateWorkerStatus(id, { status }),
+    onSuccess: (data, variables) => {
+      // 작업자 목록 및 상세 정보 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: [WORKERS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [WORKER_DETAIL_QUERY_KEY, variables.id] });
+    }
+  });
+};
+
+/**
+ * 작업자 상태를 토글하는 React Query Mutation 훅 (호환성 유지)
+ * @returns {UseMutationResult} 뮤테이션 결과
  */
 export const useToggleWorkerStatus = () => {
   const queryClient = useQueryClient();
-
+  
   return useMutation({
-    mutationFn: toggleWorkerStatus,
-    onSuccess: (data, id) => {
-      // 성공 시 관련 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WORKERS] });
-      queryClient.invalidateQueries({ queryKey: [QUERY_KEYS.WORKER, id] });
-    },
+    mutationFn: (id) => toggleWorkerStatus(id),
+    onSuccess: (data, variables) => {
+      // 작업자 목록 및 상세 정보 쿼리 무효화
+      queryClient.invalidateQueries({ queryKey: [WORKERS_QUERY_KEY] });
+      queryClient.invalidateQueries({ queryKey: [WORKER_DETAIL_QUERY_KEY, variables] });
+    }
   });
 }; 

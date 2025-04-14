@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useWorker, useUpdateWorker } from "../../lib/api/personnelQueries";
+import {
+  useWorkerDetail,
+  useUpdateWorker,
+} from "../../lib/api/personnelQueries";
 import {
   FormButton,
   FormInput,
@@ -17,7 +20,7 @@ import { ArrowLeft } from "lucide-react";
 const PersonnelEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: worker, isLoading: isLoadingWorker } = useWorker(id);
+  const { data: worker, isLoading: isLoadingWorker } = useWorkerDetail(id);
   const updateWorkerMutation = useUpdateWorker();
 
   const [formData, setFormData] = useState({

@@ -14,8 +14,13 @@ import { ArrowLeft } from "lucide-react";
 const WorkCreate = () => {
   const navigate = useNavigate();
   const createWorkMutation = useCreateWork();
-  const { data: instructions = [], isLoading: isLoadingInstructions } =
-    useInstructions();
+  const {
+    data: instructionsData = { instruction: [] },
+    isLoading: isLoadingInstructions,
+  } = useInstructions();
+
+  // 실제 지시 배열 추출
+  const instructions = instructionsData.instruction || [];
 
   const [formData, setFormData] = useState({
     name: "",

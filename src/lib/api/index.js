@@ -49,3 +49,5 @@ export default api
 export * from './personnelAPI'
 export * from './workAPI'
 export * from './instructionAPI'
+export * from './authAPI'
+export * from './userAPI'

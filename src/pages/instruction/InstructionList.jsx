@@ -10,9 +10,42 @@ import {
 } from "../../components/molecules";
 import { PlusCircle, Search, FileDown, FileUp } from "lucide-react";
 
+// 상태와 우선순위 매핑 객체
+const STATUS_MAP = {
+  RECEIVED: { label: "접수", color: "yellow" },
+  IN_PROGRESS: { label: "작업중", color: "blue" },
+  COMPLETED: { label: "완료", color: "green" },
+  CANCELED: { label: "취소", color: "red" },
+  CONFIRMED: { label: "확정", color: "purple" },
+};
+
+const PRIORITY_MAP = {
+  HIGH: { label: "높음", color: "red" },
+  MEDIUM: { label: "중간", color: "yellow" },
+  LOW: { label: "낮음", color: "green" },
+};
+
 const InstructionList = () => {
   const navigate = useNavigate();
-  const { data: instructions = [], isLoading, error } = useInstructions();
+  const [filterParams, setFilterParams] = useState({
+    status: "",
+    page: 1,
+    size: 10,
+  });
+
+  const {
+    data: instructionData = {
+      instruction: [],
+      totalCount: 0,
+      totalPage: 0,
+      currentPage: 1,
+    },
+    isLoading,
+    error,
+  } = useInstructions(filterParams);
+
+  // 실제 지시 배열 추출
+  const instructions = instructionData.instruction || [];
 
   // 디버깅을 위한 데이터 로그
   console.log("[InstructionList] 지시 데이터:", instructions);
@@ -42,6 +75,15 @@ const InstructionList = () => {
       ...filters,
       [name]: value,
     });
+
+    // API 필터링을 위한 상태 업데이트
+    if (name === "status") {
+      setFilterParams({
+        ...filterParams,
+        status: value,
+        page: 1, // 필터 변경 시 첫 페이지로 돌아가기
+      });
+    }
   };
 
   const handleRowClick = (instruction) => {
@@ -66,11 +108,8 @@ const InstructionList = () => {
     return text.length > length ? `${text.substring(0, length)}...` : text;
   };
 
-  // 필터링된 지시 목록
+  // 필터링된 지시 목록 (검색어 및 우선순위에 대한 클라이언트 측 필터링)
   const filteredInstructions = instructions.filter((instruction) => {
-    const matchesStatus = filters.status
-      ? instruction.status === filters.status
-      : true;
     const matchesPriority = filters.priority
       ? instruction.priority === filters.priority
       : true;
@@ -78,7 +117,9 @@ const InstructionList = () => {
       ? instruction.title
           ?.toLowerCase()
           .includes(filters.search.toLowerCase()) ||
-        instruction.id?.toLowerCase().includes(filters.search.toLowerCase()) ||
+        String(instruction.id)
+          ?.toLowerCase()
+          .includes(filters.search.toLowerCase()) ||
         instruction.location
           ?.toLowerCase()
           .includes(filters.search.toLowerCase()) ||
@@ -99,37 +140,19 @@ const InstructionList = () => {
           .includes(filters.search.toLowerCase())
       : true;
 
-    return matchesStatus && matchesPriority && matchesSearch;
+    return matchesPriority && matchesSearch;
   });
 
   // 상태에 따른 배경색 클래스 반환
   const getStatusClass = (status) => {
-    switch (status) {
-      case "접수":
-        return "bg-yellow-100 text-yellow-800";
-      case "작업중":
-        return "bg-blue-100 text-blue-800";
-      case "완료":
-        return "bg-green-100 text-green-800";
-      case "취소":
-        return "bg-red-100 text-red-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+    const statusInfo = STATUS_MAP[status] || { color: "gray" };
+    return `bg-${statusInfo.color}-100 text-${statusInfo.color}-800`;
   };
 
   // 우선순위에 따른 배경색 클래스 반환
   const getPriorityClass = (priority) => {
-    switch (priority) {
-      case "높음":
-        return "bg-red-100 text-red-800";
-      case "중간":
-        return "bg-yellow-100 text-yellow-800";
-      case "낮음":
-        return "bg-green-100 text-green-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
+    const priorityInfo = PRIORITY_MAP[priority] || { color: "gray" };
+    return `bg-${priorityInfo.color}-100 text-${priorityInfo.color}-800`;
   };
 
   // 즐겨찾기 표시 함수
@@ -160,7 +183,8 @@ const InstructionList = () => {
             row.getValue("priority")
           )}`}
         >
-          {row.getValue("priority")}
+          {PRIORITY_MAP[row.getValue("priority")]?.label ||
+            row.getValue("priority")}
         </span>
       ),
     },
@@ -173,7 +197,7 @@ const InstructionList = () => {
             row.getValue("status")
           )}`}
         >
-          {row.getValue("status")}
+          {STATUS_MAP[row.getValue("status")]?.label || row.getValue("status")}
         </span>
       ),
     },
@@ -189,106 +213,190 @@ const InstructionList = () => {
       header: "주소",
       cell: ({ row }) => truncateText(row.getValue("address"), 20),
     },
-    { accessorKey: "manager", header: "관리자" },
-    { accessorKey: "receiver", header: "담당자" },
-    { accessorKey: "channel", header: "접수채널" },
     {
       accessorKey: "description",
-      header: "설명",
+      header: "내용",
       cell: ({ row }) => truncateText(row.getValue("description"), 30),
     },
     {
-      accessorKey: "works",
-      header: "작업번호",
-      cell: ({ row }) => {
-        const works = row.getValue("works");
-        return works ? works.join(", ") : "";
-      },
+      accessorKey: "manager",
+      header: "관리자",
+      cell: ({ row }) => truncateText(row.getValue("manager"), 10),
     },
     {
-      accessorKey: "favorite",
-      header: "즐겨찾기",
-      cell: ({ row }) => renderFavorite(row.getValue("favorite")),
+      accessorKey: "receiver",
+      header: "담당자",
+      cell: ({ row }) => truncateText(row.getValue("receiver"), 10),
     },
-    { accessorKey: "paymentRound", header: "결제차수" },
-    { accessorKey: "lastModifiedBy", header: "최종수정자" },
-    { accessorKey: "lastModifiedAt", header: "최종수정일" },
+    { accessorKey: "channel", header: "접수 채널" },
   ];
 
-  // 현재 화면에 표시할 컬럼들
-  const columns = allColumns.filter((column) =>
+  // 필터링된 컬럼
+  const filteredColumns = allColumns.filter((column) =>
     visibleColumns.includes(column.accessorKey)
   );
 
-  // 추가 디버깅 로그
-  console.log("InstructionList 컴포넌트 columns:", columns);
-  console.log("InstructionList 필터링된 데이터:", filteredInstructions);
+  const handlePageChange = (newPage) => {
+    setFilterParams({
+      ...filterParams,
+      page: newPage,
+    });
+  };
+
+  const statusOptions = [
+    { value: "", label: "모든 상태" },
+    ...Object.entries(STATUS_MAP).map(([value, { label }]) => ({
+      value,
+      label,
+    })),
+  ];
+
+  const priorityOptions = [
+    { value: "", label: "모든 우선순위" },
+    ...Object.entries(PRIORITY_MAP).map(([value, { label }]) => ({
+      value,
+      label,
+    })),
+  ];
+
+  const columnOptions = allColumns.map((column) => ({
+    value: column.accessorKey,
+    label: column.header,
+  }));
+
+  const handleVisibleColumnsChange = (e) => {
+    const { value } = e.target;
+    setVisibleColumns((prev) =>
+      prev.includes(value)
+        ? prev.filter((col) => col !== value)
+        : [...prev, value]
+    );
+  };
 
   return (
-    <div className="container px-4 py-6 mx-auto">
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">지시 목록</h1>
-        <div className="flex space-x-2">
-          <FormButton variant="outline" onClick={handleExportClick} size="sm">
-            <FileDown className="w-4 h-4 mr-2" />
-            내보내기
-          </FormButton>
-          <FormButton variant="outline" onClick={handleImportClick} size="sm">
-            <FileUp className="w-4 h-4 mr-2" />
-            가져오기
-          </FormButton>
-          <FormButton onClick={handleAddClick}>
-            <PlusCircle className="w-4 h-4 mr-2" />
-            지시 추가
-          </FormButton>
+    <div className="container mx-auto px-4 py-6">
+      <h1 className="text-2xl font-bold mb-6">지시 목록</h1>
+
+      {/* 필터 및 버튼 영역 */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-12 mb-6">
+        <div className="md:col-span-8">
+          <FormCard className="shadow-sm">
+            <div className="flex flex-wrap gap-2">
+              <div className="w-full md:w-auto">
+                <FormSelect
+                  name="status"
+                  value={filters.status}
+                  onChange={handleFilterChange}
+                  options={statusOptions}
+                  placeholder="상태 필터"
+                  className="w-full"
+                />
+              </div>
+              <div className="w-full md:w-auto">
+                <FormSelect
+                  name="priority"
+                  value={filters.priority}
+                  onChange={handleFilterChange}
+                  options={priorityOptions}
+                  placeholder="우선순위 필터"
+                  className="w-full"
+                />
+              </div>
+              <div className="flex-grow">
+                <div className="relative">
+                  <FormInput
+                    name="search"
+                    value={filters.search}
+                    onChange={handleFilterChange}
+                    placeholder="검색..."
+                    className="w-full pl-10"
+                  />
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3">
+                    <Search className="h-5 w-5 text-gray-400" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </FormCard>
+        </div>
+        <div className="md:col-span-4">
+          <FormCard className="shadow-sm">
+            <div className="flex flex-wrap gap-2 justify-end">
+              <FormButton
+                variant="primary"
+                onClick={handleAddClick}
+                className="flex-grow md:flex-grow-0"
+              >
+                <PlusCircle className="w-5 h-5 mr-2" />
+                등록
+              </FormButton>
+              <FormButton
+                variant="outline"
+                onClick={handleImportClick}
+                className="flex-grow md:flex-grow-0"
+              >
+                <FileUp className="w-5 h-5 mr-2" />
+                가져오기
+              </FormButton>
+              <FormButton
+                variant="outline"
+                onClick={handleExportClick}
+                className="flex-grow md:flex-grow-0"
+              >
+                <FileDown className="w-5 h-5 mr-2" />
+                내보내기
+              </FormButton>
+            </div>
+          </FormCard>
         </div>
       </div>
 
-      <FormCard className="mb-6">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          <FormSelect
-            name="status"
-            label="상태"
-            value={filters.status}
-            onChange={handleFilterChange}
-            options={[
-              { value: "", label: "모든 상태" },
-              { value: "접수", label: "접수" },
-              { value: "작업중", label: "작업중" },
-              { value: "완료", label: "완료" },
-              { value: "취소", label: "취소" },
-            ]}
-          />
-          <FormSelect
-            name="priority"
-            label="우선순위"
-            value={filters.priority}
-            onChange={handleFilterChange}
-            options={[
-              { value: "", label: "모든 우선순위" },
-              { value: "높음", label: "높음" },
-              { value: "중간", label: "중간" },
-              { value: "낮음", label: "낮음" },
-            ]}
-          />
-          <FormInput
-            name="search"
-            label="검색"
-            placeholder="모든 필드에서 검색"
-            value={filters.search}
-            onChange={handleFilterChange}
-            prefix={<Search className="w-4 h-4 text-gray-400" />}
-          />
+      {/* 컬럼 선택 영역 */}
+      <FormCard className="mb-6 shadow-sm">
+        <div>
+          <p className="text-sm font-medium text-gray-700 mb-2">
+            표시할 컬럼 선택:
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {columnOptions.map((option) => (
+              <label
+                key={option.value}
+                className="inline-flex items-center space-x-2"
+              >
+                <input
+                  type="checkbox"
+                  className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+                  checked={visibleColumns.includes(option.value)}
+                  onChange={() =>
+                    handleVisibleColumnsChange({
+                      target: { value: option.value },
+                    })
+                  }
+                />
+                <span className="text-sm text-gray-700">{option.label}</span>
+              </label>
+            ))}
+          </div>
         </div>
       </FormCard>
 
-      <DataTable
-        columns={columns}
-        data={filteredInstructions}
-        loading={isLoading}
-        onRowClick={handleRowClick}
-        emptyMessage="지시 정보가 없습니다."
-      />
+      {/* 데이터 테이블 */}
+      <FormCard className="shadow-md">
+        <DataTable
+          columns={filteredColumns}
+          data={filteredInstructions}
+          isLoading={isLoading}
+          error={error}
+          onRowClick={handleRowClick}
+          pagination={{
+            currentPage: instructionData.currentPage || 1,
+            totalPages: instructionData.totalPage || 1,
+            onPageChange: handlePageChange,
+          }}
+          emptyMessage="지시 데이터가 없습니다."
+          errorMessage="지시 목록을 불러오는 데 실패했습니다."
+        />
+      </FormCard>
     </div>
   );
 };

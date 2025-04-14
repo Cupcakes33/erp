@@ -10,310 +10,420 @@ const MOCK_DELAY = 500
 // 모의 데이터 - 실제 API 연동 전까지 사용
 const mockInstructions = [
   {
-    id: 'INS-2023-0001',
+    id: 1,
     title: '강북구 도로 보수 지시',
-    priority: '높음',
-    status: '접수',
+    priority: 'HIGH',
+    status: 'RECEIVED',
     createdAt: '2023-07-15',
     dueDate: '2023-07-25',
     location: '강북구 수유동',
     address: '서울시 강북구 수유동 123-45',
     manager: '홍길동',
     receiver: '김철수',
-    channel: '전화',
+    channel: 'PHONE',
     description: '강북구 수유동 일대의 도로 파손이 심각하여 긴급 보수 작업이 필요합니다.',
-    works: ['W-001', 'W-002'],
+    works: [1, 2],
     favorite: false,
-    paymentRound: '1',
+    paymentRound: 1,
     lastModifiedBy: '관리자',
     lastModifiedAt: '2023-07-15'
   },
   {
-    id: 'INS-2023-0002',
+    id: 2,
     title: '서초구 가로등 교체 지시',
-    priority: '중간',
-    status: '작업중',
+    priority: 'MEDIUM',
+    status: 'IN_PROGRESS',
     createdAt: '2023-07-16',
     dueDate: '2023-07-30',
     location: '서초구 반포대로',
     address: '서울시 서초구 반포대로 123',
     manager: '이영희',
     receiver: '박민수',
-    channel: '이메일',
+    channel: 'EMAIL',
     description: '서초구 반포대로의 가로등이 노후화되어 교체가 필요합니다.',
-    works: ['W-001'],
+    works: [1],
     favorite: true,
-    paymentRound: '1',
+    paymentRound: 1,
     lastModifiedBy: '담당자',
     lastModifiedAt: '2023-07-16'
   },
   {
-    id: 'INS-2023-0003',
+    id: 3,
     title: '강남구 보도블럭 교체 지시',
-    priority: '중간',
-    status: '완료',
+    priority: 'MEDIUM',
+    status: 'COMPLETED',
     createdAt: '2023-07-10',
     dueDate: '2023-07-20',
     location: '강남구 삼성동',
     address: '서울시 강남구 삼성동 45-67',
     manager: '정재영',
     receiver: '홍길동',
-    channel: '시스템',
+    channel: 'SYSTEM',
     description: '강남구 삼성동 일대의 보도블럭이 파손되어 보행자 안전을 위협하고 있습니다.',
-    works: ['W-002', 'W-003'],
+    works: [2, 3],
     favorite: false,
-    paymentRound: '2',
+    paymentRound: 2,
     lastModifiedBy: '관리자',
     lastModifiedAt: '2023-07-20'
   }
 ]
 
 /**
- * 모든 지시 목록을 가져오는 함수
- * @returns {Promise<Array>} 지시 배열
+ * 지시 목록 조회 API
+ * @param {Object} params - 검색 및 페이징 파라미터
+ * @param {string} params.status - 상태 필터
+ * @param {number} params.page - 페이지 번호
+ * @param {number} params.size - 페이지 크기
+ * @returns {Promise<Object>} 지시 목록
  */
-export const fetchInstructions = async () => {
-  // 디버깅을 위한 로그
-  console.log("[instructionAPI] fetchInstructions 함수 호출됨");
-  
-  // 강제로 모의 데이터 사용
-  console.log("[instructionAPI] mock 데이터 사용 - mockInstructions:", mockInstructions);
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const result = [...mockInstructions]; // 배열 복사본 생성
-      console.log("[instructionAPI] 반환할 데이터:", result);
-      resolve(result);
-    }, 500);
-  });
-  
-  // 아래 코드는 실행되지 않음
+export const fetchInstructions = async (params = {}) => {
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        // 상태 기반 필터링
+        let filteredData = [...mockInstructions];
+        
+        if (params.status) {
+          filteredData = filteredData.filter(instruction => 
+            instruction.status === params.status
+          );
+        }
+        
+        // 페이징 처리
+        const page = params.page || 1;
+        const size = params.size || 10;
+        const startIndex = (page - 1) * size;
+        const endIndex = startIndex + size;
+        const paginatedData = filteredData.slice(startIndex, endIndex);
+        
+        resolve({
+          message: "요청 성공",
+          data: {
+            instructionList: {
+              instruction: paginatedData,
+              totalCount: filteredData.length,
+              totalPage: Math.ceil(filteredData.length / size),
+              currentPage: page
+            }
+          }
+        });
+      }, MOCK_DELAY);
+    });
+  }
+
+  // 실제 API 호출 (주석 처리)
+  /* 
   try {
-    const response = await axios.get(`${API_URL}/instructions`);
+    const response = await axios.get(`${API_URL}/instruction`, { params });
     return response.data;
   } catch (error) {
-    console.error('지시 목록 가져오기 실패:', error);
+    console.error('지시 목록 조회 실패:', error);
     throw error;
   }
+  */
 }
 
 /**
- * 특정 지시 정보를 가져오는 함수
- * @param {string} id 지시 ID
+ * 특정 지시 정보를 조회하는 API
+ * @param {number} id 지시 ID
  * @returns {Promise<Object>} 지시 정보
  */
 export const fetchInstructionById = async (id) => {
-  // 디버깅을 위한 로그
-  console.log("[instructionAPI] fetchInstructionById 함수 호출됨, id:", id);
-  
-  // 강제로 모의 데이터 사용
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const instruction = mockInstructions.find(i => i.id === id);
-      console.log("[instructionAPI] 찾은 지시 데이터:", instruction);
-      if (instruction) {
-        resolve({ ...instruction });
-      } else {
-        console.error("[instructionAPI] 지시를 찾을 수 없음, id:", id);
-        reject(new Error('지시를 찾을 수 없습니다.'));
-      }
-    }, 500);
-  });
-  
-  // 아래 코드는 실행되지 않음
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const instruction = mockInstructions.find(i => i.id === Number(id));
+        if (instruction) {
+          resolve({
+            message: "요청 성공",
+            data: {
+              instruction: { ...instruction }
+            }
+          });
+        } else {
+          reject({
+            message: "지시를 찾을 수 없습니다."
+          });
+        }
+      }, MOCK_DELAY);
+    });
+  }
+
+  // 실제 API 호출 (주석 처리)
+  /*
   try {
-    const response = await axios.get(`${API_URL}/instructions/${id}`);
+    const response = await axios.get(`${API_URL}/instruction/${id}`);
     return response.data;
   } catch (error) {
-    console.error(`지시 ID ${id} 가져오기 실패:`, error);
+    console.error(`지시 ID ${id} 조회 실패:`, error);
     throw error;
   }
+  */
 }
 
 /**
- * 새 지시를 생성하는 함수
+ * 새 지시를 생성하는 API
  * @param {Object} instructionData 지시 데이터
  * @returns {Promise<Object>} 생성된 지시 정보
  */
 export const createInstruction = async (instructionData) => {
-  // 디버깅을 위한 로그
-  console.log("[instructionAPI] createInstruction 함수 호출됨, 데이터:", instructionData);
-  
-  // 강제로 모의 데이터 사용
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newId = `INS-2023-${String(mockInstructions.length + 1).padStart(4, '0')}`;
-      const newInstruction = {
-        id: newId,
-        createdAt: new Date().toISOString().split('T')[0],
-        lastModifiedAt: new Date().toISOString().split('T')[0],
-        lastModifiedBy: '관리자',
-        favorite: false,
-        ...instructionData
-      };
-      mockInstructions.push(newInstruction);
-      console.log("[instructionAPI] 새 지시 생성됨:", newInstruction);
-      resolve({ ...newInstruction });
-    }, 500);
-  });
-  
-  // 아래 코드는 실행되지 않음
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const newId = mockInstructions.length + 1;
+        const newInstruction = {
+          id: newId,
+          createdAt: new Date().toISOString().split('T')[0],
+          lastModifiedAt: new Date().toISOString().split('T')[0],
+          lastModifiedBy: '관리자',
+          favorite: false,
+          ...instructionData.instruction
+        };
+        
+        mockInstructions.push(newInstruction);
+        
+        resolve({
+          message: "요청 성공",
+          data: {
+            instruction: { ...newInstruction }
+          }
+        });
+      }, MOCK_DELAY);
+    });
+  }
+
+  // 실제 API 호출 (주석 처리)
+  /*
   try {
-    const response = await axios.post(`${API_URL}/instructions`, instructionData);
+    const response = await axios.post(`${API_URL}/instruction`, instructionData);
     return response.data;
   } catch (error) {
     console.error('지시 생성 실패:', error);
     throw error;
   }
+  */
 }
 
 /**
- * 지시 정보를 수정하는 함수
- * @param {string} id 지시 ID
+ * 지시 정보를 수정하는 API
+ * @param {number} id 지시 ID
  * @param {Object} instructionData 업데이트할 지시 데이터
  * @returns {Promise<Object>} 수정된 지시 정보
  */
 export const updateInstruction = async (id, instructionData) => {
-  // 디버깅을 위한 로그
-  console.log("[instructionAPI] updateInstruction 함수 호출됨, id:", id, "데이터:", instructionData);
-  
-  // 강제로 모의 데이터 사용
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const index = mockInstructions.findIndex(i => i.id === id);
-      if (index !== -1) {
-        mockInstructions[index] = { 
-          ...mockInstructions[index], 
-          ...instructionData,
-          lastModifiedAt: new Date().toISOString().split('T')[0]
-        };
-        console.log("[instructionAPI] 지시 업데이트됨:", mockInstructions[index]);
-        resolve({ ...mockInstructions[index] });
-      } else {
-        console.error("[instructionAPI] 지시를 찾을 수 없음, id:", id);
-        reject(new Error('지시를 찾을 수 없습니다.'));
-      }
-    }, 500);
-  });
-  
-  // 아래 코드는 실행되지 않음
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const index = mockInstructions.findIndex(i => i.id === Number(id));
+        if (index !== -1) {
+          mockInstructions[index] = { 
+            ...mockInstructions[index], 
+            ...instructionData.instruction,
+            lastModifiedAt: new Date().toISOString().split('T')[0]
+          };
+          
+          resolve({
+            message: "요청 성공",
+            data: {
+              instruction: { ...mockInstructions[index] }
+            }
+          });
+        } else {
+          reject({
+            message: "지시를 찾을 수 없습니다."
+          });
+        }
+      }, MOCK_DELAY);
+    });
+  }
+
+  // 실제 API 호출 (주석 처리)
+  /*
   try {
-    const response = await axios.put(`${API_URL}/instructions/${id}`, instructionData);
+    const response = await axios.put(`${API_URL}/instruction/${id}`, instructionData);
     return response.data;
   } catch (error) {
     console.error(`지시 ID ${id} 수정 실패:`, error);
     throw error;
   }
+  */
 }
 
 /**
- * 지시 상태를 변경하는 함수
- * @param {string} id 지시 ID
+ * 지시 상태를 변경하는 API
+ * @param {number} id 지시 ID
  * @param {string} status 새 상태
  * @returns {Promise<Object>} 수정된 지시 정보
  */
-export const updateInstructionStatus = async (id, status) => {
-  // 디버깅을 위한 로그
-  console.log("[instructionAPI] updateInstructionStatus 함수 호출됨, id:", id, "상태:", status);
-  
-  // 강제로 모의 데이터 사용
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const index = mockInstructions.findIndex(i => i.id === id);
-      if (index !== -1) {
-        mockInstructions[index] = { 
-          ...mockInstructions[index], 
-          status,
-          lastModifiedAt: new Date().toISOString().split('T')[0]
-        };
-        console.log("[instructionAPI] 지시 상태 업데이트됨:", mockInstructions[index]);
-        resolve({ ...mockInstructions[index] });
-      } else {
-        console.error("[instructionAPI] 지시를 찾을 수 없음, id:", id);
-        reject(new Error('지시를 찾을 수 없습니다.'));
-      }
-    }, 500);
-  });
-  
-  // 아래 코드는 실행되지 않음
+export const updateInstructionStatus = async (id, statusData) => {
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const index = mockInstructions.findIndex(i => i.id === Number(id));
+        if (index !== -1) {
+          mockInstructions[index] = { 
+            ...mockInstructions[index], 
+            status: statusData.status,
+            lastModifiedAt: new Date().toISOString().split('T')[0]
+          };
+          
+          resolve({
+            message: "요청 성공",
+            data: {
+              instruction: { ...mockInstructions[index] }
+            }
+          });
+        } else {
+          reject({
+            message: "지시를 찾을 수 없습니다."
+          });
+        }
+      }, MOCK_DELAY);
+    });
+  }
+
+  // 실제 API 호출 (주석 처리)
+  /*
   try {
-    const response = await axios.patch(`${API_URL}/instructions/${id}/status`, { status });
+    const response = await axios.post(`${API_URL}/instruction/${id}/status`, statusData);
     return response.data;
   } catch (error) {
     console.error(`지시 ID ${id} 상태 변경 실패:`, error);
     throw error;
   }
+  */
 }
 
 /**
- * 지시 즐겨찾기 토글 함수
- * @param {string} id 지시 ID
+ * 지시 즐겨찾기 상태를 토글하는 API
+ * @param {number} id 지시 ID
  * @returns {Promise<Object>} 수정된 지시 정보
  */
 export const toggleInstructionFavorite = async (id) => {
-  // 디버깅을 위한 로그
-  console.log("[instructionAPI] toggleInstructionFavorite 함수 호출됨, id:", id);
-  
-  // 강제로 모의 데이터 사용
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const index = mockInstructions.findIndex(i => i.id === id);
-      if (index !== -1) {
-        const newFavorite = !mockInstructions[index].favorite;
-        mockInstructions[index] = { 
-          ...mockInstructions[index], 
-          favorite: newFavorite,
-          lastModifiedAt: new Date().toISOString().split('T')[0]
-        };
-        console.log("[instructionAPI] 지시 즐겨찾기 토글됨:", mockInstructions[index]);
-        resolve({ ...mockInstructions[index] });
-      } else {
-        console.error("[instructionAPI] 지시를 찾을 수 없음, id:", id);
-        reject(new Error('지시를 찾을 수 없습니다.'));
-      }
-    }, 500);
-  });
-  
-  // 아래 코드는 실행되지 않음
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const index = mockInstructions.findIndex(i => i.id === Number(id));
+        if (index !== -1) {
+          mockInstructions[index] = { 
+            ...mockInstructions[index], 
+            favorite: !mockInstructions[index].favorite,
+            lastModifiedAt: new Date().toISOString().split('T')[0]
+          };
+          
+          resolve({
+            message: "요청 성공",
+            data: {
+              instruction: { ...mockInstructions[index] }
+            }
+          });
+        } else {
+          reject({
+            message: "지시를 찾을 수 없습니다."
+          });
+        }
+      }, MOCK_DELAY);
+    });
+  }
+
+  // 실제 API 호출 (주석 처리)
+  /*
   try {
-    const response = await axios.patch(`${API_URL}/instructions/${id}/favorite`);
+    const response = await axios.post(`${API_URL}/instruction/${id}/favorite`);
     return response.data;
   } catch (error) {
-    console.error(`지시 ID ${id} 즐겨찾기 변경 실패:`, error);
+    console.error(`지시 ID ${id} 즐겨찾기 토글 실패:`, error);
     throw error;
   }
+  */
 }
 
 /**
- * 지시를 삭제하는 함수
- * @param {string} id 지시 ID
+ * 지시를 삭제하는 API
+ * @param {number} id 지시 ID
  * @returns {Promise<Object>} 삭제 결과
  */
 export const deleteInstruction = async (id) => {
-  // 디버깅을 위한 로그
-  console.log("[instructionAPI] deleteInstruction 함수 호출됨, id:", id);
-  
-  // 강제로 모의 데이터 사용
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const index = mockInstructions.findIndex(i => i.id === id);
-      if (index !== -1) {
-        const deletedInstruction = { ...mockInstructions[index] };
-        mockInstructions.splice(index, 1);
-        console.log("[instructionAPI] 지시 삭제됨:", deletedInstruction);
-        resolve(deletedInstruction);
-      } else {
-        console.error("[instructionAPI] 지시를 찾을 수 없음, id:", id);
-        reject(new Error('지시를 찾을 수 없습니다.'));
-      }
-    }, 500);
-  });
-  
-  // 아래 코드는 실행되지 않음
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const index = mockInstructions.findIndex(i => i.id === Number(id));
+        if (index !== -1) {
+          mockInstructions.splice(index, 1);
+          
+          resolve({
+            message: "요청 성공",
+            data: {}
+          });
+        } else {
+          reject({
+            message: "지시를 찾을 수 없습니다."
+          });
+        }
+      }, MOCK_DELAY);
+    });
+  }
+
+  // 실제 API 호출 (주석 처리)
+  /*
   try {
-    const response = await axios.delete(`${API_URL}/instructions/${id}`);
+    const response = await axios.delete(`${API_URL}/instruction/${id}`);
     return response.data;
   } catch (error) {
     console.error(`지시 ID ${id} 삭제 실패:`, error);
     throw error;
   }
+  */
+}
+
+/**
+ * 지시 확정(기성에 반영) API
+ * @param {number} id 지시 ID
+ * @returns {Promise<Object>} 확정 결과
+ */
+export const confirmInstruction = async (id) => {
+  // 개발 환경에서는 모의 데이터 사용
+  if (import.meta.env.DEV) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        const index = mockInstructions.findIndex(i => i.id === Number(id));
+        if (index !== -1) {
+          mockInstructions[index] = { 
+            ...mockInstructions[index], 
+            status: 'CONFIRMED',
+            lastModifiedAt: new Date().toISOString().split('T')[0]
+          };
+          
+          resolve({
+            message: "요청 성공",
+            data: {
+              instruction: { ...mockInstructions[index] }
+            }
+          });
+        } else {
+          reject({
+            message: "지시를 찾을 수 없습니다."
+          });
+        }
+      }, MOCK_DELAY);
+    });
+  }
+
+  // 실제 API 호출 (주석 처리)
+  /*
+  try {
+    const response = await axios.post(`${API_URL}/instruction/${id}/confirm`);
+    return response.data;
+  } catch (error) {
+    console.error(`지시 ID ${id} 확정 실패:`, error);
+    throw error;
+  }
+  */
 }

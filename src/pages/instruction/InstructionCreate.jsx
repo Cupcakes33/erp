@@ -7,7 +7,22 @@ import {
   FormSelect,
   FormTextArea,
   FormCard,
+  showSuccess,
 } from "../../components/molecules";
+
+// 상태 및 우선순위 상수
+const STATUS_OPTIONS = [
+  { value: "RECEIVED", label: "접수" },
+  { value: "IN_PROGRESS", label: "진행중" },
+  { value: "COMPLETED", label: "완료" },
+  { value: "CANCELED", label: "취소" },
+];
+
+const PRIORITY_OPTIONS = [
+  { value: "HIGH", label: "높음" },
+  { value: "MEDIUM", label: "중간" },
+  { value: "LOW", label: "낮음" },
+];
 
 const InstructionCreate = () => {
   const navigate = useNavigate();
@@ -17,10 +32,13 @@ const InstructionCreate = () => {
     title: "",
     description: "",
     location: "",
-    priority: "중간",
-    status: "대기중",
+    priority: "MEDIUM",
+    status: "RECEIVED",
     dueDate: "",
-    attachments: [],
+    address: "",
+    manager: "",
+    receiver: "",
+    channel: "PHONE",
   });
 
   const [errors, setErrors] = useState({});
@@ -60,6 +78,14 @@ const InstructionCreate = () => {
       newErrors.dueDate = "마감일을 선택해주세요";
     }
 
+    if (!formData.manager) {
+      newErrors.manager = "관리자를 입력해주세요";
+    }
+
+    if (!formData.receiver) {
+      newErrors.receiver = "담당자를 입력해주세요";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -72,16 +98,15 @@ const InstructionCreate = () => {
     }
 
     try {
-      // ID는 실제 API에서 생성될 것임, 여기서는 데모 ID 생성
       const newInstruction = {
         ...formData,
-        id: `INS-${new Date().getFullYear()}-${String(
-          Math.floor(Math.random() * 10000)
-        ).padStart(4, "0")}`,
-        createdAt: new Date().toISOString().split("T")[0],
+        favorite: false,
+        works: [],
+        paymentRound: 1,
       };
 
       await createInstructionMutation.mutateAsync(newInstruction);
+      showSuccess("지시가 성공적으로 생성되었습니다.");
       navigate("/instructions");
     } catch (error) {
       console.error("지시 생성 실패:", error);
@@ -103,18 +128,18 @@ const InstructionCreate = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
-      <h1 className="text-2xl font-bold mb-6">새 지시 등록</h1>
+    <div className="container px-4 py-6 mx-auto">
+      <h1 className="mb-6 text-2xl font-bold">새 지시 등록</h1>
 
       <FormCard>
         <form onSubmit={handleSubmit}>
           {errors.submit && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <div className="px-4 py-3 mb-4 text-red-700 bg-red-100 border border-red-400 rounded">
               {errors.submit}
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
             <div>
               <FormInput
                 id="title"
@@ -143,6 +168,18 @@ const InstructionCreate = () => {
           </div>
 
           <div className="mb-6">
+            <FormInput
+              id="address"
+              name="address"
+              label="주소"
+              placeholder="상세 주소를 입력하세요"
+              value={formData.address}
+              onChange={handleChange}
+              error={errors.address}
+            />
+          </div>
+
+          <div className="mb-6">
             <FormTextArea
               id="description"
               name="description"
@@ -156,7 +193,7 @@ const InstructionCreate = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
             <div>
               <FormSelect
                 id="status"
@@ -164,13 +201,13 @@ const InstructionCreate = () => {
                 label="상태"
                 value={formData.status}
                 onChange={handleChange}
-                options={[
-                  { value: "대기중", label: "대기중" },
-                  { value: "진행중", label: "진행중" },
-                  { value: "완료", label: "완료" },
-                  { value: "취소", label: "취소" },
-                ]}
-              />
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </FormSelect>
             </div>
 
             <div>
@@ -180,12 +217,13 @@ const InstructionCreate = () => {
                 label="우선순위"
                 value={formData.priority}
                 onChange={handleChange}
-                options={[
-                  { value: "높음", label: "높음" },
-                  { value: "중간", label: "중간" },
-                  { value: "낮음", label: "낮음" },
-                ]}
-              />
+              >
+                {PRIORITY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </FormSelect>
             </div>
 
             <div>
@@ -199,6 +237,49 @@ const InstructionCreate = () => {
                 error={errors.dueDate}
                 required
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
+            <div>
+              <FormInput
+                id="manager"
+                name="manager"
+                label="관리자"
+                placeholder="관리자 이름을 입력하세요"
+                value={formData.manager}
+                onChange={handleChange}
+                error={errors.manager}
+                required
+              />
+            </div>
+
+            <div>
+              <FormInput
+                id="receiver"
+                name="receiver"
+                label="담당자"
+                placeholder="담당자 이름을 입력하세요"
+                value={formData.receiver}
+                onChange={handleChange}
+                error={errors.receiver}
+                required
+              />
+            </div>
+
+            <div>
+              <FormSelect
+                id="channel"
+                name="channel"
+                label="접수 채널"
+                value={formData.channel}
+                onChange={handleChange}
+              >
+                <option value="PHONE">전화</option>
+                <option value="EMAIL">이메일</option>
+                <option value="SYSTEM">시스템</option>
+                <option value="OTHER">기타</option>
+              </FormSelect>
             </div>
           </div>
 

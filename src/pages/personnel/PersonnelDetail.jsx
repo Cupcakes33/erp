@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
-  useWorker,
+  useWorkerDetail,
   useUpdateWorker,
   useToggleWorkerStatus,
 } from "../../lib/api/personnelQueries";
@@ -14,7 +14,7 @@ import { Edit, ArrowLeft, UserCheck, UserX } from "lucide-react";
 const PersonnelDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: worker, isLoading, error } = useWorker(id);
+  const { data: worker, isLoading, error } = useWorkerDetail(id);
   const updateWorkerMutation = useUpdateWorker();
   const toggleStatusMutation = useToggleWorkerStatus();
 

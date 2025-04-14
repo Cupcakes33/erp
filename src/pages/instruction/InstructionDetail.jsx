@@ -6,6 +6,7 @@ import {
   useUpdateInstructionStatus,
   useToggleInstructionFavorite,
   useDeleteInstruction,
+  useConfirmInstruction,
 } from "../../lib/api/instructionQueries";
 import {
   FormButton,
@@ -19,6 +20,12 @@ import {
   showSuccess,
   showDeleteConfirm,
   showTextAreaPrompt,
+  Badge,
+  Button,
+  DetailItem,
+  DetailSection,
+  Loading,
+  ConfirmDialog,
 } from "../../components/molecules";
 import {
   ArrowLeft,
@@ -27,9 +34,31 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Trash2,
 } from "lucide-react";
-import Button from "../../components/atoms/Button";
 import Card from "../../components/atoms/Card";
+import { formatDateTime } from "../../lib/utils/dateUtils";
+
+// 상태와 우선순위 매핑 객체
+const STATUS_MAP = {
+  RECEIVED: { label: "접수", color: "blue" },
+  IN_PROGRESS: { label: "진행중", color: "orange" },
+  COMPLETED: { label: "완료", color: "green" },
+  CANCELED: { label: "취소", color: "red" },
+};
+
+const PRIORITY_MAP = {
+  HIGH: { label: "높음", color: "red" },
+  MEDIUM: { label: "중간", color: "yellow" },
+  LOW: { label: "낮음", color: "green" },
+};
+
+const CHANNEL_MAP = {
+  PHONE: "전화",
+  EMAIL: "이메일",
+  SYSTEM: "시스템",
+  OTHER: "기타",
+};
 
 const InstructionDetail = () => {
   const { id } = useParams();
@@ -40,6 +69,9 @@ const InstructionDetail = () => {
   const updateStatusMutation = useUpdateInstructionStatus();
   const toggleFavoriteMutation = useToggleInstructionFavorite();
   const deleteInstructionMutation = useDeleteInstruction();
+  const confirmInstructionMutation = useConfirmInstruction();
+
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleEdit = () => {
     navigate(`/instructions/${id}/edit`);
@@ -58,6 +90,7 @@ const InstructionDetail = () => {
     if (result.isConfirmed) {
       try {
         await deleteInstructionMutation.mutateAsync(id);
+        showSuccess("지시가 삭제되었습니다.");
         navigate("/instructions");
       } catch (error) {
         console.error("지시 삭제 실패:", error);
@@ -76,12 +109,31 @@ const InstructionDetail = () => {
 
     if (result.isConfirmed) {
       try {
-        await updateInstructionMutation.mutateAsync({
+        await updateStatusMutation.mutateAsync({
           id,
-          data: { ...instruction, status: "완료" },
+          status: "COMPLETED",
         });
+        showSuccess("지시가 완료 처리되었습니다.");
       } catch (error) {
         console.error("지시 완료 처리 실패:", error);
+      }
+    }
+  };
+
+  const handleConfirm = async () => {
+    const result = await showConfirm({
+      title: "지시 확정",
+      message: "이 지시를 확정하시겠습니까? 확정된 지시는 기성에 반영됩니다.",
+      confirmText: "확정",
+      icon: "question",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await confirmInstructionMutation.mutateAsync(id);
+        showSuccess("지시가 확정되었습니다.");
+      } catch (error) {
+        console.error("지시 확정 실패:", error);
       }
     }
   };
@@ -90,24 +142,24 @@ const InstructionDetail = () => {
     try {
       await updateStatusMutation.mutateAsync({
         id,
-        data: {
-          ...instruction,
-          status: newStatus,
-        },
+        status: newStatus,
       });
+      showSuccess(`상태가 ${STATUS_MAP[newStatus]?.label}로 변경되었습니다.`);
     } catch (error) {
       console.error("상태 변경 실패:", error);
     }
   };
 
+  const handleToggleFavorite = async () => {
+    try {
+      await toggleFavoriteMutation.mutateAsync(id);
+    } catch (error) {
+      console.error("즐겨찾기 토글 실패:", error);
+    }
+  };
+
   if (isLoading) {
-    return (
-      <div className="container px-4 py-6 mx-auto">
-        <div className="flex items-center justify-center h-64">
-          <div className="w-12 h-12 border-b-2 border-blue-500 rounded-full animate-spin"></div>
-        </div>
-      </div>
-    );
+    return <Loading />;
   }
 
   if (error) {
@@ -136,21 +188,36 @@ const InstructionDetail = () => {
     );
   }
 
+  const status = STATUS_MAP[instruction.status] || {
+    label: instruction.status,
+    color: "gray",
+  };
+  const priority = PRIORITY_MAP[instruction.priority] || {
+    label: instruction.priority,
+    color: "gray",
+  };
+  const channel = CHANNEL_MAP[instruction.channel] || instruction.channel;
+
   const statusOptions = [
-    { value: "대기중", label: "대기중", color: "bg-blue-100 text-blue-800" },
+    { value: "RECEIVED", label: "접수", color: "bg-blue-100 text-blue-800" },
     {
-      value: "진행중",
+      value: "IN_PROGRESS",
       label: "진행중",
       color: "bg-yellow-100 text-yellow-800",
     },
-    { value: "완료", label: "완료", color: "bg-green-100 text-green-800" },
-    { value: "취소", label: "취소", color: "bg-red-100 text-red-800" },
+    { value: "COMPLETED", label: "완료", color: "bg-green-100 text-green-800" },
+    { value: "CANCELED", label: "취소", color: "bg-red-100 text-red-800" },
+    {
+      value: "CONFIRMED",
+      label: "확정",
+      color: "bg-purple-100 text-purple-800",
+    },
   ];
 
   const priorityColors = {
-    높음: "text-red-600",
-    중간: "text-yellow-600",
-    낮음: "text-green-600",
+    HIGH: "text-red-600",
+    MEDIUM: "text-yellow-600",
+    LOW: "text-green-600",
   };
 
   const workColumns = [
@@ -161,10 +228,11 @@ const InstructionDetail = () => {
       dataIndex: "status",
       render: (rowData) => {
         const statusClasses = {
-          대기중: "bg-blue-100 text-blue-800",
-          진행중: "bg-yellow-100 text-yellow-800",
-          완료: "bg-green-100 text-green-800",
-          취소: "bg-red-100 text-red-800",
+          RECEIVED: "bg-blue-100 text-blue-800",
+          IN_PROGRESS: "bg-yellow-100 text-yellow-800",
+          COMPLETED: "bg-green-100 text-green-800",
+          CANCELED: "bg-red-100 text-red-800",
+          CONFIRMED: "bg-purple-100 text-purple-800",
         };
 
         return (
@@ -173,7 +241,7 @@ const InstructionDetail = () => {
               statusClasses[rowData.status] || "bg-gray-100"
             }`}
           >
-            {rowData.status}
+            {STATUS_MAP[rowData.status]?.label}
           </span>
         );
       },
@@ -193,8 +261,10 @@ const InstructionDetail = () => {
     { title: "담당자", dataIndex: "user" },
   ];
 
-  const isCompleted = instruction.status === "완료";
-  const isCanceled = instruction.status === "취소";
+  const isCompleted = instruction.status === "COMPLETED";
+  const isCanceled = instruction.status === "CANCELED";
+  const isConfirmed = instruction.status === "CONFIRMED";
+  const canEdit = !isCompleted && !isCanceled && !isConfirmed;
 
   return (
     <div className="container px-4 py-6 mx-auto">
@@ -212,17 +282,27 @@ const InstructionDetail = () => {
           <h1 className="text-2xl font-bold">{instruction.title}</h1>
         </div>
         <div className="flex space-x-2">
-          {!isCompleted && !isCanceled && (
+          {canEdit && (
             <>
               <FormButton onClick={handleComplete} variant="success" size="sm">
                 <CheckCircle className="w-4 h-4 mr-2" />
                 완료 처리
               </FormButton>
+              {isCompleted && !isConfirmed && (
+                <FormButton onClick={handleConfirm} variant="primary" size="sm">
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  확정
+                </FormButton>
+              )}
               <FormButton onClick={handleEdit} variant="primary" size="sm">
                 <Edit className="w-4 h-4 mr-2" />
                 수정
               </FormButton>
-              <FormButton onClick={handleDelete} variant="danger" size="sm">
+              <FormButton
+                onClick={() => setShowDeleteDialog(true)}
+                variant="danger"
+                size="sm"
+              >
                 <Trash className="w-4 h-4 mr-2" />
                 삭제
               </FormButton>
@@ -248,110 +328,162 @@ const InstructionDetail = () => {
                 <p className="text-sm text-gray-500">상태</p>
                 <p className="font-medium">
                   <span
-                    className={`inline-block px-2 py-1 text-xs rounded-full ${getStatusClass(
-                      instruction.status
-                    )}`}
+                    className={`px-2 py-1 text-xs rounded-full ${
+                      statusOptions.find((s) => s.value === instruction.status)
+                        ?.color || "bg-gray-100"
+                    }`}
                   >
-                    {instruction.status}
+                    {status.label}
                   </span>
                 </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">우선순위</p>
-                <p className="font-medium">
-                  <span
-                    className={`inline-block px-2 py-1 text-xs rounded-full ${getPriorityClass(
-                      instruction.priority
-                    )}`}
-                  >
-                    {instruction.priority}
-                  </span>
+                <p
+                  className={`font-medium ${
+                    priorityColors[instruction.priority]
+                  }`}
+                >
+                  {priority.label}
                 </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">생성일</p>
-                <p className="font-medium">{instruction.createdAt}</p>
+                <p className="font-medium">
+                  {formatDateTime(instruction.createdAt)}
+                </p>
               </div>
               <div>
                 <p className="text-sm text-gray-500">마감일</p>
                 <p className="font-medium">{instruction.dueDate}</p>
               </div>
+              <div>
+                <p className="text-sm text-gray-500">관리자</p>
+                <p className="font-medium">{instruction.manager}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">담당자</p>
+                <p className="font-medium">{instruction.receiver}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">접수 채널</p>
+                <p className="font-medium">{channel}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">즐겨찾기</p>
+                <p className="font-medium">
+                  {instruction.favorite ? "⭐ 즐겨찾기됨" : "-"}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">기성 회차</p>
+                <p className="font-medium">{instruction.paymentRound}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">최종 수정자</p>
+                <p className="font-medium">{instruction.lastModifiedBy}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">최종 수정일</p>
+                <p className="font-medium">{instruction.lastModifiedAt}</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">주소</p>
+              <p className="font-medium">{instruction.address}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">설명</p>
+              <p className="p-3 bg-gray-50 rounded-md">
+                {instruction.description}
+              </p>
             </div>
           </div>
         </FormCard>
 
-        <FormCard className="p-6">
-          <h2 className="mb-4 text-xl font-semibold">상세 내용</h2>
-          <div className="whitespace-pre-line">{instruction.description}</div>
-        </FormCard>
+        <div className="space-y-6">
+          <FormCard className="p-6">
+            <h2 className="mb-4 text-xl font-semibold">관련 작업</h2>
+            {instruction.works && instruction.works.length > 0 ? (
+              <Table
+                columns={workColumns}
+                data={instruction.works.map((workId) => ({
+                  id: workId,
+                  name: `작업 ${workId}`,
+                  status: "IN_PROGRESS",
+                  assignedTo: instruction.receiver,
+                }))}
+              />
+            ) : (
+              <p className="text-gray-500">관련 작업이 없습니다.</p>
+            )}
+          </FormCard>
+
+          {canEdit && (
+            <FormCard className="p-6">
+              <h2 className="mb-4 text-xl font-semibold">상태 변경</h2>
+              <div className="flex space-x-2">
+                {statusOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    variant={
+                      instruction.status === option.value
+                        ? "primary"
+                        : "outline"
+                    }
+                    size="sm"
+                    onClick={() => handleStatusChange(option.value)}
+                    disabled={instruction.status === option.value}
+                    className={
+                      option.value === instruction.status ? "opacity-50" : ""
+                    }
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </FormCard>
+          )}
+
+          <FormCard className="p-6">
+            <h2 className="mb-4 text-xl font-semibold">액션</h2>
+            <div className="flex flex-wrap gap-2">
+              <FormButton
+                variant="outline"
+                size="sm"
+                onClick={handleToggleFavorite}
+              >
+                {instruction.favorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
+              </FormButton>
+              {canEdit && (
+                <>
+                  <FormButton onClick={handleEdit} variant="outline" size="sm">
+                    수정
+                  </FormButton>
+                  <FormButton
+                    onClick={() => setShowDeleteDialog(true)}
+                    variant="outline"
+                    size="sm"
+                    className="text-red-500 border-red-300 hover:bg-red-50"
+                  >
+                    삭제
+                  </FormButton>
+                </>
+              )}
+            </div>
+          </FormCard>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 mb-6">
-        <FormCard className="p-6">
-          <h3 className="mb-4 text-lg font-medium text-gray-800">작업 목록</h3>
-          <DataTable
-            columns={workColumns.map((col) => ({
-              accessorKey: col.dataIndex,
-              header: col.title,
-              cell: col.render
-                ? ({ row }) => col.render(row.original)
-                : undefined,
-            }))}
-            data={instruction.works || []}
-            loading={isLoading}
-            emptyMessage="등록된 작업이 없습니다."
-            onRowClick={(row) => navigate(`/works/${row.id}`)}
-            enablePagination={instruction.works?.length > 10}
-          />
-          <div className="flex justify-end mt-4">
-            <FormButton
-              variant="outline"
-              size="sm"
-              className="px-3 py-1 text-sm text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50"
-            >
-              작업 추가
-            </FormButton>
-          </div>
-        </FormCard>
-      </div>
-
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <FormCard className="p-6">
-          <h3 className="mb-4 text-lg font-medium text-gray-800">필요 자재</h3>
-          <DataTable
-            columns={materialColumns.map((col) => ({
-              accessorKey: col.dataIndex,
-              header: col.title,
-              cell: col.render
-                ? ({ row }) => col.render(row.original)
-                : undefined,
-            }))}
-            data={instruction.materials || []}
-            loading={isLoading}
-            emptyMessage="등록된 자재가 없습니다."
-            enablePagination={false}
-            enableGlobalFilter={false}
-          />
-        </FormCard>
-
-        <FormCard className="p-6">
-          <h3 className="mb-4 text-lg font-medium text-gray-800">작업 이력</h3>
-          <DataTable
-            columns={historyColumns.map((col) => ({
-              accessorKey: col.dataIndex,
-              header: col.title,
-              cell: col.render
-                ? ({ row }) => col.render(row.original)
-                : undefined,
-            }))}
-            data={instruction.history || []}
-            loading={isLoading}
-            emptyMessage="작업 이력이 없습니다."
-            enablePagination={false}
-            enableGlobalFilter={false}
-          />
-        </FormCard>
-      </div>
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        title="지시 삭제"
+        message="이 지시를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다."
+        confirmLabel="삭제"
+        cancelLabel="취소"
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteDialog(false)}
+      />
     </div>
   );
 };
