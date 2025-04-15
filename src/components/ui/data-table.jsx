@@ -188,7 +188,7 @@ export const DataTable = ({
       variant={variant}
       {...props}
     >
-      <div className={`space-y-4 ${className}`}>
+      <div className={`space-y-4 ${className} ${enableGlobalFilter ? "" : "pt-4"}`}>
         {/* 검색 필터 */}
         {enableGlobalFilter && (
           <div className="flex items-center">
