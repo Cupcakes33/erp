@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateWorker } from "../../lib/api/personnelQueries";
-import { FormButton, FormInput, FormSelect, FormCard } from "../../components/molecules";
+import { FormButton, FormCard, FormInput, FormTextArea, FormSelect } from "../../components/molecules";
 
 /**
  * 작업자 추가 페이지
@@ -12,15 +12,11 @@ const PersonnelCreate = () => {
 
   const [formData, setFormData] = useState({
     name: "",
-    position: "",
     phone: "",
-    birthDate: "",
-    email: "",
-    address: "",
-    status: "active",
-    department: "",
-    hireDate: "",
-    notes: "",
+    rank: "",
+    status: "ACTIVE",
+    brith: "",
+    note: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -47,25 +43,20 @@ const PersonnelCreate = () => {
     if (!formData.name.trim()) {
       newErrors.name = "이름을 입력해주세요";
     }
-
-    if (!formData.position.trim()) {
-      newErrors.position = "직급을 입력해주세요";
-    }
-
     if (!formData.phone.trim()) {
       newErrors.phone = "연락처를 입력해주세요";
-    } else if (!/^(\d{3}-\d{4}-\d{4}|\d{11})$/.test(formData.phone.replace(/-/g, "").trim())) {
+    } else if (!/^\d{3}-\d{4}-\d{4}$|^\d{11}$/.test(formData.phone.replace(/-/g, "").trim())) {
       newErrors.phone = "유효한 연락처 형식이 아닙니다";
     }
-
-    if (!formData.birthDate) {
-      newErrors.birthDate = "생년월일을 선택해주세요";
+    if (!formData.rank.trim()) {
+      newErrors.rank = "직급을 입력해주세요";
     }
-
-    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "유효한 이메일 형식이 아닙니다";
+    if (!formData.brith) {
+      newErrors.brith = "생년월일을 선택해주세요";
     }
-
+    if (!["ACTIVE", "RESIGNED"].includes(formData.status)) {
+      newErrors.status = "재직 여부를 선택해주세요";
+    }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -78,14 +69,14 @@ const PersonnelCreate = () => {
     }
 
     try {
-      // ID는 실제 API에서 생성될 것임, 여기서는 데모 ID 생성
       const newWorker = {
-        ...formData,
-        id: `WRK-${new Date().getFullYear()}-${String(
-          Math.floor(Math.random() * 10000)
-        ).padStart(4, "0")}`,
+        name: formData.name,
+        phone: formData.phone,
+        rank: formData.rank,
+        status: formData.status === "ACTIVE",
+        brith: formData.brith,
+        note: formData.note,
       };
-
       await createWorkerMutation.mutateAsync(newWorker);
       navigate("/personnel");
     } catch (error) {
@@ -123,18 +114,6 @@ const PersonnelCreate = () => {
               error={errors.name}
               required
             />
-
-            <FormInput
-              id="position"
-              name="position"
-              label="직급"
-              placeholder="직급을 입력하세요"
-              value={formData.position}
-              onChange={handleChange}
-              error={errors.position}
-              required
-            />
-
             <FormInput
               id="phone"
               name="phone"
@@ -145,68 +124,49 @@ const PersonnelCreate = () => {
               error={errors.phone}
               required
             />
-
             <FormInput
-              id="email"
-              name="email"
-              type="email"
-              label="이메일"
-              placeholder="이메일을 입력하세요"
-              value={formData.email}
+              id="rank"
+              name="rank"
+              label="직급"
+              placeholder="직급을 입력하세요"
+              value={formData.rank}
               onChange={handleChange}
-              error={errors.email}
-            />
-
-            <FormInput
-              id="birthDate"
-              name="birthDate"
-              type="date"
-              label="생년월일"
-              value={formData.birthDate}
-              onChange={handleChange}
-              error={errors.birthDate}
+              error={errors.rank}
               required
             />
-
-            <FormInput
-              id="hireDate"
-              name="hireDate"
-              type="date"
-              label="입사일"
-              value={formData.hireDate}
-              onChange={handleChange}
-            />
-
             <FormSelect
               id="status"
               name="status"
-              label="재직 상태"
+              label="재직 여부"
               value={formData.status}
               onChange={handleChange}
               options={[
-                { value: "active", label: "재직중" },
-                { value: "inactive", label: "퇴사" },
+                { value: "ACTIVE", label: "재직중" },
+                { value: "RESIGNED", label: "퇴사" },
               ]}
+              error={errors.status}
+              required
             />
-
             <FormInput
-              id="department"
-              name="department"
-              label="부서"
-              placeholder="부서를 입력하세요"
-              value={formData.department}
+              id="brith"
+              name="brith"
+              type="date"
+              label="생년월일"
+              value={formData.brith}
               onChange={handleChange}
+              error={errors.brith}
+              required
             />
           </div>
-
           <div className="mb-6">
-            <FormInput
-              id="address"
-              name="address"
-              label="주소"
-              placeholder="주소를 입력하세요"
-              value={formData.address}
+            <FormTextArea
+              id="note"
+              name="note"
+              label="비고"
+              placeholder="비고를 입력하세요"
+              value={formData.note}
               onChange={handleChange}
+              rows={3}
             />
           </div>
 
