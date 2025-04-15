@@ -10,23 +10,42 @@ import {
   FormSelect,
   FormTextArea,
   FormCard,
+  Loading,
+  showSuccess,
 } from "../../components/molecules";
 import { ArrowLeft } from "lucide-react";
+
+// 상태 및 우선순위 상수
+const STATUS_OPTIONS = [
+  { value: "RECEIVED", label: "접수" },
+  { value: "IN_PROGRESS", label: "진행중" },
+  { value: "COMPLETED", label: "완료" },
+  { value: "CANCELED", label: "취소" },
+];
+
+const PRIORITY_OPTIONS = [
+  { value: "HIGH", label: "높음" },
+  { value: "MEDIUM", label: "중간" },
+  { value: "LOW", label: "낮음" },
+];
 
 const InstructionEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: instruction, isLoading: isLoadingInstruction } =
-    useInstruction(id);
+  const { data: instruction, isLoading, isError } = useInstruction(id);
   const updateInstructionMutation = useUpdateInstruction();
 
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     location: "",
-    priority: "중간",
-    status: "대기중",
+    priority: "MEDIUM",
+    status: "RECEIVED",
     dueDate: "",
+    address: "",
+    manager: "",
+    receiver: "",
+    channel: "PHONE",
   });
 
   const [errors, setErrors] = useState({});
@@ -35,7 +54,16 @@ const InstructionEdit = () => {
   useEffect(() => {
     if (instruction) {
       setFormData({
-        ...instruction,
+        title: instruction.title || "",
+        description: instruction.description || "",
+        location: instruction.location || "",
+        priority: instruction.priority || "MEDIUM",
+        status: instruction.status || "RECEIVED",
+        dueDate: instruction.dueDate || "",
+        address: instruction.address || "",
+        manager: instruction.manager || "",
+        receiver: instruction.receiver || "",
+        channel: instruction.channel || "PHONE",
       });
     }
   }, [instruction]);
@@ -75,6 +103,14 @@ const InstructionEdit = () => {
       newErrors.dueDate = "마감일을 선택해주세요";
     }
 
+    if (!formData.manager) {
+      newErrors.manager = "관리자를 입력해주세요";
+    }
+
+    if (!formData.receiver) {
+      newErrors.receiver = "담당자를 입력해주세요";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -89,8 +125,10 @@ const InstructionEdit = () => {
     try {
       await updateInstructionMutation.mutateAsync({
         id,
-        data: formData,
+        ...formData,
       });
+
+      showSuccess("지시가 성공적으로 수정되었습니다.");
       navigate(`/instructions/${id}`);
     } catch (error) {
       console.error("지시 수정 실패:", error);
@@ -104,18 +142,16 @@ const InstructionEdit = () => {
     navigate(`/instructions/${id}`);
   };
 
-  if (isLoadingInstruction) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-12 h-12 border-b-2 border-blue-500 rounded-full animate-spin"></div>
-      </div>
-    );
+  if (isLoading) {
+    return <Loading />;
   }
 
-  if (!instruction) {
+  if (isError) {
     return (
-      <div className="p-4 bg-yellow-100 text-yellow-700 rounded-md">
-        지시 정보를 찾을 수 없습니다.
+      <div className="container mx-auto px-4 py-6">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          지시를 불러오는 중 오류가 발생했습니다.
+        </div>
       </div>
     );
   }
@@ -172,6 +208,18 @@ const InstructionEdit = () => {
           </div>
 
           <div className="mb-6">
+            <FormInput
+              id="address"
+              name="address"
+              label="주소"
+              placeholder="상세 주소를 입력하세요"
+              value={formData.address}
+              onChange={handleChange}
+              error={errors.address}
+            />
+          </div>
+
+          <div className="mb-6">
             <FormTextArea
               id="description"
               name="description"
@@ -193,13 +241,13 @@ const InstructionEdit = () => {
                 label="상태"
                 value={formData.status}
                 onChange={handleChange}
-                options={[
-                  { value: "대기중", label: "대기중" },
-                  { value: "진행중", label: "진행중" },
-                  { value: "완료", label: "완료" },
-                  { value: "취소", label: "취소" },
-                ]}
-              />
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </FormSelect>
             </div>
 
             <div>
@@ -209,12 +257,13 @@ const InstructionEdit = () => {
                 label="우선순위"
                 value={formData.priority}
                 onChange={handleChange}
-                options={[
-                  { value: "높음", label: "높음" },
-                  { value: "중간", label: "중간" },
-                  { value: "낮음", label: "낮음" },
-                ]}
-              />
+              >
+                {PRIORITY_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </FormSelect>
             </div>
 
             <div>
@@ -228,6 +277,49 @@ const InstructionEdit = () => {
                 error={errors.dueDate}
                 required
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+            <div>
+              <FormInput
+                id="manager"
+                name="manager"
+                label="관리자"
+                placeholder="관리자 이름을 입력하세요"
+                value={formData.manager}
+                onChange={handleChange}
+                error={errors.manager}
+                required
+              />
+            </div>
+
+            <div>
+              <FormInput
+                id="receiver"
+                name="receiver"
+                label="담당자"
+                placeholder="담당자 이름을 입력하세요"
+                value={formData.receiver}
+                onChange={handleChange}
+                error={errors.receiver}
+                required
+              />
+            </div>
+
+            <div>
+              <FormSelect
+                id="channel"
+                name="channel"
+                label="접수 채널"
+                value={formData.channel}
+                onChange={handleChange}
+              >
+                <option value="PHONE">전화</option>
+                <option value="EMAIL">이메일</option>
+                <option value="SYSTEM">시스템</option>
+                <option value="OTHER">기타</option>
+              </FormSelect>
             </div>
           </div>
 

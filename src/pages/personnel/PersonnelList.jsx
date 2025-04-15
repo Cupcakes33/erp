@@ -19,9 +19,17 @@ import { PlusCircle, Search, Edit, Eye, UserCheck, UserX } from "lucide-react";
 const PersonnelList = () => {
   const navigate = useNavigate();
   const { filterOptions, setFilterOptions } = usePersonnelStore();
-  const { data: workers = [], isLoading, isError, error } = useWorkers();
+  const {
+    data: workersData = { worker: [] },
+    isLoading,
+    isError,
+    error,
+  } = useWorkers();
   const toggleStatusMutation = useToggleWorkerStatus();
   const [searchTerm, setSearchTerm] = useState("");
+
+  // 실제 작업자 배열 추출
+  const workers = workersData.worker || [];
 
   // 디버깅을 위한 데이터 로그
   console.log("[PersonnelList] 작업자 데이터:", workers);

@@ -10,11 +10,11 @@ _It is read and updated frequently by the AI during its operational loop._
 _Holds the current status of the workflow._
 
 ```yaml
-Phase: VALIDATE # Current workflow phase (ANALYZE, BLUEPRINT, CONSTRUCT, VALIDATE, BLUEPRINT_REVISE)
-Status: COMPLETED # Current status (READY, IN_PROGRESS, BLOCKED_*, NEEDS_*, COMPLETED, COMPLETED_ITERATION)
-CurrentTaskID: TableDataFixAll # Identifier for the main task being worked on
-CurrentStep: 1 # Identifier for the specific step in the plan being executed
-CurrentItem: null # Identifier for the item currently being processed in iteration
+Phase: ANALYZE # Current workflow phase (ANALYZE, BLUEPRINT, CONSTRUCT, VALIDATE, BLUEPRINT_REVISE)
+Status: IN_PROGRESS # Current status (READY, IN_PROGRESS, BLOCKED_*, NEEDS_*, COMPLETED, COMPLETED_ITERATION)
+CurrentTaskID: API_Implementation # Identifier for the main task being worked on
+CurrentStep: 4 # Identifier for the specific step in the plan being executed
+CurrentItem: instruction_excel_api # Identifier for the item currently being processed in iteration
 ```
 
 ---
@@ -22,6 +22,81 @@ CurrentItem: null # Identifier for the item currently being processed in iterati
 ## Plan
 
 _Contains the step-by-step implementation plan generated during the BLUEPRINT phase._
+
+**Task: API_Implementation**
+
+- `[x] Step 1: 인증 및 사용자 관련 API 구현`
+
+  - `[x] 1.1: authAPI.js 파일 생성 - 인증 관련 API 구현`
+    - `[x] 1.1.1: 회원가입 API 구현 (POST /test/join)`
+    - `[x] 1.1.2: 로그인 API 구현 (POST /login)`
+    - `[x] 1.1.3: 로그아웃 API 구현 (POST /auth/logout)`
+    - `[x] 1.1.4: 토큰 재발급 API 구현 (POST /auth/reissue)`
+  - `[x] 1.2: userAPI.js 파일 생성 - 사용자 관련 API 구현`
+    - `[x] 1.2.1: 마이페이지 조회 API 구현 (GET /users/my)`
+    - `[x] 1.2.2: 프로필 수정 API 구현 (PATCH /users/my)`
+    - `[x] 1.2.3: 비밀번호 변경 API 구현 (PUT /users/pw)`
+    - `[x] 1.2.4: 비밀번호 초기화 API 구현 (POST /users/pw/reset)`
+  - `[x] 1.3: authQueries.js 파일 생성 - 인증 관련 Query 훅 구현`
+  - `[x] 1.4: userQueries.js 파일 생성 - 사용자 관련 Query 훅 구현`
+  - `[x] 1.5: index.js 및 queries.js 파일 수정 - 새로운 API/Query 모듈 추가`
+
+- `[x] Step 2: 일위대가 관련 API 확인 및 수정`
+
+  - `[x] 2.1: workAPI.js 파일 분석 및 수정`
+    - `[x] 2.1.1: 일위대가 관련 API 함수가 API 문서와 일치하는지 확인`
+    - `[x] 2.1.2: 일위대가 목록 조회 API 구현/수정 (GET /unit-price)`
+    - `[x] 2.1.3: 일위대가 상세 조회 API 구현/수정 (GET /unit-price/{id})`
+    - `[x] 2.1.4: 일위대가 생성 API 구현/수정 (POST /unit-price)`
+    - `[x] 2.1.5: 일위대가 수정 API 구현/수정 (PUT /unit-price/{id})`
+    - `[x] 2.1.6: 일위대가 삭제 API 구현/수정 (DELETE /unit-price/{id})`
+  - `[x] 2.2: workQueries.js 파일 분석 및 수정`
+    - `[x] 2.2.1: 일위대가 관련 Query 훅이 API 문서와 일치하는지 확인`
+    - `[x] 2.2.2: 필요한 Query 훅 추가/수정`
+
+- `[x] Step 3: 작업자 관련 API 확인 및 수정`
+
+  - `[x] 3.1: personnelAPI.js 파일 분석 및 수정`
+    - `[x] 3.1.1: 작업자 관련 API 함수가 API 문서와 일치하는지 확인`
+    - `[x] 3.1.2: 작업자 목록 조회 API 구현/수정 (GET /worker)`
+    - `[x] 3.1.3: 작업자 생성 API 구현/수정 (POST /worker)`
+    - `[x] 3.1.4: 작업자 수정 API 구현/수정 (PUT /worker/{id})`
+    - `[x] 3.1.5: 작업자 재직 상태 변경 API 구현/수정 (POST /worker/{id}/status)`
+  - `[x] 3.2: personnelQueries.js 파일 분석 및 수정`
+    - `[x] 3.2.1: 작업자 관련 Query 훅이 API 문서와 일치하는지 확인`
+    - `[x] 3.2.2: 필요한 Query 훅 추가/수정`
+
+- `[ ] Step 4: 지시 관련 API 확인 및 수정`
+
+  - `[x] 4.1: instructionAPI.js 파일 분석 및 수정`
+    - `[x] 4.1.1: 지시 관련 API 함수가 API 문서와 일치하는지 확인`
+    - `[x] 4.1.2: 지시 생성 API 구현/수정 (POST /instruction)`
+    - `[ ] 4.1.3: 지시 생성(Excel) API 구현/수정 (POST /instruction/excel)`
+    - `[x] 4.1.4: 지시 목록 조회 API 구현/수정 (GET /instruction)`
+    - `[x] 4.1.5: 지시 상세 조회 API 구현/수정 (GET /instruction/{id})`
+    - `[x] 4.1.6: 지시 정보 변경 API 구현/수정 (PUT /instruction/{id})`
+    - `[ ] 4.1.7: 지시 상태 변경 API 구현/수정 (POST /instruction/{id}/status)`
+    - `[ ] 4.1.8: 지시 확정 API 구현/수정 (POST /instruction/{id}/confirm)`
+    - `[ ] 4.1.9: 지시-공종 관련 API 구현/수정 (POST, PUT, DELETE /instruction/{id}/type)`
+    - `[ ] 4.1.10: 지시-공종-작업 관련 API 구현/수정 (POST, PUT, DELETE /instruction/{id}/type/unit)`
+  - `[x] 4.2: instructionQueries.js 파일 분석 및 수정`
+    - `[x] 4.2.1: 지시 관련 Query 훅이 API 문서와 일치하는지 확인`
+    - `[ ] 4.2.2: 필요한 Query 훅 추가/수정`
+
+- `[ ] Step 5: 기성 관련 API 구현`
+
+  - `[ ] 5.1: paymentAPI.js 파일 생성 - 기성 관련 API 구현`
+    - `[ ] 5.1.1: 기성 목록 조회 API 구현 (GET /progress-payment/rounds)`
+    - `[ ] 5.1.2: 기성 회차별 조회 API 구현 (GET /progress-payment/rounds/{id})`
+    - `[ ] 5.1.3: 기성 생성 API 구현 (POST /progress-payment/rounds)`
+    - `[ ] 5.1.4: 기성 완료 API 구현 (POST /progress-payment/rounds/{id})`
+  - `[ ] 5.2: paymentQueries.js 파일 생성 - 기성 관련 Query 훅 구현`
+  - `[ ] 5.3: index.js 및 queries.js 파일 수정 - 새로운 API/Query 모듈 추가`
+
+- `[ ] Step 6: Mocking 데이터 통합 및 테스트`
+  - `[ ] 6.1: 각 API 모듈에서 Mocking 데이터 확인 및 필요시 추가`
+  - `[ ] 6.2: 모든 API 호출 테스트 및 오류 수정`
+  - `[ ] 6.3: React Query 훅 테스트 및 오류 수정`
 
 **Task: TableDataFixAll**
 
@@ -256,46 +331,12 @@ RULE_ERR_HANDLE_GENERAL_01:
 
 ## Log
 
-_A chronological log of significant actions, events, tool outputs, and decisions._
-_(This section will be populated by the AI during operation)_
+_Records the progressive execution log for the current session._
 
-- `[2023-07-15 10:00:00] 프로젝트 분석 시작.`
-- `[2023-07-15 10:05:00] 프로젝트 디렉토리 구조 확인.`
-- `[2023-07-15 10:10:00] 기술 스택 확인: React 17, Vite, Zustand, React Query, TailwindCSS.`
-- `[2023-07-15 10:15:00] 주요 기능 파악: 인증 시스템, 지시 관리, 작업 관리, 인사 관리, 결제 관리.`
-- `[2023-07-15 10:20:00] 컴포넌트 구조 분석: Atomic Design 패턴 사용.`
-- `[2023-07-15 10:25:00] project_config.md 파일 업데이트 완료.`
-- `[2023-07-15 10:30:00] 워크플로우 상태 업데이트: ANALYZE/READY.`
-- `[2023-07-15 11:00:00] 사용자 스토리 분석 시작.`
-- `[2023-07-15 11:15:00] 사용자 스토리에서 주요 기능 요구사항 확인: 로그인, 프로필, 지시, 작업, 인사, 기성 관리.`
-- `[2023-07-15 11:30:00] 구현 계획 수립 완료.`
-- `[2023-07-15 11:35:00] 워크플로우 상태 업데이트: BLUEPRINT/NEEDS_PLAN_APPROVAL.`
-- `[2023-07-15 12:00:00] 사이드바 업데이트 시작: CONSTRUCT/IN_PROGRESS.`
-- `[2023-07-15 12:10:00] 사이드바 컴포넌트에 '인사 관리'와 '기성 관리' 메뉴 추가 완료.`
-- `[2023-07-15 12:20:00] App.jsx에 관련 라우트 추가 완료.`
-- `[2023-07-15 12:45:00] 인사 관리 페이지 컴포넌트 개발 완료 (PersonnelList, PersonnelCreate, PersonnelDetail, PersonnelEdit).`
-- `[2023-07-15 13:15:00] 기성 관리 페이지 컴포넌트 개발 완료 (PaymentByType).`
-- `[2023-07-15 13:20:00] 작업 완료: 사이드바 업데이트.`
-- `[2023-07-18 09:00:00] InstructionList 페이지에서 데이터를 받아오고 있지만 테이블에 데이터가 표시되지 않는 문제 분석 시작.`
-- `[2023-07-18 09:05:00] InstructionList.jsx, instructionAPI.js, instructionQueries.js, DataTable.jsx, data-table.jsx 파일 분석.`
-- `[2023-07-18 09:10:00] 문제 원인 파악 중: 데이터는 정상적으로 받아와지고 있으나 테이블에 렌더링되지 않음.`
-- `[2023-07-18 09:15:00] 문제 원인 확인: TanStack Table은 accessorKey, header, cell 구조를 기대하나 InstructionList.jsx는 accessor, header, cell을 사용하고 있었음.`
-- `[2023-07-18 09:20:00] 수정 방법 두 가지 계획: 1) InstructionList.jsx의 컬럼 정의 수정 2) DataTable 래퍼에 호환성 코드 추가`
-- `[2023-07-18 09:25:00] InstructionList.jsx의 컬럼 정의를 TanStack Table 형식에 맞게 수정: accessor → accessorKey, cell 함수 형식 변경.`
-- `[2023-07-18 09:30:00] DataTable.jsx 컴포넌트에 호환성 코드 추가: 기존 accessor 형식을 accessorKey 형식으로 자동 변환하는 로직 구현.`
-- `[2023-07-18 09:35:00] 디버깅 코드 추가: DataTable.jsx, data-table.jsx, InstructionList.jsx에 콘솔 로그 추가하여 데이터 흐름 추적.`
-- `[2023-07-18 09:40:00] 문제 해결 완료: InstructionList 페이지에서 지시 데이터가 테이블에 정상적으로 표시됨.`
-- `[2023-07-18 09:45:00] 향후 개선 사항 식별: 모든 테이블 사용 컴포넌트에 동일한 컬럼 형식을 적용하는 것이 좋으나, 현재는 DataTable 래퍼의 호환성 코드로 해결 가능.`
-- `[2023-07-18 09:50:00] 작업 완료: InstructionList 페이지 데이터 테이블 문제 해결.`
-- `[2023-07-18 10:00:00] 인사 관리(Personnel) 페이지도 동일한 데이터 테이블 이슈 확인 및 분석 시작`
-- `[2023-07-18 10:05:00] PersonnelList.jsx, personnelAPI.js, personnelQueries.js 파일 분석`
-- `[2023-07-18 10:10:00] PersonnelList.jsx의 컬럼 구조도 TanStack Table 형식과 불일치함을 확인`
-- `[2023-07-18 10:15:00] PersonnelList.jsx 컬럼 정의를 수정: accessor → accessorKey, cell 함수 형식 변경`
-- `[2023-07-18 10:20:00] actions 컬럼의 렌더링 부분에서 row.original 접근 방식으로 변경`
-- `[2023-07-18 10:25:00] 디버깅 로그 추가하여 데이터 흐름 확인`
-- `[2023-07-18 10:30:00] 수정 완료: 두 페이지(InstructionList, PersonnelList) 모두 TanStack Table에 맞는 컬럼 형식으로 변경됨`
-- `[2023-07-18 10:35:00] DataTable 래퍼 컴포넌트의 호환성 코드 개선 효과 확인 - 기존 코드와 호환성 유지하면서 TanStack Table 요구사항 충족`
-- `[2023-07-18 10:40:00] 작업 완료: 모든 데이터 테이블 문제 해결 완료 - 기존 데이터 형식과 TanStack Table 간의 차이 해결`
+2023-08-05 10:00: 작업 시작 - 지시 관련 API 엑셀 구현을 진행합니다.
+2023-08-05 10:01: InstructionCreate.jsx 파일 분석 완료. 현재 기본적인 지시 생성 기능이 구현되어 있음.
+2023-08-05 10:02: instructionAPI.js 및 instructionQueries.js 파일 분석 완료. 엑셀 업로드 API 구현이 필요한 상황임.
+2023-08-05 10:03: ANALYZE 단계 시작 - 엑셀 파일 업로드 API 구현을 위한 요구사항 분석 중.
 
 ---
 
@@ -304,10 +345,39 @@ _(This section will be populated by the AI during operation)_
 _This section will contain the list of items to be processed._
 _(The format of items is a table)_
 
-_Example (Table):_
-
-- `| Item ID | Text to Tokenize |`
-- `|---|---|`
-- `| item1 | This is the first item to tokenize. This is a short sentence. |`
-- `| item2 | Here is the second item for tokenization. This is a slightly longer sentence to test the summarization. |`
-- `
+| Item ID                 | Text to Tokenize                                                                     |
+| ----------------------- | ------------------------------------------------------------------------------------ |
+| auth_join               | 회원가입 API 구현: POST /test/join, username, name, email, password 필드 필요        |
+| auth_login              | 로그인 API 구현: POST /login, username, password 필드 필요, JWT 토큰 발급            |
+| auth_logout             | 로그아웃 API 구현: POST /auth/logout, 토큰 무효화 처리                               |
+| auth_reissue            | 토큰 재발급 API 구현: POST /auth/reissue, refresh token으로 access token 재발급      |
+| user_my                 | 마이페이지 조회 API 구현: GET /users/my, 사용자 정보 조회                            |
+| user_profile            | 프로필 수정 API 구현: PATCH /users/my, username, name, email 수정                    |
+| user_pw_change          | 비밀번호 변경 API 구현: PUT /users/pw, oldPassword, newPassword 필드 필요            |
+| user_pw_reset           | 비밀번호 초기화 API 구현: POST /users/pw/reset, username으로 임시 비밀번호 발급      |
+| unit_price_list         | 일위대가 목록 조회 API 구현: GET /unit-price, keyword 검색, 페이지네이션 지원        |
+| unit_price_detail       | 일위대가 상세 조회 API 구현: GET /unit-price/{id}, ID로 상세 정보 조회               |
+| unit_price_create       | 일위대가 생성 API 구현: POST /unit-price, code, name, spec, unit, costs 필드 필요    |
+| unit_price_update       | 일위대가 수정 API 구현: PUT /unit-price/{id}, ID로 수정                              |
+| unit_price_delete       | 일위대가 삭제 API 구현: DELETE /unit-price/{id}, ID로 삭제                           |
+| worker_list             | 작업자 목록 조회 API 구현: GET /worker, 작업자 목록 조회                             |
+| worker_create           | 작업자 생성 API 구현: POST /worker, name, phone, rank, status, birth, note 필드 필요 |
+| worker_update           | 작업자 수정 API 구현: PUT /worker/{id}, ID로 작업자 정보 수정                        |
+| worker_status           | 작업자 재직 상태 변경 API 구현: POST /worker/{id}/status, 재직/퇴사 상태 변경        |
+| instruction_create      | 지시 생성 API 구현: POST /instruction, 지시 생성                                     |
+| instruction_excel       | 지시 엑셀 업로드 API 구현: POST /instruction/excel, 엑셀 파일로 일괄 생성            |
+| instruction_list        | 지시 목록 조회 API 구현: GET /instruction, status, page, size 파라미터로 필터링      |
+| instruction_detail      | 지시 상세 조회 API 구현: GET /instruction/{id}, ID로 상세 정보 조회                  |
+| instruction_update      | 지시 정보 변경 API 구현: PUT /instruction/{id}, ID로 지시 정보 수정                  |
+| instruction_status      | 지시 상태 변경 API 구현: POST /instruction/{id}/status, 지시 상태 변경               |
+| instruction_confirm     | 지시 확정 API 구현: POST /instruction/{id}/confirm, 기성에 반영                      |
+| instruction_type_add    | 지시-공종 추가 API 구현: POST /instruction/{id}/type, 공종 추가                      |
+| instruction_type_update | 지시-공종 수정 API 구현: PUT /instruction/{id}/type, 공종 수정                       |
+| instruction_type_delete | 지시-공종 삭제 API 구현: DELETE /instruction/{id}/type, 공종 삭제                    |
+| instruction_unit_add    | 지시-공종-작업 추가 API 구현: POST /instruction/{id}/type/unit, 작업 추가            |
+| instruction_unit_update | 지시-공종-작업 수정 API 구현: PUT /instruction/{id}/type/unit, 작업 수정             |
+| instruction_unit_delete | 지시-공종-작업 삭제 API 구현: DELETE /instruction/{id}/type/unit, 작업 삭제          |
+| progress_list           | 기성 목록 조회 API 구현: GET /progress-payment/rounds, 기성 목록 조회                |
+| progress_detail         | 기성 회차별 조회 API 구현: GET /progress-payment/rounds/{id}, 회차별 상세 조회       |
+| progress_create         | 기성 생성 API 구현: POST /progress-payment/rounds, 기성 생성                         |
+| progress_complete       | 기성 완료 API 구현: POST /progress-payment/rounds/{id}, 기성 완료 처리               |

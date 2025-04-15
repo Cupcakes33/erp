@@ -1,0 +1,671 @@
+# API 문서
+
+## 목차
+
+- [인증 관련 API](#인증-관련-api)
+  - [회원가입](#회원가입)
+  - [로그인](#로그인)
+  - [로그아웃](#로그아웃)
+  - [토큰 재발급](#토큰-재발급)
+- [사용자 관련 API](#사용자-관련-api)
+  - [마이페이지 조회](#마이페이지-조회)
+  - [프로필 수정](#프로필-수정)
+  - [비밀번호 변경](#비밀번호-변경)
+  - [비밀번호 초기화](#비밀번호-초기화)
+- [일위대가 관련 API](#일위대가-관련-api)
+  - [일위대가 목록 조회](#일위대가-목록-조회)
+  - [일위대가 상세 조회](#일위대가-상세-조회)
+  - [일위대가 생성](#일위대가-생성)
+  - [일위대가 수정](#일위대가-수정)
+  - [일위대가 삭제](#일위대가-삭제)
+- [작업자 관련 API](#작업자-관련-api)
+  - [작업자 목록 조회](#작업자-목록-조회)
+  - [작업자 생성](#작업자-생성)
+  - [작업자 수정](#작업자-수정)
+  - [작업자 재직 상태 변경](#작업자-재직-상태-변경)
+- [지시 관련 API](#지시-관련-api)
+  - [지시 생성](#지시-생성)
+  - [지시 생성(Excel)](#지시-생성excel)
+  - [지시 목록 조회](#지시-목록-조회)
+  - [지시 상세 조회](#지시-상세-조회)
+  - [지시 정보 변경](#지시-정보-변경)
+  - [지시 상태 변경](#지시-상태-변경)
+  - [지시 확정(기성에 반영)](#지시-확정기성에-반영)
+  - [지시-공종 추가](#지시-공종-추가)
+  - [지시-공종 수정](#지시-공종-수정)
+  - [지시-공종 삭제](#지시-공종-삭제)
+  - [지시-공종-작업 추가](#지시-공종-작업-추가)
+  - [지시-공종-작업 수정](#지시-공종-작업-수정)
+  - [지시-공종-작업 삭제](#지시-공종-작업-삭제)
+- [기성 관련 API](#기성-관련-api)
+  - [기성 목록 조회](#기성-목록-조회)
+  - [기성 회차별 조회](#기성-회차별-조회)
+  - [기성 생성](#기성-생성)
+  - [기성 완료](#기성-완료)
+
+---
+
+## 인증 관련 API
+
+### 회원가입
+
+- **URL**: `/test/join`
+- **Method**: `POST`
+- **Request Body**:
+  ```json
+  {
+    "username": "tester1",
+    "name": "홍길동",
+    "email": "dev123@cc.com",
+    "password": "tester1"
+  }
+  ```
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "변경되었습니다.",
+    "data": {
+      "username": "tester1",
+      "name": "홍길동",
+      "email": "dev123@cc.com",
+      "password": "tester1",
+      "role": "ROLE_USER"
+    }
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**
+
+### 로그인
+
+- **URL**: `/login`
+- **Method**: `POST`
+- **Request Body**:
+  ```json
+  {
+    "username": "string",
+    "password": "string"
+  }
+  ```
+- **Response - 성공 (200 OK)**:
+  - 헤더에 access 토큰 포함
+  ```json
+  {
+    "message": "로그인 성공",
+    "data": {
+      "refreshToken": "String"
+    }
+  }
+  ```
+
+### 로그아웃
+
+- **URL**: `/auth/logout`
+- **Method**: `POST`
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "로그아웃 성공."
+  }
+  ```
+- **Response - 실패 (401 Unauthorized)**
+
+### 토큰 재발급
+
+- **URL**: `/auth/reissue`
+- **Method**: `POST`
+- **Response - 성공 (201 Created)**:
+  - **Response Body**:
+    ```json
+    {
+      "message": "토큰 재발급 완료"
+    }
+    ```
+  - **Response Header**: 새로운 인증 토큰 포함
+- **Response - 실패 (401 Unauthorized)**:
+  - 케이스 1:
+    ```json
+    {
+      "message": "리프레쉬 토큰을 찾을 수 없습니다."
+    }
+    ```
+  - 케이스 2:
+    ```json
+    {
+      "message": "리프레쉬 토큰이 만료되었습니다."
+    }
+    ```
+  - 케이스 3:
+    ```json
+    {
+      "message": "유효하지 않은 리프레쉬 토큰입니다."
+    }
+    ```
+
+---
+
+## 사용자 관련 API
+
+### 마이페이지 조회
+
+- **URL**: `/users/my`
+- **Method**: `GET`
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "요청에 성공하였습니다.",
+    "data": {
+      "username": "String",
+      "name": "String",
+      "email": "String"
+    }
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**
+
+### 프로필 수정
+
+- **URL**: `/users/my`
+- **Method**: `PATCH`
+- **Request Body**:
+  ```json
+  {
+    "username": "tester1",
+    "name": "홍길동",
+    "email": "dev123@cc.com"
+  }
+  ```
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "요청에 성공하였습니다.",
+    "data": {
+      "username": "tester1",
+      "name": "홍길동",
+      "email": "dev123@cc.com"
+    }
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**:
+  ```json
+  {
+    "message": "이름 검증 오류(한글)"
+  }
+  ```
+
+### 비밀번호 변경
+
+- **URL**: `/users/pw`
+- **Method**: `PUT`
+- **Request Body**:
+  ```json
+  {
+    "oldPassword": "pw123",
+    "newPassword": "newpw123"
+  }
+  ```
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "비밀번호가 변경되었습니다."
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**:
+  - 케이스 1:
+    ```json
+    {
+      "message": "비밀번호가 일치하지 않습니다."
+    }
+    ```
+  - 케이스 2:
+    ```json
+    {
+      "message": "비밀번호는 ~~~~~ (형식 에러)."
+    }
+    ```
+- **특이사항**: 새 비밀번호 확인(두번 입력 같은지) 검증은 프론트엔드에서 처리
+
+### 비밀번호 초기화
+
+- **URL**: `/users/pw/reset`
+- **Method**: `POST`
+- **Request Body**:
+  ```json
+  {
+    "username": "pw123"
+  }
+  ```
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "등록된 email로 임시 비밀번호가 발급되었습니다."
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**:
+  ```json
+  {
+    "message": "존재하지 않는 id입니다."
+  }
+  ```
+
+---
+
+## 일위대가 관련 API
+
+### 일위대가 목록 조회
+
+- **URL**: `/unit-price`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `keyword`: String (검색어, 공종명 검색)
+  - `page`: int (페이지 번호)
+  - `size`: int (페이지 크기, 기본값: 10)
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "요청 성공",
+    "data": {
+      "unitpriceList": {
+        "unitPrice": [
+          {
+            "id": "long",
+            "code": "코드",
+            "name": "공종명",
+            "spec": "규격",
+            "unit": "단위",
+            "matrerial_cost": "재료비",
+            "labor_cost": "노무비",
+            "expense": "경비",
+            "total_cost": "합계"
+          },
+          {
+            "id": "long",
+            "code": "코드",
+            "name": "공종명",
+            "spec": "규격",
+            "unit": "단위",
+            "matrerial_cost": "재료비",
+            "labor_cost": "노무비",
+            "expense": "경비",
+            "total_cost": "합계"
+          }
+        ]
+      }
+    }
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**
+- **특이사항**: 비용은 숫자, 코드~단위는 String
+
+### 일위대가 상세 조회
+
+- **URL**: `/unit-price/{id}`
+- **Method**: `GET`
+- **Path Variables**:
+  - `id`: long (일위대가 ID)
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "요청 성공",
+    "data": {
+      "unitPrice": {
+        "id": "long",
+        "code": "코드",
+        "name": "공종명",
+        "spec": "규격",
+        "unit": "단위",
+        "matrerial_cost": "재료비",
+        "labor_cost": "노무비",
+        "expense": "경비",
+        "total_cost": "합계"
+      }
+    }
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**
+
+### 일위대가 생성
+
+- **URL**: `/unit-price/`
+- **Method**: `POST`
+- **Request Body**:
+  ```json
+  {
+    "unitPrice": {
+      "code": "코드",
+      "name": "공종명",
+      "spec": "규격",
+      "unit": "단위",
+      "matrerial_cost": "재료비",
+      "labor_cost": "노무비",
+      "expense": "경비",
+      "total_cost": "합계"
+    }
+  }
+  ```
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "요청 성공",
+    "data": {
+      "unitPrice": {
+        "id": "long",
+        "code": "코드",
+        "name": "공종명",
+        "spec": "규격",
+        "unit": "단위",
+        "matrerial_cost": "재료비",
+        "labor_cost": "노무비",
+        "expense": "경비",
+        "total_cost": "합계"
+      }
+    }
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**
+
+### 일위대가 수정
+
+- **URL**: `/unit-price/{id}`
+- **Method**: `PUT`
+- **Path Variables**:
+  - `id`: long (일위대가 ID)
+- **Request Body**:
+  ```json
+  {
+    "unitPrice": {
+      "code": "코드",
+      "name": "공종명",
+      "spec": "규격",
+      "unit": "단위",
+      "matrerial_cost": "재료비",
+      "labor_cost": "노무비",
+      "expense": "경비",
+      "total_cost": "합계"
+    }
+  }
+  ```
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "요청 성공",
+    "data": {
+      "unitPrice": {
+        "id": "long",
+        "code": "코드",
+        "name": "공종명",
+        "spec": "규격",
+        "unit": "단위",
+        "matrerial_cost": "재료비",
+        "labor_cost": "노무비",
+        "expense": "경비",
+        "total_cost": "합계"
+      }
+    }
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**
+
+### 일위대가 삭제
+
+- **URL**: `/unit-price/{id}`
+- **Method**: `DELETE`
+- **Path Variables**:
+  - `id`: long (일위대가 ID)
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "요청 성공",
+    "data": {}
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**
+
+---
+
+## 작업자 관련 API
+
+### 작업자 목록 조회
+
+- **URL**: `/worker`
+- **Method**: `GET`
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "요청 성공",
+    "data": {}
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**
+
+### 작업자 생성
+
+- **URL**: `/worker`
+- **Method**: `POST`
+- **Request Body**:
+  ```json
+  {
+    "name": "String",
+    "phone": "String",
+    "rank": "String",
+    "status": "boolean",
+    "brith": "LocalDate",
+    "note": "text"
+  }
+  ```
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "data": {
+      "id": "long",
+      "name": "String",
+      "phone": "String",
+      "rank": "String",
+      "status": "boolean",
+      "brith": "LocalDate",
+      "note": "text"
+    },
+    "message": "작업자 생성완료"
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**:
+  ```json
+  {
+    "data": {
+      "id": "long",
+      "name": "String",
+      "phone": "String",
+      "rank": "String",
+      "status": "boolean",
+      "brith": "LocalDate",
+      "note": "text"
+    },
+    "message": "작업자 생성실패"
+  }
+  ```
+- **특이사항**: status = 재직상태 (true: 재직중, false: 퇴사)
+
+### 작업자 수정
+
+- **URL**: `/worker/{id}`
+- **Method**: `PUT`
+- **Path Variables**:
+  - `id`: long (작업자 ID)
+- **Request Body**:
+  ```json
+  {
+    "id": "long",
+    "name": "String",
+    "phone": "String",
+    "rank": "String",
+    "status": "boolean",
+    "brith": "LocalDate",
+    "note": "text"
+  }
+  ```
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "data": {
+      "id": "long",
+      "name": "String",
+      "phone": "String",
+      "rank": "String",
+      "status": "boolean",
+      "brith": "LocalDate",
+      "note": "text"
+    },
+    "message": "작업자 수정완료"
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**:
+  ```json
+  {
+    "data": {
+      "id": "long",
+      "name": "String",
+      "phone": "String",
+      "rank": "String",
+      "status": "boolean",
+      "brith": "LocalDate",
+      "note": "text"
+    },
+    "message": "작업자 수정실패"
+  }
+  ```
+
+### 작업자 재직 상태 변경
+
+- **URL**: 경로 미지정
+- **Method**: `POST`
+- **Path Variables**:
+  - `id`: long (작업자 ID)
+- **Response - 성공 (200 OK)**:
+  ```json
+  {
+    "message": "요청 성공",
+    "data": {}
+  }
+  ```
+- **Response - 실패 (400 Bad Request)**
+
+---
+
+## 지시 관련 API
+
+### 지시 생성
+
+- **URL**: `/instruction`
+- **Method**: `POST`
+
+### 지시 생성(Excel)
+
+- **URL**: `/instruction/excel`
+- **Method**: `POST`
+
+### 지시 목록 조회
+
+- **URL**: `/instruction`
+- **Method**: `GET`
+- **Query Parameters**:
+  - `status`: 상태
+  - `page`: 페이지 번호
+  - `size`: 페이지 크기
+
+### 지시 상세 조회
+
+- **URL**: `/instruction/{id}`
+- **Method**: `GET`
+- **Path Variables**:
+  - `id`: long (지시 ID)
+
+### 지시 정보 변경
+
+- **URL**: `/instruction/{id}`
+- **Method**: `PUT`
+- **Path Variables**:
+  - `id`: long (지시 ID)
+
+### 지시 상태 변경
+
+- **URL**: `/instruction/{id}/status`
+- **Method**: `POST`
+- **Path Variables**:
+  - `id`: long (지시 ID)
+
+### 지시 확정(기성에 반영)
+
+- **URL**: `/instruction/{id}/confirm`
+- **Method**: `POST`
+- **Path Variables**:
+  - `id`: long (지시 ID)
+
+### 지시-공종 추가
+
+- **URL**: `/instruction/{id}/type`
+- **Method**: `POST`
+- **Path Variables**:
+  - `id`: long (지시 ID)
+
+### 지시-공종 수정
+
+- **URL**: `/instruction/{id}/type`
+- **Method**: `PUT`
+- **Path Variables**:
+  - `id`: long (지시 ID)
+
+### 지시-공종 삭제
+
+- **URL**: `/instruction/{id}/type`
+- **Method**: `DELETE`
+- **Path Variables**:
+  - `id`: long (지시 ID)
+
+### 지시-공종-작업 추가
+
+- **URL**: `/instruction/{id}/type/unit`
+- **Method**: `POST`
+- **Path Variables**:
+  - `id`: long (지시 ID)
+
+### 지시-공종-작업 수정
+
+- **URL**: `/instruction/{id}/type/unit`
+- **Method**: `PUT`
+- **Path Variables**:
+  - `id`: long (지시 ID)
+
+### 지시-공종-작업 삭제
+
+- **URL**: `/instruction/{id}/type/unit`
+- **Method**: `DELETE`
+- **Path Variables**:
+  - `id`: long (지시 ID)
+
+---
+
+## 기성 관련 API
+
+### 기성 목록 조회
+
+- **URL**: `/progress-payment/rounds`
+- **Method**: `GET`
+
+### 기성 회차별 조회
+
+- **URL**: `/progress-payment/rounds/{id}`
+- **Method**: `GET`
+- **Path Variables**:
+  - `id`: long (기성 회차 ID)
+
+### 기성 생성
+
+- **URL**: `/progress-payment/rounds`
+- **Method**: `POST`
+
+### 기성 완료
+
+- **URL**: `/progress-payment/rounds/{id}`
+- **Method**: `POST`
+- **Path Variables**:
+  - `id`: long (기성 회차 ID)
+- **설명**: n차 기성 완료
