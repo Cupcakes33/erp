@@ -34,21 +34,38 @@ const PersonnelList = () => {
   // 디버깅을 위한 데이터 로그
   console.log("[PersonnelList] 작업자 데이터:", workers);
 
+  // 상태 영문 → 한글 변환 함수
+  const getStatusKor = (status) => {
+    switch (status) {
+      case "ACTIVE":
+        return "재직";
+      case "RESIGNED":
+        return "퇴사";
+      default:
+        return status;
+    }
+  };
+
   // 필터링 적용 (상태 필터 + 검색어)
-  const filteredWorkers = workers.filter((worker) => {
-    // '재직'/'퇴사' 상태를 사용하도록 필터링 로직 수정
-    const matchesStatus =
-      filterOptions.status === "all" ||
-      (filterOptions.status === "active" && worker.status === "재직") ||
-      (filterOptions.status === "inactive" && worker.status === "퇴사");
+  const filteredWorkers = workers
+    .map((worker) => ({
+      ...worker,
+      statusKor: getStatusKor(worker.status),
+    }))
+    .filter((worker) => {
+      // '재직'/'퇴사' 상태를 사용하도록 필터링 로직 수정
+      const matchesStatus =
+        filterOptions.status === "all" ||
+        (filterOptions.status === "active" && worker.statusKor === "재직") ||
+        (filterOptions.status === "inactive" && worker.statusKor === "퇴사");
 
-    const matchesSearch =
-      searchTerm === "" ||
-      worker.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      worker.status?.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch =
+        searchTerm === "" ||
+        worker.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        worker.statusKor?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    return matchesStatus && matchesSearch;
-  });
+      return matchesStatus && matchesSearch;
+    });
 
   // 작업자 추가 페이지로 이동
   const handleAddNew = () => {
@@ -66,15 +83,16 @@ const PersonnelList = () => {
     navigate(`/personnel/${worker.id}`);
   };
 
-  // 모든 가능한 컬럼 정의 (이름, 상태만)
+  // 모든 가능한 컬럼 정의 (id, 이름, 상태)
   const allColumns = [
+    { accessorKey: "id", header: "ID", className: "w-16 text-center" },
     { accessorKey: "name", header: "이름" },
     {
-      accessorKey: "status",
+      accessorKey: "statusKor",
       header: "상태",
       cell: ({ row }) => {
         let statusColor;
-        const status = row.getValue("status");
+        const status = row.getValue("statusKor");
         switch (status) {
           case "재직":
             statusColor = "bg-green-100 text-green-800";
@@ -96,7 +114,7 @@ const PersonnelList = () => {
     },
   ];
 
-  // 현재 화면에 표시할 컬럼들 (이름, 상태만)
+  // 현재 화면에 표시할 컬럼들 (id, 이름, 상태)
   const columns = allColumns;
 
   return (
