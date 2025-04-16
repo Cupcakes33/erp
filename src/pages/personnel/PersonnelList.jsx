@@ -118,7 +118,7 @@ const PersonnelList = () => {
   const columns = allColumns;
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="mx-auto px-4 py-6">
       {/* 페이지 헤더 */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold">작업자 목록</h1>
@@ -149,14 +149,18 @@ const PersonnelList = () => {
             </FormButton>
             <FormButton
               onClick={() => setFilterOptions({ status: "active" })}
-              variant={filterOptions.status === "active" ? "default" : "outline"}
+              variant={
+                filterOptions.status === "active" ? "default" : "outline"
+              }
               className="text-sm"
             >
               재직중
             </FormButton>
             <FormButton
               onClick={() => setFilterOptions({ status: "inactive" })}
-              variant={filterOptions.status === "inactive" ? "default" : "outline"}
+              variant={
+                filterOptions.status === "inactive" ? "default" : "outline"
+              }
               className="text-sm"
             >
               퇴사

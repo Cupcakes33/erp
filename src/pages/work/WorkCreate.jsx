@@ -136,7 +136,7 @@ const WorkCreate = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="mx-auto px-4 py-6">
       <div className="flex items-center mb-6">
         <FormButton
           variant="outline"

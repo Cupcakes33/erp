@@ -48,6 +48,14 @@ const mockWorkers = [
     position: '반장', 
     status: 'RESIGNED' 
   },
+  ...Array.from({ length: 95 }, (_, i) => ({
+    id: i + 6,
+    name: `작업자${i + 6}`,
+    birth: `${1970 + Math.floor(Math.random() * 30)}-${String(Math.floor(Math.random() * 12) + 1).padStart(2, '0')}-${String(Math.floor(Math.random() * 28) + 1).padStart(2, '0')}`,
+    phone: `010-${String(Math.floor(Math.random() * 9000) + 1000)}-${String(Math.floor(Math.random() * 9000) + 1000)}`,
+    position: Math.random() > 0.8 ? '반장' : '작업자',
+    status: Math.random() > 0.2 ? 'ACTIVE' : 'RESIGNED'
+  })),
 ];
 
 /**

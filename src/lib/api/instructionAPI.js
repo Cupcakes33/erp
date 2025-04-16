@@ -13,15 +13,21 @@ const mockInstructions = [
     id: 1,
     title: '강북구 도로 보수 지시',
     priority: 'HIGH',
-    status: 'RECEIVED',
+    status: 'RECEIVED', // 접수 상태
     createdAt: '2023-07-15',
     dueDate: '2023-07-25',
     location: '강북구 수유동',
+    dong: '수유동', // 동 필드 추가
+    lotNumber: '123-45', // 지번 필드 추가
     address: '서울시 강북구 수유동 123-45',
     manager: '홍길동',
     receiver: '김철수',
     channel: 'PHONE',
-    description: '강북구 수유동 일대의 도로 파손이 심각하여 긴급 보수 작업이 필요합니다.',
+    description: '강북구 수유동 일대의 도로 파손이 심각하여 긴급 보수 작업이 필요합니다.', // 세부사항
+    workContent: '아스팔트 보수 및 도로 경계석 교체 작업 필요', // 작업내용 필드 추가
+    note: '야간 작업 필요', // 비고 필드 추가
+    worker: '이영수', // 작업자 필드 추가
+    workStatus: '자재 준비 중', // 작업현황 필드 추가
     works: [1, 2],
     favorite: false,
     paymentRound: 1,
@@ -32,15 +38,21 @@ const mockInstructions = [
     id: 2,
     title: '서초구 가로등 교체 지시',
     priority: 'MEDIUM',
-    status: 'IN_PROGRESS',
+    status: 'IN_PROGRESS', // 작업중 상태
     createdAt: '2023-07-16',
     dueDate: '2023-07-30',
     location: '서초구 반포대로',
+    dong: '반포동', // 동 필드 추가
+    lotNumber: '45-67', // 지번 필드 추가
     address: '서울시 서초구 반포대로 123',
     manager: '이영희',
     receiver: '박민수',
     channel: 'EMAIL',
-    description: '서초구 반포대로의 가로등이 노후화되어 교체가 필요합니다.',
+    description: '서초구 반포대로의 가로등이 노후화되어 교체가 필요합니다.', // 세부사항
+    workContent: 'LED 가로등으로 전체 교체 및 전선 정비', // 작업내용 필드 추가
+    note: '교통량이 많은 지역으로 안전 조치 필수', // 비고 필드 추가
+    worker: '김준호', // 작업자 필드 추가
+    workStatus: '가로등 설치 진행 중 (60%)', // 작업현황 필드 추가
     works: [1],
     favorite: true,
     paymentRound: 1,
@@ -51,20 +63,76 @@ const mockInstructions = [
     id: 3,
     title: '강남구 보도블럭 교체 지시',
     priority: 'MEDIUM',
-    status: 'COMPLETED',
+    status: 'COMPLETED_WORK', // 작업완료 상태 (기존 COMPLETED에서 변경)
     createdAt: '2023-07-10',
     dueDate: '2023-07-20',
     location: '강남구 삼성동',
+    dong: '삼성동', // 동 필드 추가
+    lotNumber: '78-90', // 지번 필드 추가
     address: '서울시 강남구 삼성동 45-67',
     manager: '정재영',
     receiver: '홍길동',
     channel: 'SYSTEM',
-    description: '강남구 삼성동 일대의 보도블럭이 파손되어 보행자 안전을 위협하고 있습니다.',
+    description: '강남구 삼성동 일대의 보도블럭이 파손되어 보행자 안전을 위협하고 있습니다.', // 세부사항
+    workContent: '파손된 보도블럭 교체 및 경계석 재설치', // 작업내용 필드 추가
+    note: '민원 다수 접수된 지역으로 신속한 처리 요망', // 비고 필드 추가
+    worker: '박성민', // 작업자 필드 추가
+    workStatus: '보도블럭 교체 작업 완료, 현장 정리 완료', // 작업현황 필드 추가
     works: [2, 3],
     favorite: false,
     paymentRound: 2,
     lastModifiedBy: '관리자',
     lastModifiedAt: '2023-07-20'
+  },
+  {
+    id: 4,
+    title: '송파구 하수도 정비 지시',
+    priority: 'HIGH',
+    status: 'IN_APPROVAL', // 결재중 상태 추가
+    createdAt: '2023-07-05',
+    dueDate: '2023-07-15',
+    location: '송파구 방이동',
+    dong: '방이동', // 동 필드 추가
+    lotNumber: '112-5', // 지번 필드 추가
+    address: '서울시 송파구 방이동 112-5',
+    manager: '김태우',
+    receiver: '이지민',
+    channel: 'PHONE',
+    description: '송파구 방이동 아파트 단지 주변 하수도 역류 문제 발생', // 세부사항
+    workContent: '하수관로 준설 및 맨홀 보수 작업', // 작업내용 필드 추가
+    note: '우천시 침수 우려 지역으로 신속 처리 요망', // 비고 필드 추가
+    worker: '최재혁', // 작업자 필드 추가
+    workStatus: '작업 완료 및 결재 제출', // 작업현황 필드 추가
+    works: [4, 5],
+    favorite: true,
+    paymentRound: 3,
+    lastModifiedBy: '팀장',
+    lastModifiedAt: '2023-07-14'
+  },
+  {
+    id: 5,
+    title: '마포구 도로 미끄럼 방지 시설 설치',
+    priority: 'LOW',
+    status: 'COMPLETED', // 완료 상태
+    createdAt: '2023-06-20',
+    dueDate: '2023-07-05',
+    location: '마포구 성산동',
+    dong: '성산동', // 동 필드 추가
+    lotNumber: '50-3', // 지번 필드 추가
+    address: '서울시 마포구 성산동 50-3',
+    manager: '이상철',
+    receiver: '김영희',
+    channel: 'SYSTEM',
+    description: '마포구 성산동 경사로 구간에 미끄럼 방지 시설 필요', // 세부사항
+    workContent: '미끄럼 방지 포장 및 안전 표지판 설치', // 작업내용 필드 추가
+    note: '겨울철 사고 다발 지역', // 비고 필드 추가
+    worker: '장민수', // 작업자 필드 추가
+    workStatus: '작업 완료 및 검수 완료', // 작업현황 필드 추가
+    works: [6],
+    favorite: false,
+    paymentRound: 2,
+    lastModifiedBy: '부장',
+    lastModifiedAt: '2023-07-05'
   }
 ]
 

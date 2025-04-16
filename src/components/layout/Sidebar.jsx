@@ -26,8 +26,8 @@ const Sidebar = () => {
       subItems: [
         { title: "지시 목록", path: "/instructions" },
         { title: "지시 생성", path: "/instructions/create" },
-        { title: "지시 가져오기", path: "/instructions/import" },
-        { title: "지시 내보내기", path: "/instructions/export" },
+        // { title: "지시 가져오기", path: "/instructions/import" },
+        // { title: "지시 내보내기", path: "/instructions/export" },
       ],
     },
     {
@@ -37,8 +37,8 @@ const Sidebar = () => {
       subItems: [
         { title: "작업 목록", path: "/works" },
         { title: "작업 생성", path: "/works/create" },
-        { title: "작업 가져오기", path: "/works/import" },
-        { title: "작업 내보내기", path: "/works/export" },
+        // { title: "작업 가져오기", path: "/works/import" },
+        // { title: "작업 내보내기", path: "/works/export" },
       ],
     },
     {

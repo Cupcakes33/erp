@@ -148,8 +148,8 @@ const InstructionEdit = () => {
 
   if (isError) {
     return (
-      <div className="container mx-auto px-4 py-6">
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+      <div className="px-4 py-6 mx-auto">
+        <div className="px-4 py-3 text-red-700 bg-red-100 border border-red-400 rounded">
           지시를 불러오는 중 오류가 발생했습니다.
         </div>
       </div>
@@ -157,7 +157,7 @@ const InstructionEdit = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="px-4 py-6 mx-auto">
       <div className="flex items-center mb-6">
         <FormButton
           variant="outline"
@@ -174,12 +174,12 @@ const InstructionEdit = () => {
       <FormCard>
         <form onSubmit={handleSubmit}>
           {errors.submit && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <div className="px-4 py-3 mb-4 text-red-700 bg-red-100 border border-red-400 rounded">
               {errors.submit}
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
             <div>
               <FormInput
                 id="title"
@@ -233,7 +233,7 @@ const InstructionEdit = () => {
             />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
             <div>
               <FormSelect
                 id="status"
@@ -280,7 +280,7 @@ const InstructionEdit = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
             <div>
               <FormInput
                 id="manager"

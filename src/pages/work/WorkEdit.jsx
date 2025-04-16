@@ -145,7 +145,7 @@ const WorkEdit = () => {
 
   if (isLoadingWork) {
     return (
-      <div className="container mx-auto px-4 py-6">
+      <div className="mx-auto px-4 py-6">
         <p className="text-center text-gray-500">작업 정보를 불러오는 중...</p>
       </div>
     );
@@ -153,7 +153,7 @@ const WorkEdit = () => {
 
   if (isError) {
     return (
-      <div className="container mx-auto px-4 py-6">
+      <div className="mx-auto px-4 py-6">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           작업을 불러오는 중 오류가 발생했습니다.
         </div>
@@ -167,7 +167,7 @@ const WorkEdit = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="mx-auto px-4 py-6">
       <div className="flex items-center mb-6">
         <FormButton
           variant="outline"

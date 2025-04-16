@@ -10,11 +10,11 @@ _It is read and updated frequently by the AI during its operational loop._
 _Holds the current status of the workflow._
 
 ```yaml
-Phase: ANALYZE # Current workflow phase (ANALYZE, BLUEPRINT, CONSTRUCT, VALIDATE, BLUEPRINT_REVISE)
+Phase: CONSTRUCT # Current workflow phase (ANALYZE, BLUEPRINT, CONSTRUCT, VALIDATE, BLUEPRINT_REVISE)
 Status: IN_PROGRESS # Current status (READY, IN_PROGRESS, BLOCKED_*, NEEDS_*, COMPLETED, COMPLETED_ITERATION)
-CurrentTaskID: API_Implementation # Identifier for the main task being worked on
-CurrentStep: 4 # Identifier for the specific step in the plan being executed
-CurrentItem: instruction_excel_api # Identifier for the item currently being processed in iteration
+CurrentTaskID: InstructionManagement # Identifier for the main task being worked on
+CurrentStep: 1 # Identifier for the specific step in the plan being executed
+CurrentItem: instruction_management # Identifier for the item currently being processed in iteration
 ```
 
 ---
@@ -23,195 +23,75 @@ CurrentItem: instruction_excel_api # Identifier for the item currently being pro
 
 _Contains the step-by-step implementation plan generated during the BLUEPRINT phase._
 
-**Task: API_Implementation**
+**Task: InstructionManagement**
 
-- `[x] Step 1: 인증 및 사용자 관련 API 구현`
+- `[ ] Step 1: 지시 관리 시스템 프론트엔드 구현`
 
-  - `[x] 1.1: authAPI.js 파일 생성 - 인증 관련 API 구현`
-    - `[x] 1.1.1: 회원가입 API 구현 (POST /test/join)`
-    - `[x] 1.1.2: 로그인 API 구현 (POST /login)`
-    - `[x] 1.1.3: 로그아웃 API 구현 (POST /auth/logout)`
-    - `[x] 1.1.4: 토큰 재발급 API 구현 (POST /auth/reissue)`
-  - `[x] 1.2: userAPI.js 파일 생성 - 사용자 관련 API 구현`
-    - `[x] 1.2.1: 마이페이지 조회 API 구현 (GET /users/my)`
-    - `[x] 1.2.2: 프로필 수정 API 구현 (PATCH /users/my)`
-    - `[x] 1.2.3: 비밀번호 변경 API 구현 (PUT /users/pw)`
-    - `[x] 1.2.4: 비밀번호 초기화 API 구현 (POST /users/pw/reset)`
-  - `[x] 1.3: authQueries.js 파일 생성 - 인증 관련 Query 훅 구현`
-  - `[x] 1.4: userQueries.js 파일 생성 - 사용자 관련 Query 훅 구현`
-  - `[x] 1.5: index.js 및 queries.js 파일 수정 - 새로운 API/Query 모듈 추가`
+  - `[ ] 1.1: 지시 목록 페이지 개선`
 
-- `[x] Step 2: 일위대가 관련 API 확인 및 수정`
+    - `[ ] 1.1.1: 검색 및 필터링 기능 구현 (번지/동 검색, 날짜 필터링, 상태 필터링)`
+    - `[ ] 1.1.2: 필요한 필드만 표시하는 커스텀 컬럼 설정 기능 구현 (id, 날짜, 담당자, 동, 지번, 세부사항, 작업내용, 비고, 진행상태)`
+    - `[ ] 1.1.3: 지시 상태 표시 개선 (접수, 작업중, 작업완료, 결재중, 완료)`
+    - `[ ] 1.1.4: 최종 수정자 정보 표시 추가`
+    - `[ ] 1.1.5: 지시 목록 데이터 테이블 UI 및 상호작용 개선`
 
-  - `[x] 2.1: workAPI.js 파일 분석 및 수정`
-    - `[x] 2.1.1: 일위대가 관련 API 함수가 API 문서와 일치하는지 확인`
-    - `[x] 2.1.2: 일위대가 목록 조회 API 구현/수정 (GET /unit-price)`
-    - `[x] 2.1.3: 일위대가 상세 조회 API 구현/수정 (GET /unit-price/{id})`
-    - `[x] 2.1.4: 일위대가 생성 API 구현/수정 (POST /unit-price)`
-    - `[x] 2.1.5: 일위대가 수정 API 구현/수정 (PUT /unit-price/{id})`
-    - `[x] 2.1.6: 일위대가 삭제 API 구현/수정 (DELETE /unit-price/{id})`
-  - `[x] 2.2: workQueries.js 파일 분석 및 수정`
-    - `[x] 2.2.1: 일위대가 관련 Query 훅이 API 문서와 일치하는지 확인`
-    - `[x] 2.2.2: 필요한 Query 훅 추가/수정`
+  - `[ ] 1.2: 단일 지시 생성 페이지 개선`
 
-- `[x] Step 3: 작업자 관련 API 확인 및 수정`
+    - `[ ] 1.2.1: 최소 요구 필드 조정 (제목만으로도 생성 가능하도록)`
+    - `[ ] 1.2.2: 추가 선택적 필드 구성 (담당자, 접수채널, 접수일, 위치 등)`
+    - `[ ] 1.2.3: 폼 유효성 검증 개선`
+    - `[ ] 1.2.4: UI/UX 개선`
 
-  - `[x] 3.1: personnelAPI.js 파일 분석 및 수정`
-    - `[x] 3.1.1: 작업자 관련 API 함수가 API 문서와 일치하는지 확인`
-    - `[x] 3.1.2: 작업자 목록 조회 API 구현/수정 (GET /worker)`
-    - `[x] 3.1.3: 작업자 생성 API 구현/수정 (POST /worker)`
-    - `[x] 3.1.4: 작업자 수정 API 구현/수정 (PUT /worker/{id})`
-    - `[x] 3.1.5: 작업자 재직 상태 변경 API 구현/수정 (POST /worker/{id}/status)`
-  - `[x] 3.2: personnelQueries.js 파일 분석 및 수정`
-    - `[x] 3.2.1: 작업자 관련 Query 훅이 API 문서와 일치하는지 확인`
-    - `[x] 3.2.2: 필요한 Query 훅 추가/수정`
+  - `[ ] 1.3: 지시 상세 페이지 개선`
 
-- `[ ] Step 4: 지시 관련 API 확인 및 수정`
+    - `[ ] 1.3.1: 지시 상태 관리 UI 구현 (5단계 상태 표시 및 변경 기능)`
+    - `[ ] 1.3.2: 추가 필드 표시 구현 (작업자, 작업현황, 비고, 기성회차, 최종 수정자)`
+    - `[ ] 1.3.3: 즐겨찾기 기능 구현`
+    - `[ ] 1.3.4: 발주 정보 표시 구현 (담당자, 접수채널, 접수일)`
+    - `[ ] 1.3.5: 작업 등록 및 관리 UI 구현`
+      - `[ ] 1.3.5.1: 작업 검색 및 선택 기능 구현`
+      - `[ ] 1.3.5.2: 수량 및 산출내역 입력 UI 구현`
+      - `[ ] 1.3.5.3: 실시간 금액 계산 표시 UI 구현`
+    - `[ ] 1.3.6: 기성 반영 전 지시만 수정 가능하도록 제한 로직 구현`
 
-  - `[x] 4.1: instructionAPI.js 파일 분석 및 수정`
-    - `[x] 4.1.1: 지시 관련 API 함수가 API 문서와 일치하는지 확인`
-    - `[x] 4.1.2: 지시 생성 API 구현/수정 (POST /instruction)`
-    - `[ ] 4.1.3: 지시 생성(Excel) API 구현/수정 (POST /instruction/excel)`
-    - `[x] 4.1.4: 지시 목록 조회 API 구현/수정 (GET /instruction)`
-    - `[x] 4.1.5: 지시 상세 조회 API 구현/수정 (GET /instruction/{id})`
-    - `[x] 4.1.6: 지시 정보 변경 API 구현/수정 (PUT /instruction/{id})`
-    - `[ ] 4.1.7: 지시 상태 변경 API 구현/수정 (POST /instruction/{id}/status)`
-    - `[ ] 4.1.8: 지시 확정 API 구현/수정 (POST /instruction/{id}/confirm)`
-    - `[ ] 4.1.9: 지시-공종 관련 API 구현/수정 (POST, PUT, DELETE /instruction/{id}/type)`
-    - `[ ] 4.1.10: 지시-공종-작업 관련 API 구현/수정 (POST, PUT, DELETE /instruction/{id}/type/unit)`
-  - `[x] 4.2: instructionQueries.js 파일 분석 및 수정`
-    - `[x] 4.2.1: 지시 관련 Query 훅이 API 문서와 일치하는지 확인`
-    - `[ ] 4.2.2: 필요한 Query 훅 추가/수정`
+  - `[ ] 1.4: 일괄 지시 생성 페이지 구현 - [나중에 진행 예정 - 필수 작업]`
+    - `[ ] 1.4.1: 엑셀 파일 업로드 UI 구현`
+    - `[ ] 1.4.2: 데이터 미리보기 UI 구현`
+    - `[ ] 1.4.3: 필드 매핑 인터페이스 구현`
+    - `[ ] 1.4.4: 데이터 유효성 검증 및 오류 표시`
+    - `[ ] 1.4.5: 일괄 저장 기능 구현`
+    - `참고: 백엔드 API 명세 완료 후 진행 예정`
 
-- `[ ] Step 5: 기성 관련 API 구현`
+- `[ ] Step 2: UI 컴포넌트 개선 및 상호작용 향상`
 
-  - `[ ] 5.1: paymentAPI.js 파일 생성 - 기성 관련 API 구현`
-    - `[ ] 5.1.1: 기성 목록 조회 API 구현 (GET /progress-payment/rounds)`
-    - `[ ] 5.1.2: 기성 회차별 조회 API 구현 (GET /progress-payment/rounds/{id})`
-    - `[ ] 5.1.3: 기성 생성 API 구현 (POST /progress-payment/rounds)`
-    - `[ ] 5.1.4: 기성 완료 API 구현 (POST /progress-payment/rounds/{id})`
-  - `[ ] 5.2: paymentQueries.js 파일 생성 - 기성 관련 Query 훅 구현`
-  - `[ ] 5.3: index.js 및 queries.js 파일 수정 - 새로운 API/Query 모듈 추가`
+  - `[ ] 2.1: 지시 상태 관리를 위한 커스텀 컴포넌트 구현`
+    - `[ ] 2.1.1: 상태 변경 드롭다운/버튼 컴포넌트 구현`
+    - `[ ] 2.1.2: 상태별 시각적 표시(색상, 아이콘) 구현`
+    - `[ ] 2.1.3: 상태 변경 확인 모달 구현`
+  - `[ ] 2.2: 지시 작업 관리를 위한 컴포넌트 구현`
+    - `[ ] 2.2.1: 작업 검색 및 선택 컴포넌트 구현`
+    - `[ ] 2.2.2: 작업 항목 표시 및 편집 컴포넌트 구현`
+    - `[ ] 2.2.3: 작업 금액 계산 및 표시 컴포넌트 구현`
+  - `[ ] 2.3: 필터링 및 검색 컴포넌트 개선`
+    - `[ ] 2.3.1: 고급 검색 필터 UI 구현`
+    - `[ ] 2.3.2: 날짜 범위 선택 컴포넌트 구현`
+    - `[ ] 2.3.3: 상태 필터 컴포넌트 구현`
 
-- `[ ] Step 6: Mocking 데이터 통합 및 테스트`
-  - `[ ] 6.1: 각 API 모듈에서 Mocking 데이터 확인 및 필요시 추가`
-  - `[ ] 6.2: 모든 API 호출 테스트 및 오류 수정`
-  - `[ ] 6.3: React Query 훅 테스트 및 오류 수정`
+- `[ ] Step 3: 데이터 상태 관리 및 API 연동 개선`
 
-**Task: TableDataFixAll**
+  - `[ ] 3.1: 지시 관련 상태 관리 개선`
+    - `[ ] 3.1.1: Zustand 스토어 개선 (상태 관리, 필터링 상태 등)`
+    - `[ ] 3.1.2: React Query 캐싱 전략 최적화`
+  - `[ ] 3.2: API 연동 Mock 데이터 개선`
+    - `[ ] 3.2.1: 지시 Mock 데이터 구조 확장 (추가 필드 반영)`
+    - `[ ] 3.2.2: 지시 상태 변경 Mock 기능 개선`
+    - `[ ] 3.2.3: 지시-작업 연결 Mock 기능 구현`
 
-- `[x] Step 1: DataTable 컴포넌트 문제 해결 (InstructionList, PersonnelList)`
-  - `[x] 1.1: InstructionList 데이터 테이블 분석 및 수정`
-  - `[x] 1.2: PersonnelList 데이터 테이블 분석 및 수정`
-  - `[x] 1.3: DataTable 컴포넌트 호환성 코드 개선`
-  - `[x] 1.4: 테스트 및 결과 확인`
-
-**Task: InstructionTableDataFix**
-
-- `[x] Step 1: InstructionList 페이지 데이터 테이블 문제 분석 및 해결`
-  - `[x] 1.1: 현재 데이터 흐름 분석 - API 호출부터 테이블 렌더링까지`
-  - `[x] 1.2: 문제의 원인 파악 - 데이터 형식 또는 컬럼 구성 불일치 확인`
-  - `[x] 1.3: DataTable.jsx 컴포넌트와 data-table.jsx 원본 컴포넌트 상호작용 분석`
-  - `[x] 1.4: 컬럼 정의와 데이터 구조 일치 여부 확인`
-  - `[x] 1.5: 문제 해결 적용 및 테스트`
-
-**Task: DataTableFix**
-
-- `[x] Step 1: 데이터 테이블 mock 데이터 렌더링 문제 해결`
-
-  - `[x] 1.1: src/lib/api/workAPI.js 파일의 mockWorks 데이터 구조 확인`
-  - `[x] 1.2: WorkList.jsx에서 사용하는 columns와 mockWorks의 데이터 구조 비교 분석`
-  - `[x] 1.3: WorkList.jsx의 columns 정의를 mockWorks 데이터 구조에 맞게 수정`
-  - `[x] 1.4: 데이터 테이블에 데이터가 올바르게 렌더링되는지 확인`
-
-- `[x] Step 2: 테이블 hover 효과 개선`
-
-  - `[x] 2.1: 현재 hover 효과 스타일 확인`
-  - `[x] 2.2: hover 시 글자가 가려지지 않도록 스타일 수정`
-  - `[x] 2.3: 직관적인 hover 효과 구현 (배경색 변경, 경계선 추가 등)`
-
-- `[ ] Step 3: 사이드바 업데이트`
-
-  - `[x] 3.1: 사이드바 컴포넌트에 '인사 관리'와 '기성 관리' 메뉴 추가`
-  - `[x] 3.2: App.jsx에 관련 라우트 추가`
-  - `[x] 3.3: 인사 관리 페이지 컴포넌트 개발 (목록, 추가, 상세, 수정)`
-  - `[x] 3.4: 기성 관리 페이지 컴포넌트 개발 (공종별 조회 페이지)`
-
-- `[ ] Step 4: 인증 시스템 구현`
-
-  - `[ ] 4.1: 로그인 컴포넌트 개발 (아이디/비밀번호 입력 폼, 검증 로직)`
-  - `[ ] 4.2: 사용자 유형별 계정 설정 (관리자 1개, 담당자 2개, 일반 2개)`
-  - `[ ] 4.3: 비밀번호 초기화 기능 구현 (이메일 발송 시스템 연동)`
-  - `[ ] 4.4: 계정 관리 페이지 개발 (프로필 정보 수정, 비밀번호 변경)`
-  - `[ ] 4.5: 비밀번호 유효성 검증 로직 구현 (영어+숫자 5-12자리)`
-
-- `[ ] Step 5: UI 컴포넌트 개선`
-
-  - `[x] 5.1: 현재 사용 중인 UI 컴포넌트 분석 및 목록화`
-  - `[x] 5.2: shadcn 컴포넌트 라이브러리 설치 및 구성`
-  - `[x] 5.3: 테이블 컴포넌트를 shadcn 데이터 테이블로 교체`
-    - `[x] 5.3.1: 테이블 컴포넌트 사용 현황 분석`
-    - `[x] 5.3.2: TableAdapter 컴포넌트 생성 (기존 Table props를 DataTable props로 변환)`
-    - `[x] 5.3.3: InstructionDetail.jsx 파일에서 Table을 DataTable로 교체`
-    - `[x] 5.3.4: WorkDetail.jsx 파일에서 Table 임포트 제거 및 DataTable 사용 통일`
-    - `[x] 5.3.5: 모든 테이블 컴포넌트 호출 코드 일관성 검증`
-  - `[x] 5.4: 폼 요소(버튼, 입력필드, 체크박스 등)를 shadcn 컴포넌트로 교체`
-  - `[x] 5.5: sweetalert2 라이브러리 설치 및 구성`
-  - `[ ] 5.6: 기존 모달 다이얼로그를 sweetalert2로 교체`
-  - `[ ] 5.7: 컴포넌트 교체 후 스타일 및 기능 테스트`
-  - `[x] 5.8: 사이드바 컴포넌트를 shadcn/ui 컴포넌트로 교체 및 반응형 지원 추가`
-  - `[ ] 5.9: 대시보드 레이아웃 및 카드 디자인 개선`
-    - `[x] 5.9.1: FormCard 컴포넌트의 스타일 일관성 개선`
-    - `[x] 5.9.2: 그리드 및 카드 간격 조정`
-    - `[x] 5.9.3: 색상 테마 적용 일관성 개선`
-    - `[x] 5.9.4: 반응형 레이아웃 최적화`
-    - `[x] 5.9.5: UI 요소의 시각적 일관성 검증`
-
-- `[ ] Step 6: 지시 관리 시스템 구현`
-
-  - `[ ] 6.1: 엑셀 파일 업로드 및 파싱 기능 개발`
-  - `[ ] 6.2: 개별 지시 생성 폼 개발 (최소 제목만으로 생성 가능)`
-  - `[ ] 6.3: 지시 상태 관리 시스템 구현 (5단계: 접수, 작업중, 작업완료, 결재중, 완료)`
-  - `[ ] 6.4: 지시 상세 정보 필드 추가 (작업자, 작업현황, 비고, 기성회차, 즐겨찾기 등)`
-  - `[ ] 6.5: 발주 정보 관리 기능 구현 (지시 담당자, 접수채널, 접수일 등)`
-  - `[ ] 6.6: 작업 등록 및 연결 기능 개발 (검색 후 선택, 수량/산출내역 입력, 실시간 금액 계산)`
-  - `[ ] 6.7: 지시 수정 기능 구현 (기성 반영 전 지시만 수정 가능하도록 제한)`
-  - `[ ] 6.8: 검색 및 필터링 기능 개발 (번지/동 검색, 날짜/상태 필터링)`
-  - `[ ] 6.9: 목록 표시 필드 사용자화 (필요 필드 표시 설정)`
-  - `[ ] 6.10: 다양한 형식의 조회/출력 기능 구현 (보수확인서, 물량산출 근거, 내역서)`
-  - `[ ] 6.11: 일괄 출력 기능 개발 (여러 지시 동시 출력)`
-  - `[ ] 6.12: 수정 이력 추적 기능 구현 (마지막 수정자 표시)`
-
-- `[x] Step 7: 상태 관리 모듈화`
-
-  - `[x] 7.1: Zustand 스토어 파일 구조 설계 (/lib/zustand/)`
-  - `[x] 7.2: UI 상태용 Zustand 스토어 구현 (auth 등 로컬 상태)`
-  - `[x] 7.3: TanStack Query 구조 설계 및 API 호출 모듈 구현 (/lib/api/)`
-
-- `[x] Step 8: 인사 관리 시스템 구현`
-
-  - `[x] 8.1: 작업자 API 모듈 개발 (personnelAPI.js)`
-  - `[x] 8.2: 작업자 Query 훅 개발 (personnelQueries.js)`
-  - `[x] 8.3: 작업자 데이터 모델 설계 (ID, 이름, 생년월일, 연락처, 직급, 상태)`
-  - `[x] 8.4: 작업자 목록/상세/수정 컴포넌트 React Query 연동`
-
-- `[x] Step 9: API 통합 Layer 구현`
-
-  - `[x] 9.1: API 호출 모듈 구조화 (mockedAPI 포함)`
-  - `[x] 9.2: React Query Custom Hooks 구현`
-  - `[x] 9.3: API 호출 모듈과 React Query 통합`
-
-- `[ ] Step 10: 기성 관리 시스템 구현`
-
-  - `[ ] 10.1: 공종별 공사 대금 조회 기능 개발 (관리자 권한)`
-  - `[ ] 10.2: 주소별 공사 대금 조회 기능 개발 (관리자 권한)`
-  - `[ ] 10.3: 기성별 공사 대금 조회 기능 개발 (관리자 권한)`
-
-- `[ ] Step 11: 통합 및 테스트`
-  - `[ ] 11.1: 모든 기능 통합`
-  - `[ ] 11.2: 사용자 권한별 테스트 (관리자, 담당자, 일반 사용자)`
-  - `[ ] 11.3: 성능 테스트 및 최적화`
-  - `[ ] 11.4: 오류 수정 및 사용성 개선`
+- `[ ] Step 4: 테스트 및 최적화`
+  - `[ ] 4.1: 기능 테스트`
+  - `[ ] 4.2: UI/UX 개선 및 일관성 확보`
+  - `[ ] 4.3: 성능 최적화`
+  - `[ ] 4.4: 반응형 디자인 검증`
 
 ---
 
@@ -337,6 +217,86 @@ _Records the progressive execution log for the current session._
 2023-08-05 10:01: InstructionCreate.jsx 파일 분석 완료. 현재 기본적인 지시 생성 기능이 구현되어 있음.
 2023-08-05 10:02: instructionAPI.js 및 instructionQueries.js 파일 분석 완료. 엑셀 업로드 API 구현이 필요한 상황임.
 2023-08-05 10:03: ANALYZE 단계 시작 - 엑셀 파일 업로드 API 구현을 위한 요구사항 분석 중.
+2023-08-05 10:30: 지시 관련 기존 컴포넌트 분석 완료. 현재 instructionAPI.js에 구현된 API 함수들:
+
+- fetchInstructions (GET /instruction) - 지시 목록 조회
+- fetchInstructionById (GET /instruction/{id}) - 지시 상세 조회
+- createInstruction (POST /instruction) - 지시 생성
+- updateInstruction (PUT /instruction/{id}) - 지시 정보 수정
+- updateInstructionStatus (POST /instruction/{id}/status) - 지시 상태 변경 (모의 데이터만 있음)
+- toggleInstructionFavorite (POST /instruction/{id}/favorite) - 지시 즐겨찾기 토글
+- deleteInstruction (DELETE /instruction/{id}) - 지시 삭제
+- confirmInstruction (POST /instruction/{id}/confirm) - 지시 확정 (모의 데이터만 있음)
+  2023-08-05 10:31: InstructionImport.jsx 분석 완료. 현재 JSON/CSV 파일만 지원하며 xlsx 포맷은 미지원 상태.
+  2023-08-05 10:32: 미구현된 API 기능:
+- Excel 파일 업로드 API (POST /instruction/excel)
+- 지시 상태 변경 API (실제 API 호출)
+- 지시 확정 API (실제 API 호출)
+- 지시-공종 관련 API (POST, PUT, DELETE /instruction/{id}/type)
+- 지시-공종-작업 관련 API (POST, PUT, DELETE /instruction/{id}/type/unit)
+  2023-08-05 10:40: API 문서 확인 완료. 지시 관련 API 문서에 상세 요청/응답 형식이 명시되어 있지 않음.
+  2023-08-05 10:45: ANALYZE 단계 완료. 지시 관련 API 및 컴포넌트 현황 파악 완료.
+  2023-08-05 10:50: BLUEPRINT 단계 시작. 엑셀 파일 업로드 API 및 관련 기능 구현을 위한 계획 수립 중.
+  2023-08-05 11:00: 계획 작성 완료. 사용자 검토 및 승인 필요.
+  2023-08-05 11:30: 사용자 요청에 따라 계획 수정. 백엔드 개발은 작업 범위에서 제외하고 프론트엔드 구현에 집중. 엑셀 기능은 향후 필수 작업으로 표시.
+  2023-08-05 11:35: 사용자가 제시한 10가지 지시 관리 요구사항을 반영하여 계획 재수립.
+  2023-08-05 11:40: 수정된 계획 작성 완료. 사용자 검토 및 승인 필요.
+  2023-08-05 11:45: 계획 승인 완료. CONSTRUCT 단계로 전환하여 개발 시작.
+  2023-08-05 11:50: 지시 목록 페이지 개선 작업(Step 1.1) 시작. 현재 InstructionList.jsx 파일 분석 진행 중.
+  2023-08-05 12:00: InstructionList.jsx 분석 완료. 현재 구현 상태:
+- 지시 목록 필터링: 상태(status)와 우선순위(priority)로 필터링 가능
+- 검색 기능: 제목, ID, 위치, 주소, 관리자, 담당자, 채널, 내용 등으로 검색 가능
+- 컬럼 표시 선택: 사용자가 원하는 컬럼만 선택하여 표시 가능
+- 페이지네이션: 페이지 단위로 데이터 로드 가능
+- 지시 추가, 가져오기, 내보내기 버튼 제공
+- 상태 및 우선순위 시각화: 색상 구분으로 표시
+- 개선 필요 사항:
+  1. 번지/동 검색 기능 명확화
+  2. 날짜 범위 필터링 추가
+  3. 지시 상태 필터링 5단계 업데이트
+  4. 최종 수정자 정보 컬럼 추가
+  5. 작업자, 작업현황, 비고, 기성회차 필드 추가
+     2023-08-05 12:10: instructionAPI.js 분석 완료. 현재 Mock 데이터 구조:
+- 기본 필드: id, title, priority, status, createdAt, dueDate, location, address, manager, receiver, channel, description
+- 추가 필드: works(배열), favorite(불리언), paymentRound, lastModifiedBy, lastModifiedAt
+- 개선이 필요한 필드:
+  1. 5단계 상태 체계화: RECEIVED(접수), IN_PROGRESS(작업중), COMPLETED_WORK(작업완료), IN_APPROVAL(결재중), COMPLETED(완료)
+  2. 작업자(worker) 필드 추가
+  3. 작업현황(workStatus) 필드 추가
+  4. 비고(note) 필드 추가
+  5. 동(dong)과 지번(lotNumber) 필드를 명확히 구분
+  6. 세부사항과 작업내용 필드 구분
+     2023-08-05 12:20: 개선 계획 정리:
+
+1. InstructionList.jsx 페이지 개선:
+   - 상태 필터 5단계로 업데이트
+   - 날짜 범위 필터 추가
+   - 번지/동 검색 기능 구체화
+   - 목록 컬럼에 작업자, 작업현황, 비고, 기성회차, 최종 수정자 필드 추가
+   - 컬럼 레이아웃 최적화
+2. Mock 데이터 개선:
+   - 기존 mockInstructions 데이터 확장
+   - 새로운 필드 및 5단계 상태 추가
+3. 구현 순서:
+   - 먼저 Mock 데이터 구조 업데이트
+   - 상태 관련 코드 업데이트 (STATUS_MAP)
+   - 날짜 필터링 컴포넌트 추가
+   - 검색 영역 개선
+   - 컬럼 정의 업데이트
+     2023-08-05 12:30: instructionAPI.js 파일의 Mock 데이터 업데이트 완료:
+
+- 상태 체계를 5단계로 확장 (RECEIVED, IN_PROGRESS, COMPLETED_WORK, IN_APPROVAL, COMPLETED)
+- 새로운 데이터 항목 추가: dong, lotNumber, workContent, note, worker, workStatus
+- 기존 데이터 항목 수정 및 확장: description은 세부사항으로, workContent는 작업내용으로 분리
+- 테스트를 위해 추가 샘플 데이터 2개 추가 (IN_APPROVAL, COMPLETED 상태)
+  2023-08-05 12:45: InstructionList.jsx 파일 업데이트 완료:
+- 상태 필터 5단계로 업데이트 (접수, 작업중, 작업완료, 결재중, 완료)
+- 날짜 범위 필터링 기능 추가 (createdAt, dueDate, lastModifiedAt 필드 선택 가능)
+- 검색 기능 개선 (전체 검색, 동 검색, 지번 검색 선택 가능)
+- 테이블 컬럼 추가 (동, 지번, 작업내용, 비고, 작업자, 작업현황, 기성회차, 최종 수정자)
+- 컬럼 표시 선택 기본값 최적화
+- UI 개선 (필터 및 검색 영역 레이아웃 최적화)
+  2023-08-05 13:00: Step 1.1(지시 목록 페이지 개선) 작업 완료.
 
 ---
 

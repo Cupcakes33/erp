@@ -231,7 +231,7 @@ const WorkDetail = () => {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-6">
+      <div className="mx-auto px-4 py-6">
         <div className="flex items-center justify-center h-64">
           <div className="w-12 h-12 border-b-2 border-blue-500 rounded-full animate-spin"></div>
         </div>
@@ -241,7 +241,7 @@ const WorkDetail = () => {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-6">
+      <div className="mx-auto px-4 py-6">
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           <p>작업 정보를 불러오는 중 오류가 발생했습니다.</p>
           <FormButton onClick={handleBack} className="mt-2">
@@ -254,7 +254,7 @@ const WorkDetail = () => {
 
   if (!currentWork) {
     return (
-      <div className="container mx-auto px-4 py-6">
+      <div className="mx-auto px-4 py-6">
         <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">
           <p>작업 정보를 찾을 수 없습니다.</p>
           <FormButton onClick={handleBack} className="mt-2">
@@ -327,7 +327,7 @@ const WorkDetail = () => {
   const isCanceled = currentWork.status === "취소";
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="mx-auto px-4 py-6">
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center">
           <FormButton
