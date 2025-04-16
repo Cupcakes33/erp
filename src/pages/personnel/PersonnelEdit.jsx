@@ -41,7 +41,10 @@ const PersonnelEdit = () => {
         name: worker.name || "",
         phone: worker.phone || "",
         rank: worker.rank || "",
-        status: worker.status === true || worker.status === "ACTIVE" ? "ACTIVE" : "RESIGNED",
+        status:
+          worker.status === true || worker.status === "ACTIVE"
+            ? "ACTIVE"
+            : "RESIGNED",
         brith: worker.brith || "",
         note: worker.note || "",
       });
@@ -71,7 +74,11 @@ const PersonnelEdit = () => {
     }
     if (!formData.phone.trim()) {
       newErrors.phone = "연락처를 입력해주세요";
-    } else if (!/^\d{3}-\d{4}-\d{4}$|^\d{11}$/.test(formData.phone.replace(/-/g, "").trim())) {
+    } else if (
+      !/^\d{3}-\d{4}-\d{4}$|^\d{11}$/.test(
+        formData.phone.replace(/-/g, "").trim()
+      )
+    ) {
       newErrors.phone = "유효한 연락처 형식이 아닙니다";
     }
     if (!formData.rank.trim()) {
@@ -136,7 +143,7 @@ const PersonnelEdit = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="mx-auto px-4 py-6">
       <div className="flex items-center mb-6">
         <FormButton
           variant="outline"

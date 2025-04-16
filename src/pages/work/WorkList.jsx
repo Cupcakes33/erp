@@ -226,7 +226,7 @@ const WorkList = () => {
   console.log("[WorkList] 렌더링 - filteredWorks:", filteredWorks);
 
   return (
-    <div className="container px-4 py-6 mx-auto">
+    <div className="mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">작업 관리</h1>
         <div className="flex space-x-2">

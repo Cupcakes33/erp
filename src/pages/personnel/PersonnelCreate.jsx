@@ -1,7 +1,13 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCreateWorker } from "../../lib/api/personnelQueries";
-import { FormButton, FormCard, FormInput, FormTextArea, FormSelect } from "../../components/molecules";
+import {
+  FormButton,
+  FormCard,
+  FormInput,
+  FormTextArea,
+  FormSelect,
+} from "../../components/molecules";
 
 /**
  * 작업자 추가 페이지
@@ -45,7 +51,11 @@ const PersonnelCreate = () => {
     }
     if (!formData.phone.trim()) {
       newErrors.phone = "연락처를 입력해주세요";
-    } else if (!/^\d{3}-\d{4}-\d{4}$|^\d{11}$/.test(formData.phone.replace(/-/g, "").trim())) {
+    } else if (
+      !/^\d{3}-\d{4}-\d{4}$|^\d{11}$/.test(
+        formData.phone.replace(/-/g, "").trim()
+      )
+    ) {
       newErrors.phone = "유효한 연락처 형식이 아닙니다";
     }
     if (!formData.rank.trim()) {
@@ -92,7 +102,7 @@ const PersonnelCreate = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="mx-auto px-4 py-6">
       <h1 className="text-2xl font-bold mb-6">새 작업자 등록</h1>
 
       <FormCard>
