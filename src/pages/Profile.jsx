@@ -11,9 +11,6 @@ const Profile = () => {
     username: user?.username || "admin",
     name: user?.name || "관리자",
     email: "admin@example.com",
-    department: "유지보수팀",
-    position: "팀장",
-    phone: "010-1234-5678",
   });
 
   const [isEditing, setIsEditing] = useState(false);
@@ -151,42 +148,6 @@ const Profile = () => {
               />
             </div>
 
-            <div className="mb-4">
-              <FormInput
-                id="department"
-                name="department"
-                label="부서"
-                placeholder="부서"
-                value={profile.department}
-                onChange={handleProfileChange}
-                disabled={!isEditing}
-              />
-            </div>
-
-            <div className="mb-4">
-              <FormInput
-                id="position"
-                name="position"
-                label="직책"
-                placeholder="직책"
-                value={profile.position}
-                onChange={handleProfileChange}
-                disabled={!isEditing}
-              />
-            </div>
-
-            <div className="mb-4">
-              <FormInput
-                id="phone"
-                name="phone"
-                label="연락처"
-                placeholder="연락처"
-                value={profile.phone}
-                onChange={handleProfileChange}
-                disabled={!isEditing}
-              />
-            </div>
-
             {isEditing && (
               <div className="flex justify-end">
                 <FormButton type="submit" variant="success">
@@ -228,7 +189,7 @@ const Profile = () => {
               />
             </div>
 
-            <div className="mb-6">
+            <div className="mb-5">
               <FormInput
                 id="confirm-password"
                 name="confirm"
