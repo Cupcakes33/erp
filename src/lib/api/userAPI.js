@@ -208,8 +208,11 @@ export const mockResetPassword = async (resetData) => {
         return;
       }
       
+      // 임의의 임시 비밀번호 생성 (실제 서비스에서는 서버에서 생성)
+      const tempPassword = 'temp' + Math.floor(1000 + Math.random() * 9000) + '!';
       resolve({
-        message: '등록된 email로 임시 비밀번호가 발급되었습니다.'
+        message: '등록된 email로 임시 비밀번호가 발급되었습니다.',
+        password: tempPassword
       });
     }, 500);
   });

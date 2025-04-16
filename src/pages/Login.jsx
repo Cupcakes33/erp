@@ -8,6 +8,8 @@ import {
   // FormCheckbox,
 } from "../components/molecules";
 import { LockKeyhole, User, AlertCircle } from "lucide-react";
+import { useResetPassword } from "../lib/api/userQueries";
+import Modal from "../components/molecules/Modal";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -30,6 +32,21 @@ const Login = () => {
 
   const [error, setError] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetUsername, setResetUsername] = useState("");
+  const [resetError, setResetError] = useState("");
+  const [tempPassword, setTempPassword] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const {
+    mutate: resetPassword,
+    isLoading: isResetting,
+    isSuccess: isResetSuccess,
+    isError: isResetError,
+    error: resetApiError,
+    reset: resetResetPasswordState,
+  } = useResetPassword();
 
   // 인증 상태 변경 감지
   useEffect(() => {
@@ -64,6 +81,39 @@ const Login = () => {
 
     // Zustand 스토어의 login 함수 호출
     login(formData);
+  };
+
+  // 비밀번호 초기화 요청 핸들러
+  const handleResetPassword = (e) => {
+    e.preventDefault();
+    setResetError("");
+    setTempPassword("");
+    if (!resetUsername.trim()) {
+      setResetError("아이디를 입력해주세요.");
+      return;
+    }
+    resetPassword(
+      { username: resetUsername },
+      {
+        onSuccess: (data) => {
+          setTempPassword(data?.password || "");
+        },
+        onError: (err) => {
+          setResetError(
+            err?.response?.data?.message || err?.message || "비밀번호 초기화 실패"
+          );
+        },
+      }
+    );
+  };
+
+  // 모달 닫기 시 상태 초기화
+  const handleCloseResetModal = () => {
+    setShowResetModal(false);
+    setResetUsername("");
+    setResetError("");
+    setTempPassword("");
+    resetResetPasswordState();
   };
 
   return (
@@ -124,8 +174,12 @@ const Login = () => {
             <a
               href="#"
               className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+              onClick={(e) => {
+                e.preventDefault();
+                setShowResetModal(true);
+              }}
             >
-              비밀번호를 잊으셨나요?
+              비밀번호 초기화
             </a>
           </div>
 
@@ -138,6 +192,58 @@ const Login = () => {
           </p>
         </form>
       </FormCard>
+
+      {/* 비밀번호 초기화 모달 */}
+      <Modal
+        isOpen={showResetModal}
+        onClose={handleCloseResetModal}
+        title="비밀번호 초기화"
+        size="sm"
+      >
+        {tempPassword ? (
+          <div className="space-y-4">
+            <div className="text-green-700 text-center">
+              임시 비밀번호가 발급되었습니다.
+            </div>
+            <div className="flex items-center justify-between border rounded p-2 bg-gray-50">
+              <span className="font-mono text-blue-700">{tempPassword}</span>
+              <button
+                className="ml-2 px-2 py-1 text-xs bg-blue-100 rounded hover:bg-blue-200"
+                onClick={() => {
+                  navigator.clipboard.writeText(tempPassword);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1200);
+                }}
+                type="button"
+              >
+                {copied ? "복사됨" : "복사"}
+              </button>
+            </div>
+            <FormButton onClick={handleCloseResetModal} className="w-full" type="button">
+              닫기
+            </FormButton>
+          </div>
+        ) : (
+          <form onSubmit={handleResetPassword} className="space-y-4">
+            <FormInput
+              id="reset-username"
+              name="reset-username"
+              label="아이디"
+              value={resetUsername}
+              onChange={(e) => setResetUsername(e.target.value)}
+              placeholder="비밀번호를 초기화할 아이디 입력"
+              required
+              autoFocus
+            />
+            {resetError && (
+              <div className="text-red-600 text-sm">{resetError}</div>
+            )}
+            <FormButton type="submit" className="w-full" disabled={isResetting}>
+              {isResetting ? "요청 중..." : "임시 비밀번호 발급"}
+            </FormButton>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 };
