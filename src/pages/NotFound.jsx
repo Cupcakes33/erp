@@ -1,8 +1,9 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { FormCard, FormButton } from "../components/molecules";
 
 const NotFound = () => {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
       <FormCard className="max-w-md w-full text-center py-12 px-6">
@@ -29,7 +30,7 @@ const NotFound = () => {
           요청하신 페이지가 존재하지 않거나 이동되었을 수 있습니다.
         </p>
         <div className="flex justify-center">
-          <FormButton as={Link} to="/" variant="primary">
+          <FormButton variant="primary" onClick={() => navigate("/instructions")}> 
             홈으로 돌아가기
           </FormButton>
         </div>
