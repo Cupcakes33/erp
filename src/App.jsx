@@ -61,7 +61,8 @@ const App = () => {
     <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
-
+        {/* /로 접근 시 /instructions로 리다이렉트 */}
+        <Route path="/" element={<Navigate to="/instructions" replace />} />
         <Route
           path="/"
           element={
@@ -70,7 +71,7 @@ const App = () => {
             </PrivateRoute>
           }
         >
-          <Route index element={<Dashboard />} />
+          {/* <Route index element={<Dashboard />} /> */}
           <Route path="profile" element={<Profile />} />
 
           {/* 지시 관련 라우트 */}

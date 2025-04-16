@@ -34,7 +34,7 @@ const Login = () => {
   // 인증 상태 변경 감지
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/");
+      navigate("/instructions");
     }
 
     if (authError) {

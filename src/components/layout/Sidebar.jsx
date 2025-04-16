@@ -18,7 +18,7 @@ const Sidebar = () => {
 
   // 메뉴 아이템 데이터
   const menuItems = [
-    { title: "대시보드", path: "/", icon: Home },
+    // { title: "대시보드", path: "/", icon: Home },
     {
       title: "지시 관리",
       path: "/instructions",
