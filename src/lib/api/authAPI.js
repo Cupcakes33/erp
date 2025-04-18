@@ -1,3 +1,4 @@
+import axios from 'axios';
 import api from './index';
 
 /**
@@ -47,6 +48,9 @@ const mockUsers = [
 // Mock 토큰 - 개발용
 let mockAuthToken = null;
 let mockRefreshToken = null;
+
+// /api가 제거된 url 주소
+const BASE_URL = import.meta.env.VITE_API_URL.replace(/\/api$/, '');
 
 /**
  * 회원가입 API
@@ -107,7 +111,7 @@ export const mockRegister = async (userData) => {
 export const login = async (credentials) => {
   try {
     // 실제 API 호출
-    const response = await api.post('/login', credentials);
+    const response = await axios.post(`${BASE_URL}/login`, credentials);
     
     // 토큰 저장
     const accessToken = response.headers.authorization;
@@ -125,45 +129,6 @@ export const login = async (credentials) => {
     console.error('로그인 실패:', error);
     throw error;
   }
-};
-
-/**
- * Mock 로그인 API
- * @param {Object} credentials - 로그인 정보
- * @returns {Promise<Object>} 로그인 결과
- */
-export const mockLogin = async (credentials) => {
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      const user = mockUsers.find(
-        user => user.username === credentials.username && user.password === credentials.password
-      );
-
-      if (user) {
-        // Mock 토큰 생성
-        mockAuthToken = `mock-auth-token-${Date.now()}`;
-        mockRefreshToken = `mock-refresh-token-${Date.now()}`;
-        
-        // 로컬 스토리지에 저장
-        localStorage.setItem('authToken', mockAuthToken);
-        localStorage.setItem('refreshToken', mockRefreshToken);
-        localStorage.setItem('currentUser', JSON.stringify({
-          username: user.username,
-          name: user.name,
-          role: user.role
-        }));
-
-        resolve({
-          message: '로그인 성공',
-          data: {
-            refreshToken: mockRefreshToken
-          }
-        });
-      } else {
-        reject(new Error('아이디 또는 비밀번호가 올바르지 않습니다.'));
-      }
-    }, 500);
-  });
 };
 
 /**
@@ -289,7 +254,7 @@ const isDevelopment = import.meta.env.DEV;
 // 실제 API와 Mock API 중 환경에 맞게 내보내기
 export default {
   register: isDevelopment ? mockRegister : register,
-  login: isDevelopment ? mockLogin : login,
-  logout: isDevelopment ? mockLogout : logout,
+  login,
+  logout,
   reissueToken: isDevelopment ? mockReissueToken : reissueToken
 }; 

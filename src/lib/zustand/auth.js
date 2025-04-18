@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
+import authAPI from '../api/authAPI';
 
 // 인증 스토어
 const useAuthStore = create(
@@ -12,35 +13,24 @@ const useAuthStore = create(
         error: null,
         
         // 로그인
-        login: (credentials) => {
+        login: async (credentials) => {
+
           set({ isLoading: true, error: null });
-          
-          // 실제 구현에서는 API 호출
-          setTimeout(() => {
-            // 간단한 인증 체크 (실제 구현에서는 서버에서 검증)
-            if (credentials.username === 'admin' && credentials.password === 'admin') {
-              const user = {
-                id: 1,
-                username: 'admin',
-                name: '관리자',
-                role: 'admin'
-              };
-              
-              // JWT 토큰 저장 (실제 구현에서는 서버에서 발급받은 토큰 사용)
-              localStorage.setItem('token', 'mock-jwt-token');
-              
-              set({ 
-                user, 
-                isAuthenticated: true, 
-                isLoading: false 
-              });
-            } else {
-              set({ 
-                isLoading: false, 
-                error: '아이디 또는 비밀번호가 올바르지 않습니다.' 
-              });
-            }
-          }, 500);
+          try {
+            const response = await authAPI.login(credentials);
+            // 성공 시 사용자 정보와 토큰 저장 (API 응답 구조에 따라 조정)
+            const user = response?.data?.user || { username: credentials.username };
+            set({ 
+              user, 
+              isAuthenticated: true, 
+              isLoading: false 
+            });
+          } catch (error) {
+            set({ 
+              isLoading: false, 
+              error: error?.message || '아이디 또는 비밀번호가 올바르지 않습니다.' 
+            });
+          }
         },
         
         // 로그아웃
