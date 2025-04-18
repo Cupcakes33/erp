@@ -1,5 +1,5 @@
-import axios from 'axios';
-import api from './index';
+import axios from "axios"
+import api from "./index"
 
 /**
  * 인증 관련 API 모듈
@@ -7,7 +7,7 @@ import api from './index';
  */
 
 // /api가 제거된 url 주소
-const BASE_URL = import.meta.env.VITE_API_URL.replace(/\/api$/, '');
+const BASE_URL = import.meta.env.VITE_API_URL.replace(/\/api$/, "")
 
 /**
  * 회원가입 API
@@ -21,13 +21,13 @@ const BASE_URL = import.meta.env.VITE_API_URL.replace(/\/api$/, '');
 export const register = async (userData) => {
   try {
     // 실제 API 호출
-    const response = await api.post('/users/join', userData);
-    return response.data;
+    const response = await api.post("/users/join", userData)
+    return response.data
   } catch (error) {
-    console.error('회원가입 실패:', error);
-    throw error;
+    console.error("회원가입 실패:", error)
+    throw error
   }
-};
+}
 
 /**
  * 로그인 API
@@ -39,20 +39,22 @@ export const register = async (userData) => {
 export const login = async (credentials) => {
   try {
     // 실제 API 호출
-    const response = await axios.post(`${BASE_URL}/login`, credentials);
+    const response = await axios.post(`${BASE_URL}/login`, credentials, {
+      withCredentials: true,
+    })
 
     // 토큰 저장
-    const accessToken = response.headers.authorization;
+    const accessToken = response.headers.authorization
     if (accessToken) {
-      localStorage.setItem('authToken', accessToken);
+      localStorage.setItem("authToken", accessToken)
     }
 
-    return response.data;
+    return response.data
   } catch (error) {
-    console.error('로그인 실패:', error);
-    throw error;
+    console.error("로그인 실패:", error)
+    throw error
   }
-};
+}
 
 /**
  * 로그아웃 API
@@ -61,21 +63,26 @@ export const login = async (credentials) => {
 export const logout = async () => {
   try {
     // 실제 API 호출
-    const response = await api.post('/auth/logout');
-
-    // 토큰 제거
-    localStorage.removeItem('authToken');
-
-    return response.data;
+    const token = localStorage.getItem("authToken")
+    const response = await axios.post(
+      `${BASE_URL}/logout`,
+      {},
+      {
+        withCredentials: true,
+        headers: {
+          Authorization: token ? token : undefined,
+        },
+      },
+    )
+    return response.data
   } catch (error) {
-    console.error('로그아웃 실패:', error);
-
-    // 토큰 제거 (에러가 나도 로컬의 토큰은 제거)
-    localStorage.removeItem('authToken');
-
-    throw error;
+    console.error("로그아웃 실패:", error)
+    throw error
+  } finally {
+    localStorage.removeItem("authToken")
+    window.location.href = "/login"
   }
-};
+}
 
 /**
  * 토큰 재발급 API
@@ -84,42 +91,42 @@ export const logout = async () => {
 export const reissueToken = async () => {
   try {
     // 실제 API 호출
-    const response = await api.post('/auth/reissue', { withCredentials: true });
+    const response = await api.post("/auth/reissue", { withCredentials: true })
 
     // 새 토큰 저장
-    const accessToken = response.headers.authorization;
+    const accessToken = response.headers.authorization
     if (accessToken) {
-      localStorage.setItem('authToken', accessToken);
+      localStorage.setItem("authToken", accessToken)
     }
 
-    return response.data;
+    return response.data
   } catch (error) {
-    console.error('토큰 재발급 실패:', error);
+    console.error("토큰 재발급 실패:", error)
 
     // 오류 종류에 따라 처리
     if (error.response) {
-      const errorMessage = error.response.data?.message;
+      const errorMessage = error.response.data?.message
       if (
-        errorMessage === '리프레쉬 토큰을 찾을 수 없습니다.' ||
-        errorMessage === '리프레쉬 토큰이 만료되었습니다.' ||
-        errorMessage === '유효하지 않은 리프레쉬 토큰입니다.'
+        errorMessage === "리프레쉬 토큰을 찾을 수 없습니다." ||
+        errorMessage === "리프레쉬 토큰이 만료되었습니다." ||
+        errorMessage === "유효하지 않은 리프레쉬 토큰입니다."
       ) {
         // 리프레시 토큰 오류 시 로그아웃 처리
-        localStorage.removeItem('authToken');
+        localStorage.removeItem("authToken")
       }
     }
 
-    throw error;
+    throw error
   }
-};
+}
 
 // 개발 환경에서 Mock API 사용을 위한 설정
-const isDevelopment = import.meta.env.DEV;
+const isDevelopment = import.meta.env.DEV
 
 // 실제 API와 Mock API 중 환경에 맞게 내보내기
 export default {
-  register: isDevelopment ? mockRegister : register,
+  register,
   login,
   logout,
-  reissueToken: isDevelopment ? mockReissueToken : reissueToken
-};
+  reissueToken,
+}

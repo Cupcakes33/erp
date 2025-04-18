@@ -1,45 +1,44 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
-import { useAuthStore } from "../../lib/zustand";
+import React, { useState } from "react"
+import { Link } from "react-router-dom"
+import { useAuthStore } from "../../lib/zustand"
 
 const Header = () => {
   const { user, logout } = useAuthStore((state) => ({
     user: state.user,
     logout: state.logout,
-  }));
+  }))
 
-  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false)
 
   const handleToggleProfileMenu = () => {
-    setIsProfileMenuOpen(!isProfileMenuOpen);
-    if (isNotificationOpen) setIsNotificationOpen(false);
-  };
+    setIsProfileMenuOpen(!isProfileMenuOpen)
+    if (isNotificationOpen) setIsNotificationOpen(false)
+  }
 
   const handleToggleNotification = () => {
-    setIsNotificationOpen(!isNotificationOpen);
-    if (isProfileMenuOpen) setIsProfileMenuOpen(false);
-  };
+    setIsNotificationOpen(!isNotificationOpen)
+    if (isProfileMenuOpen) setIsProfileMenuOpen(false)
+  }
 
   const handleKeyProfileMenu = (e) => {
     if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleToggleProfileMenu();
+      e.preventDefault()
+      handleToggleProfileMenu()
     }
-  };
+  }
 
   const handleKeyNotification = (e) => {
     if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      handleToggleNotification();
+      e.preventDefault()
+      handleToggleNotification()
     }
-  };
+  }
 
   const handleLogout = () => {
     // Zustand 스토어의 logout 함수 호출
-    logout();
-    window.location.href = "/login";
-  };
+    logout()
+  }
 
   return (
     <header className="z-10 bg-white shadow-sm">
@@ -219,7 +218,7 @@ const Header = () => {
         </div>
       </div>
     </header>
-  );
-};
+  )
+}
 
-export default Header;
+export default Header

@@ -1,7 +1,7 @@
-import React, { useState } from "react";
-import { NavLink, useLocation } from "react-router-dom";
-import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+import React, { useState } from "react"
+import { NavLink, useLocation } from "react-router-dom"
+import { cn } from "@/lib/utils"
+import { Button } from "@/components/ui/button"
 import {
   Home,
   ClipboardList,
@@ -11,10 +11,14 @@ import {
   Banknote,
   ChevronDown,
   LogOut,
-} from "lucide-react";
+} from "lucide-react"
+import { useAuthStore } from "@/lib/zustand"
 
 const Sidebar = () => {
-  const location = useLocation();
+  const { logout } = useAuthStore((state) => ({
+    logout: state.logout,
+  }))
+  const location = useLocation()
 
   // 메뉴 아이템 데이터
   const menuItems = [
@@ -61,41 +65,40 @@ const Sidebar = () => {
       ],
     },
     { title: "프로필", path: "/profile", icon: User },
-  ];
+  ]
 
   // 서브메뉴 토글 상태 관리
-  const [openSubMenus, setOpenSubMenus] = useState({});
+  const [openSubMenus, setOpenSubMenus] = useState({})
 
   const toggleSubMenu = (title) => {
     setOpenSubMenus((prev) => ({
       ...prev,
       [title]: !prev[title],
-    }));
-  };
+    }))
+  }
 
   // 로그아웃 핸들러
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    window.location.href = "/login";
-  };
+    logout()
+  }
 
   // 경로가 정확히 일치하는지 확인하는 함수
   const isExactPath = (path) => {
     if (path === "/") {
-      return location.pathname === "/";
+      return location.pathname === "/"
     }
-    return location.pathname === path;
-  };
+    return location.pathname === path
+  }
 
   // 하위 경로를 포함하는지 확인하는 함수
   const isSubPath = (path) => {
     if (path === "/") {
-      return location.pathname === "/";
+      return location.pathname === "/"
     }
     return (
       location.pathname.startsWith(path + "/") || location.pathname === path
-    );
-  };
+    )
+  }
 
   return (
     <div className="fixed flex flex-col w-64 h-screen text-white bg-gray-800">
@@ -114,7 +117,7 @@ const Sidebar = () => {
                     className={cn(
                       "flex items-center justify-between w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 hover:text-white",
                       isSubPath(item.path) && "bg-gray-700 text-white",
-                      openSubMenus[item.title] && "bg-gray-700 text-white"
+                      openSubMenus[item.title] && "bg-gray-700 text-white",
                     )}
                     onClick={() => toggleSubMenu(item.title)}
                   >
@@ -125,7 +128,7 @@ const Sidebar = () => {
                     <ChevronDown
                       className={cn(
                         "w-4 h-4 transition-transform",
-                        openSubMenus[item.title] && "transform rotate-180"
+                        openSubMenus[item.title] && "transform rotate-180",
                       )}
                     />
                   </Button>
@@ -141,7 +144,7 @@ const Sidebar = () => {
                                 "block px-4 py-2 text-sm rounded transition-colors",
                                 isActive
                                   ? "bg-blue-700 text-white"
-                                  : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                                  : "text-gray-300 hover:bg-gray-700 hover:text-white",
                               )
                             }
                             end
@@ -161,7 +164,7 @@ const Sidebar = () => {
                       "flex items-center px-4 py-2 rounded transition-colors",
                       isActive
                         ? "bg-blue-700 text-white"
-                        : "text-gray-300 hover:bg-gray-700 hover:text-white"
+                        : "text-gray-300 hover:bg-gray-700 hover:text-white",
                     )
                   }
                   end
@@ -186,7 +189,7 @@ const Sidebar = () => {
         </Button>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Sidebar;
+export default Sidebar
