@@ -7,7 +7,6 @@ import api from "."
 export const fetchWorkers = async () => {
   try {
     const response = await api.get(`/worker`)
-    console.log("response???", response)
     return response.data
   } catch (error) {
     console.error("작업자 목록 조회 실패:", error)

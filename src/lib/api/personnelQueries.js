@@ -69,8 +69,13 @@ export const useUpdateWorker = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ id, workerData }) =>
-      updateWorker(id, { worker: workerData }),
+    mutationFn: (workerData) => {
+      console.log("workerData???", workerData)
+      return updateWorker(workerData.id, {
+        name: workerData.name,
+        active: workerData.active,
+      })
+    },
     onSuccess: (data, variables) => {
       // 작업자 목록 및 상세 정보 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: [WORKERS_QUERY_KEY] })
