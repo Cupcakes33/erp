@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from "react"
 import usePersonnelStore, { filterWorkers } from "../../lib/zustand/personnel"
 import {
   useWorkers,
-  useToggleWorkerStatus,
   useCreateWorker,
   useUpdateWorker,
 } from "../../lib/api/personnelQueries"

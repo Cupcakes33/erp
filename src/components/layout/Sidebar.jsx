@@ -51,7 +51,6 @@ const Sidebar = () => {
       icon: Users,
       subItems: [
         { title: "작업자 목록", path: "/personnel" },
-        { title: "작업자 추가", path: "/personnel/create" },
       ],
     },
     {

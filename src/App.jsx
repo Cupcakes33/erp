@@ -34,9 +34,6 @@ import WorkExport from "./pages/work/WorkExport";
 
 // 인사 관련 페이지
 import PersonnelList from "./pages/personnel/PersonnelList";
-import PersonnelDetail from "./pages/personnel/PersonnelDetail";
-import PersonnelCreate from "./pages/personnel/PersonnelCreate";
-import PersonnelEdit from "./pages/personnel/PersonnelEdit";
 
 // 인증 상태 확인 컴포넌트
 const PrivateRoute = ({ children }) => {
@@ -92,9 +89,6 @@ const App = () => {
 
           {/* 인사 관련 라우트 */}
           <Route path="personnel" element={<PersonnelList />} />
-          <Route path="personnel/:id" element={<PersonnelDetail />} />
-          <Route path="personnel/create" element={<PersonnelCreate />} />
-          <Route path="personnel/:id/edit" element={<PersonnelEdit />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />
