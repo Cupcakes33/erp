@@ -305,39 +305,39 @@ _Records the progressive execution log for the current session._
 _This section will contain the list of items to be processed._
 _(The format of items is a table)_
 
-| Item ID                 | Text to Tokenize                                                                     |
-| ----------------------- | ------------------------------------------------------------------------------------ |
-| auth_join               | 회원가입 API 구현: POST /test/join, username, name, email, password 필드 필요        |
-| auth_login              | 로그인 API 구현: POST /login, username, password 필드 필요, JWT 토큰 발급            |
-| auth_logout             | 로그아웃 API 구현: POST /auth/logout, 토큰 무효화 처리                               |
-| auth_reissue            | 토큰 재발급 API 구현: POST /auth/reissue, refresh token으로 access token 재발급      |
-| user_my                 | 마이페이지 조회 API 구현: GET /users/me, 사용자 정보 조회                            |
-| user_profile            | 프로필 수정 API 구현: PATCH /users/name, name 수정                                   |
-| user_pw_change          | 비밀번호 변경 API 구현: PUT /users/pw, oldPassword, newPassword 필드 필요            |
-| user_pw_reset           | 비밀번호 초기화 API 구현: POST /users/pw/reset, username으로 임시 비밀번호 발급      |
-| unit_price_list         | 일위대가 목록 조회 API 구현: GET /unit-price, keyword 검색, 페이지네이션 지원        |
-| unit_price_detail       | 일위대가 상세 조회 API 구현: GET /unit-price/{id}, ID로 상세 정보 조회               |
-| unit_price_create       | 일위대가 생성 API 구현: POST /unit-price, code, name, spec, unit, costs 필드 필요    |
-| unit_price_update       | 일위대가 수정 API 구현: PUT /unit-price/{id}, ID로 수정                              |
-| unit_price_delete       | 일위대가 삭제 API 구현: DELETE /unit-price/{id}, ID로 삭제                           |
-| worker_list             | 작업자 목록 조회 API 구현: GET /worker, 작업자 목록 조회                             |
-| worker_create           | 작업자 생성 API 구현: POST /worker, name, phone, rank, status, birth, note 필드 필요 |
-| worker_update           | 작업자 수정 API 구현: PUT /worker/{id}, ID로 작업자 정보 수정                        |
-| worker_status           | 작업자 재직 상태 변경 API 구현: POST /worker/{id}/status, 재직/퇴사 상태 변경        |
-| instruction_create      | 지시 생성 API 구현: POST /instruction, 지시 생성                                     |
-| instruction_excel       | 지시 엑셀 업로드 API 구현: POST /instruction/excel, 엑셀 파일로 일괄 생성            |
-| instruction_list        | 지시 목록 조회 API 구현: GET /instruction, status, page, size 파라미터로 필터링      |
-| instruction_detail      | 지시 상세 조회 API 구현: GET /instruction/{id}, ID로 상세 정보 조회                  |
-| instruction_update      | 지시 정보 변경 API 구현: PUT /instruction/{id}, ID로 지시 정보 수정                  |
-| instruction_status      | 지시 상태 변경 API 구현: POST /instruction/{id}/status, 지시 상태 변경               |
-| instruction_confirm     | 지시 확정 API 구현: POST /instruction/{id}/confirm, 기성에 반영                      |
-| instruction_type_add    | 지시-공종 추가 API 구현: POST /instruction/{id}/type, 공종 추가                      |
-| instruction_type_update | 지시-공종 수정 API 구현: PUT /instruction/{id}/type, 공종 수정                       |
-| instruction_type_delete | 지시-공종 삭제 API 구현: DELETE /instruction/{id}/type, 공종 삭제                    |
-| instruction_unit_add    | 지시-공종-작업 추가 API 구현: POST /instruction/{id}/type/unit, 작업 추가            |
-| instruction_unit_update | 지시-공종-작업 수정 API 구현: PUT /instruction/{id}/type/unit, 작업 수정             |
-| instruction_unit_delete | 지시-공종-작업 삭제 API 구현: DELETE /instruction/{id}/type/unit, 작업 삭제          |
-| progress_list           | 기성 목록 조회 API 구현: GET /progress-payment/rounds, 기성 목록 조회                |
-| progress_detail         | 기성 회차별 조회 API 구현: GET /progress-payment/rounds/{id}, 회차별 상세 조회       |
-| progress_create         | 기성 생성 API 구현: POST /progress-payment/rounds, 기성 생성                         |
-| progress_complete       | 기성 완료 API 구현: POST /progress-payment/rounds/{id}, 기성 완료 처리               |
+| Item ID                 | Text to Tokenize                                                                      |
+| ----------------------- | ------------------------------------------------------------------------------------- |
+| auth_join               | 회원가입 API 구현: POST /test/join, username, name, email, password 필드 필요         |
+| auth_login              | 로그인 API 구현: POST /login, username, password 필드 필요, JWT 토큰 발급             |
+| auth_logout             | 로그아웃 API 구현: POST /auth/logout, 토큰 무효화 처리                                |
+| auth_reissue            | 토큰 재발급 API 구현: POST /auth/reissue, refresh token으로 access token 재발급       |
+| user_my                 | 마이페이지 조회 API 구현: GET /users/me, 사용자 정보 조회                             |
+| user_profile            | 프로필 수정 API 구현: PATCH /users/name, name 수정                                    |
+| user_pw_change          | 비밀번호 변경 API 구현: PUT /users/password, oldPassword, newPassword 필드 필요       |
+| user_pw_reset           | 비밀번호 초기화 API 구현: POST /users/password/reset, username으로 임시 비밀번호 발급 |
+| unit_price_list         | 일위대가 목록 조회 API 구현: GET /unit-price, keyword 검색, 페이지네이션 지원         |
+| unit_price_detail       | 일위대가 상세 조회 API 구현: GET /unit-price/{id}, ID로 상세 정보 조회                |
+| unit_price_create       | 일위대가 생성 API 구현: POST /unit-price, code, name, spec, unit, costs 필드 필요     |
+| unit_price_update       | 일위대가 수정 API 구현: PUT /unit-price/{id}, ID로 수정                               |
+| unit_price_delete       | 일위대가 삭제 API 구현: DELETE /unit-price/{id}, ID로 삭제                            |
+| worker_list             | 작업자 목록 조회 API 구현: GET /worker, 작업자 목록 조회                              |
+| worker_create           | 작업자 생성 API 구현: POST /worker, name, phone, rank, status, birth, note 필드 필요  |
+| worker_update           | 작업자 수정 API 구현: PUT /worker/{id}, ID로 작업자 정보 수정                         |
+| worker_status           | 작업자 재직 상태 변경 API 구현: POST /worker/{id}/status, 재직/퇴사 상태 변경         |
+| instruction_create      | 지시 생성 API 구현: POST /instruction, 지시 생성                                      |
+| instruction_excel       | 지시 엑셀 업로드 API 구현: POST /instruction/excel, 엑셀 파일로 일괄 생성             |
+| instruction_list        | 지시 목록 조회 API 구현: GET /instruction, status, page, size 파라미터로 필터링       |
+| instruction_detail      | 지시 상세 조회 API 구현: GET /instruction/{id}, ID로 상세 정보 조회                   |
+| instruction_update      | 지시 정보 변경 API 구현: PUT /instruction/{id}, ID로 지시 정보 수정                   |
+| instruction_status      | 지시 상태 변경 API 구현: POST /instruction/{id}/status, 지시 상태 변경                |
+| instruction_confirm     | 지시 확정 API 구현: POST /instruction/{id}/confirm, 기성에 반영                       |
+| instruction_type_add    | 지시-공종 추가 API 구현: POST /instruction/{id}/type, 공종 추가                       |
+| instruction_type_update | 지시-공종 수정 API 구현: PUT /instruction/{id}/type, 공종 수정                        |
+| instruction_type_delete | 지시-공종 삭제 API 구현: DELETE /instruction/{id}/type, 공종 삭제                     |
+| instruction_unit_add    | 지시-공종-작업 추가 API 구현: POST /instruction/{id}/type/unit, 작업 추가             |
+| instruction_unit_update | 지시-공종-작업 수정 API 구현: PUT /instruction/{id}/type/unit, 작업 수정              |
+| instruction_unit_delete | 지시-공종-작업 삭제 API 구현: DELETE /instruction/{id}/type/unit, 작업 삭제           |
+| progress_list           | 기성 목록 조회 API 구현: GET /progress-payment/rounds, 기성 목록 조회                 |
+| progress_detail         | 기성 회차별 조회 API 구현: GET /progress-payment/rounds/{id}, 회차별 상세 조회        |
+| progress_create         | 기성 생성 API 구현: POST /progress-payment/rounds, 기성 생성                          |
+| progress_complete       | 기성 완료 API 구현: POST /progress-payment/rounds/{id}, 기성 완료 처리                |

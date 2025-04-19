@@ -47,7 +47,7 @@ export const updateProfile = async (profileData) => {
 export const changePassword = async (passwordData) => {
   try {
     // 실제 API 호출
-    const response = await api.put("/users/pw", passwordData)
+    const response = await api.patch("/users/password", { ...passwordData })
     return response.data
   } catch (error) {
     console.error("비밀번호 변경 실패:", error)
@@ -64,7 +64,7 @@ export const changePassword = async (passwordData) => {
 export const resetPassword = async (resetData) => {
   try {
     // 실제 API 호출
-    const response = await api.post("/users/pw/reset", resetData)
+    const response = await api.post("/users/password/reset", resetData)
     return response.data
   } catch (error) {
     console.error("비밀번호 초기화 실패:", error)

@@ -89,7 +89,7 @@ api.interceptors.response.use(
       } catch (err) {
         processQueue(err, null)
         localStorage.removeItem("authToken")
-        window.location.href = "/login"
+        // window.location.href = "/login"
         return Promise.reject(err)
       } finally {
         isRefreshing = false
@@ -100,7 +100,7 @@ api.interceptors.response.use(
     ) {
       // 일반적은 401(인증 만료) 처리
       localStorage.removeItem("authToken")
-      window.location.href = "/login"
+      // window.location.href = "/login"
       return Promise.reject(error)
     }
     return Promise.reject(error)

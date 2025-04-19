@@ -192,7 +192,7 @@
 
 ### 비밀번호 변경
 
-- **URL**: `/users/pw`
+- **URL**: `/users/password`
 - **Method**: `PUT`
 - **Request Body**:
   ```json
@@ -224,7 +224,7 @@
 
 ### 비밀번호 초기화
 
-- **URL**: `/users/pw/reset`
+- **URL**: `/users/password/reset`
 - **Method**: `POST`
 - **Request Body**:
   ```json

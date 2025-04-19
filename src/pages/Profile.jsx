@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react"
 import { FormButton, FormInput, FormCard } from "../components/molecules"
 import { useAuthStore } from "../lib/zustand"
-import { useMyProfile, useUpdateProfile } from "@/lib/api/userQueries"
+import {
+  useMyProfile,
+  useUpdateProfile,
+  useChangePassword,
+} from "@/lib/api/userQueries"
 
 const Profile = () => {
   const { user } = useAuthStore((state) => ({
@@ -25,6 +29,8 @@ const Profile = () => {
   const { data, isSuccess, isError, error } = useMyProfile()
   const { mutate: updateProfileMutate, isLoading: isUpdating } =
     useUpdateProfile()
+  const { mutate: changePasswordMutate, isLoading: isChangingPassword } =
+    useChangePassword()
 
   const handleProfileChange = (e) => {
     const { name, value } = e.target
@@ -78,7 +84,7 @@ const Profile = () => {
     setErrors({})
   }
 
-  const handleUpdateName = (e) => {
+  const handleUpdateProfile = (e) => {
     e.preventDefault()
     if (
       !profile.name ||
@@ -101,23 +107,30 @@ const Profile = () => {
     )
   }
 
-  const handleUpdateProfile = (e) => {
-    e.preventDefault()
-    // 프로필 업데이트 로직 (실제로는 API 호출)
-    setIsEditing(false)
-    alert("프로필이 업데이트되었습니다")
-  }
-
   const handleUpdatePassword = (e) => {
     e.preventDefault()
     if (validatePassword()) {
-      // 비밀번호 변경 로직 (실제로는 API 호출)
-      alert("비밀번호가 변경되었습니다")
-      setPassword({
-        current: "",
-        new: "",
-        confirm: "",
-      })
+      changePasswordMutate(
+        {
+          oldPassword: password.current,
+          newPassword: password.new,
+        },
+        {
+          onSuccess: () => {
+            alert("비밀번호가 변경되었습니다")
+            setPassword({
+              current: "",
+              new: "",
+              confirm: "",
+            })
+          },
+          onError: (err) => {
+            setErrors({
+              current: err?.response?.data?.message || "비밀번호 변경 실패",
+            })
+          },
+        },
+      )
     }
   }
 
@@ -149,7 +162,7 @@ const Profile = () => {
       <div className="flex flex-col gap-6 md:flex-row">
         {/* 프로필 정보 카드 */}
         <FormCard className="flex-1">
-          <form onSubmit={handleUpdateName}>
+          <form onSubmit={handleUpdateProfile}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">기본 정보</h2>
               <FormButton
@@ -256,8 +269,12 @@ const Profile = () => {
             </div>
 
             <div className="flex justify-end">
-              <FormButton type="submit" variant="primary">
-                비밀번호 변경
+              <FormButton
+                type="submit"
+                variant="primary"
+                disabled={isChangingPassword}
+              >
+                {isChangingPassword ? "변경 중..." : "비밀번호 변경"}
               </FormButton>
             </div>
           </form>
