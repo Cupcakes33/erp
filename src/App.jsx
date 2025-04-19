@@ -1,58 +1,54 @@
-import React, { useEffect } from "react";
+import React, { useEffect } from "react"
 import {
   BrowserRouter as Router,
   Routes,
   Route,
   Navigate,
-} from "react-router-dom";
-import { useAuthStore } from "./lib/zustand";
+} from "react-router-dom"
+import { useAuthStore } from "./lib/zustand"
 
 // 레이아웃
-import Layout from "./components/layout/Layout";
+import Layout from "./components/layout/Layout"
 
 // 페이지
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Profile from "./pages/Profile";
-import NotFound from "./pages/NotFound";
+import Login from "./pages/Login"
+import Profile from "./pages/Profile"
+import NotFound from "./pages/NotFound"
 
 // 지시 관련 페이지
-import InstructionList from "./pages/instruction/InstructionList";
-import InstructionDetail from "./pages/instruction/InstructionDetail";
-import InstructionCreate from "./pages/instruction/InstructionCreate";
-import InstructionEdit from "./pages/instruction/InstructionEdit";
-import InstructionImport from "./pages/instruction/InstructionImport";
-import InstructionExport from "./pages/instruction/InstructionExport";
+import InstructionList from "./pages/instruction/InstructionList"
+import InstructionDetail from "./pages/instruction/InstructionDetail"
+import InstructionCreate from "./pages/instruction/InstructionCreate"
+import InstructionEdit from "./pages/instruction/InstructionEdit"
+import InstructionImport from "./pages/instruction/InstructionImport"
+import InstructionExport from "./pages/instruction/InstructionExport"
 
 // 일위대가 관련 페이지
-import WorkList from "./pages/work/WorkList";
-import WorkDetail from "./pages/work/WorkDetail";
-import WorkCreate from "./pages/work/WorkCreate";
-import WorkEdit from "./pages/work/WorkEdit";
-import WorkImport from "./pages/work/WorkImport";
-import WorkExport from "./pages/work/WorkExport";
+import WorkList from "./pages/work/WorkList"
+import WorkCreate from "./pages/work/WorkCreate"
+import WorkEdit from "./pages/work/WorkEdit"
 
 // 인사 관련 페이지
-import PersonnelList from "./pages/personnel/PersonnelList";
+import PersonnelList from "./pages/personnel/PersonnelList"
 
 // 인증 상태 확인 컴포넌트
 const PrivateRoute = ({ children }) => {
   // Zustand 스토어에서 인증 상태 확인
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  const token = localStorage.getItem("token");
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const token = localStorage.getItem("token")
 
-  return isAuthenticated || token ? children : <Navigate to="/login" />;
-};
+  return isAuthenticated || token ? children : <Navigate to="/login" />
+}
 
 const App = () => {
   const { checkAuth } = useAuthStore((state) => ({
     checkAuth: state.checkAuth,
-  }));
+  }))
 
   // 컴포넌트 마운트 시 인증 상태 확인
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    checkAuth()
+  }, [checkAuth])
 
   return (
     <Router>
@@ -81,11 +77,8 @@ const App = () => {
 
           {/* 일위대가 관련 라우트 */}
           <Route path="works" element={<WorkList />} />
-          <Route path="works/:id" element={<WorkDetail />} />
           <Route path="works/create" element={<WorkCreate />} />
           <Route path="works/:id/edit" element={<WorkEdit />} />
-          <Route path="works/import" element={<WorkImport />} />
-          <Route path="works/export" element={<WorkExport />} />
 
           {/* 인사 관련 라우트 */}
           <Route path="personnel" element={<PersonnelList />} />
@@ -94,7 +87,7 @@ const App = () => {
         <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
-  );
-};
+  )
+}
 
-export default App;
+export default App

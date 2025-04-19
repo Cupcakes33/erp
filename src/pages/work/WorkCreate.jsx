@@ -1,26 +1,26 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useCreateWork } from "../../lib/api/workQueries";
-import { useInstructions } from "../../lib/api/instructionQueries";
+import React, { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import { useCreateUnitPrice } from "../../lib/api/workQueries"
+import { useInstructions } from "../../lib/api/instructionQueries"
 import {
   FormButton,
   FormInput,
   FormSelect,
   FormTextArea,
   FormCard,
-} from "../../components/molecules";
-import { ArrowLeft } from "lucide-react";
+} from "../../components/molecules"
+import { ArrowLeft } from "lucide-react"
 
 const WorkCreate = () => {
-  const navigate = useNavigate();
-  const createWorkMutation = useCreateWork();
+  const navigate = useNavigate()
+  const createWorkMutation = useCreateUnitPrice()
   const {
     data: instructionsData = { instruction: [] },
     isLoading: isLoadingInstructions,
-  } = useInstructions();
+  } = useInstructions()
 
   // 실제 지시 배열 추출
-  const instructions = instructionsData.instruction || [];
+  const instructions = instructionsData.instruction || []
 
   const [formData, setFormData] = useState({
     name: "",
@@ -32,53 +32,53 @@ const WorkCreate = () => {
     completionRate: 0,
     startDate: "",
     dueDate: "",
-  });
+  })
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState({})
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setFormData({
       ...formData,
       [name]: value,
-    });
+    })
 
     // 입력 시 해당 필드의 오류 메시지 삭제
     if (errors[name]) {
       setErrors({
         ...errors,
         [name]: "",
-      });
+      })
     }
 
     // 지시 선택 시 위치 자동 설정
     if (name === "instructionId" && value) {
       const selectedInstruction = instructions.find(
-        (instruction) => instruction.id === value
-      );
+        (instruction) => instruction.id === value,
+      )
       if (selectedInstruction) {
         setFormData((prev) => ({
           ...prev,
           location: selectedInstruction.location,
           instructionId: value,
-        }));
+        }))
       }
     }
-  };
+  }
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors = {}
 
     if (!formData.name.trim()) {
-      newErrors.name = "작업명을 입력해주세요";
+      newErrors.name = "작업명을 입력해주세요"
     }
 
     if (!formData.location.trim()) {
-      newErrors.location = "위치를 입력해주세요";
+      newErrors.location = "위치를 입력해주세요"
     }
 
     if (!formData.assignedTo) {
-      newErrors.assignedTo = "담당자를 입력해주세요";
+      newErrors.assignedTo = "담당자를 입력해주세요"
     }
 
     if (
@@ -86,18 +86,18 @@ const WorkCreate = () => {
       formData.dueDate &&
       new Date(formData.startDate) > new Date(formData.dueDate)
     ) {
-      newErrors.dueDate = "마감일은 시작일 이후여야 합니다";
+      newErrors.dueDate = "마감일은 시작일 이후여야 합니다"
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!validateForm()) {
-      return;
+      return
     }
 
     try {
@@ -105,35 +105,35 @@ const WorkCreate = () => {
       const newWork = {
         ...formData,
         id: `WRK-${new Date().getFullYear()}-${String(
-          Math.floor(Math.random() * 10000)
+          Math.floor(Math.random() * 10000),
         ).padStart(4, "0")}`,
         createdAt: new Date().toISOString().split("T")[0],
         completionRate: parseInt(formData.completionRate) || 0,
-      };
+      }
 
       // 지시 제목 추가
       if (formData.instructionId) {
         const instruction = instructions.find(
-          (i) => i.id === formData.instructionId
-        );
+          (i) => i.id === formData.instructionId,
+        )
         if (instruction) {
-          newWork.instructionTitle = instruction.title;
+          newWork.instructionTitle = instruction.title
         }
       }
 
-      await createWorkMutation.mutateAsync(newWork);
-      navigate("/works");
+      await createWorkMutation.mutateAsync(newWork)
+      navigate("/works")
     } catch (error) {
-      console.error("작업 생성 실패:", error);
+      console.error("작업 생성 실패:", error)
       setErrors({
         submit: "작업을 생성하는 중 오류가 발생했습니다.",
-      });
+      })
     }
-  };
+  }
 
   const handleCancel = () => {
-    navigate("/works");
-  };
+    navigate("/works")
+  }
 
   return (
     <div className="mx-auto px-4 py-6">
@@ -295,7 +295,7 @@ const WorkCreate = () => {
         </form>
       </FormCard>
     </div>
-  );
-};
+  )
+}
 
-export default WorkCreate;
+export default WorkCreate

@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { useWork, useUpdateWork } from "../../lib/api/workQueries";
-import { useInstructions } from "../../lib/api/instructionQueries";
+import React, { useState, useEffect } from "react"
+import { useNavigate, useParams } from "react-router-dom"
+import { useUnitPrices, useUpdateUnitPrice } from "../../lib/api/workQueries"
+import { useInstructions } from "../../lib/api/instructionQueries"
 import {
   FormButton,
   FormInput,
   FormSelect,
   FormTextArea,
   FormCard,
-} from "../../components/molecules";
-import { ArrowLeft } from "lucide-react";
+} from "../../components/molecules"
+import { ArrowLeft } from "lucide-react"
 
 const WorkEdit = () => {
-  const { id } = useParams();
-  const navigate = useNavigate();
-  const { data: work, isLoading: isLoadingWork, isError } = useWork(id);
-  const updateWorkMutation = useUpdateWork();
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const { data: work, isLoading: isLoadingWork, isError } = useUnitPrices(id)
+  const updateWorkMutation = useUpdateUnitPrice()
   const { data: instructions = [], isLoading: isLoadingInstructions } =
-    useInstructions();
+    useInstructions()
 
   const [formData, setFormData] = useState({
     name: "",
@@ -29,9 +29,9 @@ const WorkEdit = () => {
     completionRate: 0,
     startDate: "",
     dueDate: "",
-  });
+  })
 
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState({})
 
   useEffect(() => {
     if (work) {
@@ -45,52 +45,52 @@ const WorkEdit = () => {
         completionRate: work.completionRate || 0,
         startDate: work.startDate || "",
         dueDate: work.dueDate || "",
-      });
+      })
     }
-  }, [work]);
+  }, [work])
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setFormData({
       ...formData,
       [name]: value,
-    });
+    })
 
     // 입력 시 해당 필드의 오류 메시지 삭제
     if (errors[name]) {
       setErrors({
         ...errors,
         [name]: "",
-      });
+      })
     }
 
     // 지시 선택 시 위치 자동 설정
     if (name === "instructionId" && value) {
       const selectedInstruction = instructions.find(
-        (instruction) => instruction.id === value
-      );
+        (instruction) => instruction.id === value,
+      )
       if (selectedInstruction) {
         setFormData((prev) => ({
           ...prev,
           location: selectedInstruction.location,
-        }));
+        }))
       }
     }
-  };
+  }
 
   const validateForm = () => {
-    const newErrors = {};
+    const newErrors = {}
 
     if (!formData.name.trim()) {
-      newErrors.name = "작업명을 입력해주세요";
+      newErrors.name = "작업명을 입력해주세요"
     }
 
     if (!formData.location.trim()) {
-      newErrors.location = "위치를 입력해주세요";
+      newErrors.location = "위치를 입력해주세요"
     }
 
     if (!formData.assignedTo) {
-      newErrors.assignedTo = "담당자를 입력해주세요";
+      newErrors.assignedTo = "담당자를 입력해주세요"
     }
 
     if (
@@ -98,18 +98,18 @@ const WorkEdit = () => {
       formData.dueDate &&
       new Date(formData.startDate) > new Date(formData.dueDate)
     ) {
-      newErrors.dueDate = "마감일은 시작일 이후여야 합니다";
+      newErrors.dueDate = "마감일은 시작일 이후여야 합니다"
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     if (!validateForm()) {
-      return;
+      return
     }
 
     try {
@@ -117,38 +117,38 @@ const WorkEdit = () => {
         ...work,
         ...formData,
         completionRate: parseInt(formData.completionRate) || 0,
-      };
+      }
 
       // 지시 제목 업데이트
       if (formData.instructionId) {
         const instruction = instructions.find(
-          (i) => i.id === formData.instructionId
-        );
+          (i) => i.id === formData.instructionId,
+        )
         if (instruction) {
-          updatedWork.instructionTitle = instruction.title;
+          updatedWork.instructionTitle = instruction.title
         }
       }
 
-      await updateWorkMutation.mutateAsync(updatedWork);
-      navigate(`/works/${id}`);
+      await updateWorkMutation.mutateAsync(updatedWork)
+      navigate(`/works/${id}`)
     } catch (error) {
-      console.error("작업 수정 실패:", error);
+      console.error("작업 수정 실패:", error)
       setErrors({
         submit: "작업을 수정하는 중 오류가 발생했습니다.",
-      });
+      })
     }
-  };
+  }
 
   const handleCancel = () => {
-    navigate(`/works/${id}`);
-  };
+    navigate(`/works/${id}`)
+  }
 
   if (isLoadingWork) {
     return (
       <div className="mx-auto px-4 py-6">
         <p className="text-center text-gray-500">작업 정보를 불러오는 중...</p>
       </div>
-    );
+    )
   }
 
   if (isError) {
@@ -163,7 +163,7 @@ const WorkEdit = () => {
           </FormButton>
         </div>
       </div>
-    );
+    )
   }
 
   return (
@@ -325,7 +325,7 @@ const WorkEdit = () => {
         </form>
       </FormCard>
     </div>
-  );
-};
+  )
+}
 
-export default WorkEdit;
+export default WorkEdit

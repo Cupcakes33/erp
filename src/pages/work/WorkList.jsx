@@ -1,49 +1,38 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useWorks } from "../../lib/api/workQueries";
-import { DataTable, FormButton, FormInput } from "../../components/molecules";
-import { Eye, Pencil, Plus, Search, FileUp, RefreshCw } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import React, { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import { useUnitPrices } from "../../lib/api/workQueries"
+import { DataTable, FormButton, FormInput } from "../../components/molecules"
+import { Eye, Pencil, Plus, Search, FileUp, RefreshCw } from "lucide-react"
+import { useQueryClient } from "@tanstack/react-query"
 
 const WorkList = () => {
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
 
   // 데이터 상태 관리
-  const worksQuery = useWorks();
-  const { data: works, isLoading, refetch, error } = worksQuery;
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filteredWorks, setFilteredWorks] = useState([]);
+  const unitPricesQuery = useUnitPrices()
+  const { data: works, isLoading, refetch, error } = unitPricesQuery
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filteredWorks, setFilteredWorks] = useState([])
 
   // 컴포넌트 마운트 시 강제로 데이터 로드
   useEffect(() => {
-    console.log("[WorkList] 컴포넌트 마운트됨");
+    console.log("[WorkList] 컴포넌트 마운트됨")
 
     // React Query 캐시 초기화
-    queryClient.invalidateQueries({ queryKey: ["works"] });
+    queryClient.invalidateQueries({ queryKey: ["works"] })
 
     // 즉시 데이터 리로드
     refetch().then((result) => {
-      console.log("[WorkList] 리페치 결과:", result);
-    });
-  }, []);
-
-  // 쿼리 상태 변경 모니터링
-  useEffect(() => {
-    console.log("[WorkList] 쿼리 상태 변경됨:", {
-      isLoading,
-      isError: worksQuery.isError,
-      data: works,
-      dataUpdatedAt: worksQuery.dataUpdatedAt,
-      status: worksQuery.status,
-    });
-  }, [worksQuery.status, isLoading, works]);
+      console.log("[WorkList] 리페치 결과:", result)
+    })
+  }, [])
 
   // works 데이터가 변경될 때마다 필터링 로직 적용
   useEffect(() => {
-    console.log("[WorkList] works 변경됨:", works);
+    console.log("[WorkList] works 변경됨:", works)
     if (works && Array.isArray(works)) {
-      console.log("[WorkList] works는 배열이고 길이:", works.length);
+      console.log("[WorkList] works는 배열이고 길이:", works.length)
       const filtered = works.filter((work) => {
         return (
           searchTerm === "" ||
@@ -67,44 +56,44 @@ const WorkList = () => {
               .toString()
               .toLowerCase()
               .includes(searchTerm.toLowerCase()))
-        );
-      });
-      console.log("[WorkList] 필터링된 데이터:", filtered);
-      setFilteredWorks(filtered);
+        )
+      })
+      console.log("[WorkList] 필터링된 데이터:", filtered)
+      setFilteredWorks(filtered)
     } else {
-      console.log("[WorkList] works가 없거나 배열이 아님");
-      setFilteredWorks([]);
+      console.log("[WorkList] works가 없거나 배열이 아님")
+      setFilteredWorks([])
     }
-  }, [works, searchTerm]);
+  }, [works, searchTerm])
 
   const handleNavigateToCreate = () => {
-    navigate("/works/create");
-  };
+    navigate("/works/create")
+  }
 
   const handleNavigateToImport = () => {
-    navigate("/works/import");
-  };
+    navigate("/works/import")
+  }
 
   const handleNavigateToDetail = (workId) => {
-    navigate(`/works/${workId}`);
-  };
+    navigate(`/works/${workId}`)
+  }
 
   const handleNavigateToEdit = (workId) => {
-    navigate(`/works/${workId}/edit`);
-  };
+    navigate(`/works/${workId}/edit`)
+  }
 
   // 강제 리로드 함수
   const handleForceRefetch = () => {
-    console.log("[WorkList] 강제 리로드 시작");
-    queryClient.invalidateQueries({ queryKey: ["works"] });
+    console.log("[WorkList] 강제 리로드 시작")
+    queryClient.invalidateQueries({ queryKey: ["works"] })
     refetch({ force: true }).then((result) => {
-      console.log("[WorkList] 강제 리로드 결과:", result);
-    });
-  };
+      console.log("[WorkList] 강제 리로드 결과:", result)
+    })
+  }
 
   // 수동 데이터 설정 함수
   const handleDebugData = () => {
-    console.log("[WorkList] 디버그 데이터 설정");
+    console.log("[WorkList] 디버그 데이터 설정")
     const mockData = [
       {
         id: "W-001",
@@ -128,10 +117,10 @@ const WorkList = () => {
         expenseCost: 3000,
         totalCost: 53000,
       },
-    ];
-    setFilteredWorks(mockData);
-    console.log("[WorkList] 수동으로 mock 데이터 설정됨:", mockData);
-  };
+    ]
+    setFilteredWorks(mockData)
+    console.log("[WorkList] 수동으로 mock 데이터 설정됨:", mockData)
+  }
 
   // 데이터 테이블 컬럼 정의
   const columns = [
@@ -201,8 +190,8 @@ const WorkList = () => {
         <div className="flex items-center space-x-2">
           <button
             onClick={(e) => {
-              e.stopPropagation();
-              handleNavigateToDetail(row.original.id);
+              e.stopPropagation()
+              handleNavigateToDetail(row.original.id)
             }}
             className="p-1 text-blue-600 hover:text-blue-800"
           >
@@ -210,8 +199,8 @@ const WorkList = () => {
           </button>
           <button
             onClick={(e) => {
-              e.stopPropagation();
-              handleNavigateToEdit(row.original.id);
+              e.stopPropagation()
+              handleNavigateToEdit(row.original.id)
             }}
             className="p-1 text-gray-600 hover:text-gray-800"
           >
@@ -220,10 +209,10 @@ const WorkList = () => {
         </div>
       ),
     },
-  ];
+  ]
 
   // 현재 데이터 상태 표시
-  console.log("[WorkList] 렌더링 - filteredWorks:", filteredWorks);
+  console.log("[WorkList] 렌더링 - filteredWorks:", filteredWorks)
 
   return (
     <div className="mx-auto px-4 py-6">
@@ -299,7 +288,7 @@ const WorkList = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default WorkList;
+export default WorkList
