@@ -1,135 +1,138 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { usePersonnelStore } from "../../lib/zustand";
+import React, { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import usePersonnelStore, { filterWorkers } from "../../lib/zustand/personnel"
 import {
   useWorkers,
   useToggleWorkerStatus,
-} from "../../lib/api/personnelQueries";
+} from "../../lib/api/personnelQueries"
 import {
   DataTable,
   FormButton,
   FormInput,
   FormSelect,
-} from "../../components/molecules";
-import { PlusCircle, Search, Edit, Eye, UserCheck, UserX } from "lucide-react";
+} from "../../components/molecules"
+import { PlusCircle, Search } from "lucide-react"
 
 /**
  * 인사 관리 목록 페이지
  */
 const PersonnelList = () => {
-  const navigate = useNavigate();
-  const { filterOptions, setFilterOptions } = usePersonnelStore();
+  const navigate = useNavigate()
   const {
-    data: workersData = { worker: [] },
+    filterOptions,
+    setFilterOptions,
+    sortBy,
+    tableSettings,
+    setTableSettings,
+    setCurrentPage,
+    setPageSize,
+  } = usePersonnelStore()
+
+  // 원본 데이터 fetch (파라미터 없이 전체 데이터만 받아옴)
+  const {
+    data: workersData = { data: [] },
     isLoading,
     isError,
     error,
-  } = useWorkers();
-  const toggleStatusMutation = useToggleWorkerStatus();
-  const [searchTerm, setSearchTerm] = useState("");
+  } = useWorkers() // 파라미터 제거
+  const toggleStatusMutation = useToggleWorkerStatus()
 
-  // 실제 작업자 배열 추출
-  const workers = workersData.worker || [];
+  // 상태 관리: 원본/가공/페이지네이션
+  const [rawWorkers, setRawWorkers] = useState([])
+  const [filtered, setFiltered] = useState([])
+  const [totalCount, setTotalCount] = useState(0)
+  const [totalPage, setTotalPage] = useState(1)
 
-  // 디버깅을 위한 데이터 로그
-  console.log("[PersonnelList] 작업자 데이터:", workers);
+  // 원본 데이터 useEffect로 상태에 반영
+  useEffect(() => {
+    setRawWorkers(workersData.data || [])
+  }, [workersData])
+
+  // 필터링/정렬/페이지네이션 useEffect
+  useEffect(() => {
+    const { paged, totalCount, totalPage } = filterWorkers(rawWorkers, {
+      keyword: filterOptions.keyword,
+      status: filterOptions.status,
+      sortBy,
+      pageSize: tableSettings.pageSize,
+      currentPage: tableSettings.currentPage,
+    })
+    setFiltered(paged)
+    setTotalCount(totalCount)
+    setTotalPage(totalPage)
+  }, [
+    rawWorkers,
+    filterOptions,
+    sortBy,
+    tableSettings.pageSize,
+    tableSettings.currentPage,
+  ])
 
   // 상태 영문 → 한글 변환 함수
-  const getStatusKor = (status) => {
-    switch (status) {
-      case "ACTIVE":
-        return "재직";
-      case "RESIGNED":
-        return "퇴사";
-      default:
-        return status;
-    }
-  };
-
-  // 필터링 적용 (상태 필터 + 검색어)
-  const filteredWorkers = workers
-    .map((worker) => ({
-      ...worker,
-      statusKor: getStatusKor(worker.status),
-    }))
-    .filter((worker) => {
-      // '재직'/'퇴사' 상태를 사용하도록 필터링 로직 수정
-      const matchesStatus =
-        filterOptions.status === "all" ||
-        (filterOptions.status === "active" && worker.statusKor === "재직") ||
-        (filterOptions.status === "inactive" && worker.statusKor === "퇴사");
-
-      const matchesSearch =
-        searchTerm === "" ||
-        worker.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        worker.statusKor?.toLowerCase().includes(searchTerm.toLowerCase());
-
-      return matchesStatus && matchesSearch;
-    });
+  const getStatusKor = (active) => (active ? "재직" : "퇴사")
 
   // 작업자 추가 페이지로 이동
   const handleAddNew = () => {
-    navigate("/personnel/create");
-  };
+    navigate("/personnel/create")
+  }
 
   // 작업자 상태 토글 (재직/퇴사)
   const handleToggleStatus = (workerId, e) => {
-    e.stopPropagation();
-    toggleStatusMutation.mutate(workerId);
-  };
+    e.stopPropagation()
+    toggleStatusMutation.mutate(workerId)
+  }
 
   // 작업자 상세 보기 페이지로 이동
   const handleRowClick = (worker) => {
-    navigate(`/personnel/${worker.id}`);
-  };
+    navigate(`/personnel/${worker.id}`)
+  }
 
-  // 모든 가능한 컬럼 정의 (id, 이름, 상태)
-  const allColumns = [
+  // 컬럼 정의
+  const columns = [
     { accessorKey: "id", header: "ID", className: "w-16 text-center" },
     { accessorKey: "name", header: "이름" },
     {
-      accessorKey: "statusKor",
+      accessorKey: "active",
       header: "상태",
       cell: ({ row }) => {
-        let statusColor;
-        const status = row.getValue("statusKor");
-        switch (status) {
-          case "재직":
-            statusColor = "bg-green-100 text-green-800";
-            break;
-          case "퇴사":
-            statusColor = "bg-red-100 text-red-800";
-            break;
-          default:
-            statusColor = "bg-gray-100 text-gray-800";
-        }
+        const status = getStatusKor(row.original.active)
+        const statusColor =
+          status === "재직"
+            ? "bg-green-100 text-green-800"
+            : "bg-red-100 text-red-800"
         return (
           <span
             className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${statusColor}`}
           >
             {status}
           </span>
-        );
+        )
       },
     },
-  ];
+  ]
 
-  // 현재 화면에 표시할 컬럼들 (id, 이름, 상태)
-  const columns = allColumns;
+  // 페이지네이션 핸들러
+  const handlePageChange = (nextPage) => {
+    setTableSettings({ ...tableSettings, currentPage: nextPage })
+  }
+  const handlePageSizeChange = (e) => {
+    setTableSettings({
+      ...tableSettings,
+      pageSize: Number(e.target.value),
+      currentPage: 1,
+    })
+  }
 
   return (
     <div className="mx-auto px-4 py-6">
-      {/* 페이지 헤더 */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold">작업자 목록</h1>
       </div>
-      {/* 2분할 레이아웃 */}
       <div className="flex flex-col md:flex-row gap-6">
-        {/* 좌측: 테이블 */}
         <div className="flex-1">
           <DataTable
             columns={columns}
-            data={filteredWorkers}
+            data={filtered}
             loading={isLoading}
             emptyMessage="작업자 정보가 없습니다."
             onRowClick={handleRowClick}
@@ -175,9 +178,11 @@ const PersonnelList = () => {
               <FormInput
                 type="text"
                 className="pl-10"
-                placeholder="이름, 상태로 검색..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="이름으로 검색..."
+                value={filterOptions.keyword}
+                onChange={(e) =>
+                  setFilterOptions({ keyword: e.target.value, currentPage: 1 })
+                }
               />
             </div>
           </div>
@@ -195,7 +200,7 @@ const PersonnelList = () => {
         </div>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default PersonnelList;
+export default PersonnelList
