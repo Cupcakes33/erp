@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
 import usePersonnelStore, { filterWorkers } from "../../lib/zustand/personnel"
 import {
   useWorkers,
   useToggleWorkerStatus,
+  useCreateWorker,
+  useUpdateWorker,
 } from "../../lib/api/personnelQueries"
 import {
   DataTable,
@@ -12,12 +13,12 @@ import {
   FormSelect,
 } from "../../components/molecules"
 import { PlusCircle, Search } from "lucide-react"
+import Modal from "../../components/molecules/Modal"
 
 /**
  * 인사 관리 목록 페이지
  */
 const PersonnelList = () => {
-  const navigate = useNavigate()
   const {
     filterOptions,
     setFilterOptions,
@@ -35,7 +36,6 @@ const PersonnelList = () => {
     isError,
     error,
   } = useWorkers() // 파라미터 제거
-  const toggleStatusMutation = useToggleWorkerStatus()
 
   // 상태 관리: 원본/가공/페이지네이션
   const [rawWorkers, setRawWorkers] = useState([])
@@ -71,29 +71,63 @@ const PersonnelList = () => {
   // 상태 영문 → 한글 변환 함수
   const getStatusKor = (active) => (active ? "재직" : "퇴사")
 
-  // 작업자 추가 페이지로 이동
-  const handleAddNew = () => {
-    navigate("/personnel/create")
+  // 모달 상태 관리
+  const [modal, setModal] = useState({ type: null, open: false, data: null })
+  const [modalName, setModalName] = useState("")
+  const [modalStatus, setModalStatus] = useState("active")
+  const [modalError, setModalError] = useState("")
+
+  // 모달 열기 핸들러
+  const openAddModal = () => {
+    setModal({ type: "add", open: true, data: null })
+    setModalName("")
+    setModalError("")
+  }
+  const openEditModal = (worker) => {
+    setModal({ type: "edit", open: true, data: worker })
+    setModalName(worker.name)
+    setModalStatus(worker.active ? "active" : "inactive")
+    setModalError("")
+  }
+  const closeModal = () => {
+    setModal({ type: null, open: false, data: null })
+    setModalError("")
   }
 
-  // 작업자 상태 토글 (재직/퇴사)
-  const handleToggleStatus = (workerId, e) => {
-    e.stopPropagation()
-    toggleStatusMutation.mutate(workerId)
-  }
+  // 추가/수정 API 연결
+  const { mutate: createWorker } = useCreateWorker() // 기존 훅에서 create 함수 분리 필요시 수정
+  const { mutate: updateWorker } = useUpdateWorker() // 수정용 훅 분리 필요시 수정
 
-  // 작업자 상세 보기 페이지로 이동
-  const handleRowClick = (worker) => {
-    navigate(`/personnel/${worker.id}`)
+  const handleAdd = (e) => {
+    e.preventDefault()
+    if (!modalName.trim()) {
+      setModalError("이름을 입력하세요.")
+      return
+    }
+    createWorker({ name: modalName }, { onSuccess: closeModal })
+  }
+  const handleEdit = (e) => {
+    e.preventDefault()
+    if (!modalName.trim()) {
+      setModalError("이름을 입력하세요.")
+      return
+    }
+    // 수정 API 호출
+    updateWorker(
+      { id: modal.data.id, name: modalName, active: modalStatus === "active" },
+      { onSuccess: closeModal },
+    )
+    // (실제 API에 맞게 수정)
   }
 
   // 컬럼 정의
   const columns = [
-    { accessorKey: "id", header: "ID", className: "w-16 text-center" },
-    { accessorKey: "name", header: "이름" },
+    { accessorKey: "id", header: "ID", className: "w-16 text-center px-2" },
+    { accessorKey: "name", header: "이름", className: "px-2" },
     {
       accessorKey: "active",
       header: "상태",
+      className: "px-2",
       cell: ({ row }) => {
         const status = getStatusKor(row.original.active)
         const statusColor =
@@ -108,6 +142,27 @@ const PersonnelList = () => {
           </span>
         )
       },
+    },
+    {
+      id: "edit",
+      header: "",
+      className: "w-24 text-center px-2 !pr-0",
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <button
+            type="button"
+            className="px-3 py-1 rounded bg-blue-500 text-white text-xs hover:bg-blue-600 transition"
+            onClick={(e) => {
+              e.stopPropagation()
+              openEditModal(row.original)
+            }}
+          >
+            수정
+          </button>
+        </div>
+      ),
+      enableSorting: false,
+      enableFiltering: false,
     },
   ]
 
@@ -135,7 +190,6 @@ const PersonnelList = () => {
             data={filtered}
             loading={isLoading}
             emptyMessage="작업자 정보가 없습니다."
-            onRowClick={handleRowClick}
             enableGlobalFilter={false}
           />
         </div>
@@ -187,7 +241,7 @@ const PersonnelList = () => {
             </div>
           </div>
           {/* 작업자 추가 버튼 */}
-          <FormButton onClick={handleAddNew} className="w-full">
+          <FormButton onClick={openAddModal} className="w-full">
             <PlusCircle className="w-4 h-4 mr-2" />
             작업자 추가
           </FormButton>
@@ -199,6 +253,44 @@ const PersonnelList = () => {
           )}
         </div>
       </div>
+      {/* 추가/수정 모달 */}
+      <Modal
+        isOpen={modal.open}
+        onClose={closeModal}
+        title={modal.type === "add" ? "작업자 추가" : "작업자 정보 수정"}
+      >
+        <form onSubmit={modal.type === "add" ? handleAdd : handleEdit}>
+          <FormInput
+            label="이름"
+            value={modalName}
+            onChange={(e) => setModalName(e.target.value)}
+            required
+            autoFocus
+          />
+          {modal.type === "edit" && (
+            <FormSelect
+              label="상태"
+              value={modalStatus}
+              onChange={(e) => setModalStatus(e.target.value)}
+              options={[
+                { value: "active", label: "재직" },
+                { value: "inactive", label: "퇴사" },
+              ]}
+            />
+          )}
+          {modalError && (
+            <div className="text-red-500 text-sm mb-2">{modalError}</div>
+          )}
+          <div className="flex justify-end gap-2 mt-6">
+            <FormButton type="button" variant="outline" onClick={closeModal}>
+              취소
+            </FormButton>
+            <FormButton type="submit">
+              {modal.type === "add" ? "추가" : "저장"}
+            </FormButton>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

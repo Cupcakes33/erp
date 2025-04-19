@@ -19,9 +19,6 @@ export const fetchWorkers = async () => {
  * 작업자를 생성하는 API
  * @param {Object} workerData - 작업자 데이터
  * @param {string} workerData.name - 작업자 이름
- * @param {string} workerData.birth - 생년월일 (YYYY-MM-DD)
- * @param {string} workerData.phone - 연락처
- * @param {string} workerData.position - 직책
  * @returns {Promise<Object>} 생성된 작업자 정보
  */
 export const createWorker = async (workerData) => {

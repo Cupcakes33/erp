@@ -53,7 +53,7 @@ export const useCreateWorker = () => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (workerData) => createWorker({ worker: workerData }),
+    mutationFn: (workerData) => createWorker(workerData),
     onSuccess: () => {
       // 작업자 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: [WORKERS_QUERY_KEY] })
