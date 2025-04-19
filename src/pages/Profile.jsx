@@ -1,96 +1,120 @@
-import React, { useState } from "react";
-import { FormButton, FormInput, FormCard } from "../components/molecules";
-import { useAuthStore } from "../lib/zustand";
+import React, { useEffect, useState } from "react"
+import { FormButton, FormInput, FormCard } from "../components/molecules"
+import { useAuthStore } from "../lib/zustand"
+import { useMyProfile } from "@/lib/api/userQueries"
 
 const Profile = () => {
   const { user } = useAuthStore((state) => ({
     user: state.user,
-  }));
+  }))
 
   const [profile, setProfile] = useState({
     username: user?.username || "admin",
     name: user?.name || "관리자",
     email: "admin@example.com",
-  });
+  })
 
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false)
   const [password, setPassword] = useState({
     current: "",
     new: "",
     confirm: "",
-  });
-  const [errors, setErrors] = useState({});
+  })
+  const [errors, setErrors] = useState({})
+
+  const { data, isSuccess, isError, error } = useMyProfile()
 
   const handleProfileChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setProfile((prev) => ({
       ...prev,
       [name]: value,
-    }));
-  };
+    }))
+  }
 
   const handlePasswordChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setPassword((prev) => ({
       ...prev,
       [name]: value,
-    }));
+    }))
 
     // Clear errors when typing
     if (errors[name]) {
       setErrors((prev) => ({
         ...prev,
         [name]: "",
-      }));
+      }))
     }
-  };
+  }
 
   const validatePassword = () => {
-    const newErrors = {};
+    const newErrors = {}
 
     if (!password.current) {
-      newErrors.current = "현재 비밀번호를 입력하세요";
+      newErrors.current = "현재 비밀번호를 입력하세요"
     }
 
     if (!password.new) {
-      newErrors.new = "새 비밀번호를 입력하세요";
+      newErrors.new = "새 비밀번호를 입력하세요"
     } else if (password.new.length < 8) {
-      newErrors.new = "비밀번호는 8자 이상이어야 합니다";
+      newErrors.new = "비밀번호는 8자 이상이어야 합니다"
     }
 
     if (!password.confirm) {
-      newErrors.confirm = "비밀번호 확인을 입력하세요";
+      newErrors.confirm = "비밀번호 확인을 입력하세요"
     } else if (password.new !== password.confirm) {
-      newErrors.confirm = "비밀번호가 일치하지 않습니다";
+      newErrors.confirm = "비밀번호가 일치하지 않습니다"
     }
 
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
+    setErrors(newErrors)
+    return Object.keys(newErrors).length === 0
+  }
 
   const handleEditToggle = () => {
-    setIsEditing((prev) => !prev);
-  };
+    setIsEditing((prev) => !prev)
+  }
 
   const handleUpdateProfile = (e) => {
-    e.preventDefault();
+    e.preventDefault()
     // 프로필 업데이트 로직 (실제로는 API 호출)
-    setIsEditing(false);
-    alert("프로필이 업데이트되었습니다");
-  };
+    setIsEditing(false)
+    alert("프로필이 업데이트되었습니다")
+  }
 
   const handleUpdatePassword = (e) => {
-    e.preventDefault();
+    e.preventDefault()
     if (validatePassword()) {
       // 비밀번호 변경 로직 (실제로는 API 호출)
-      alert("비밀번호가 변경되었습니다");
+      alert("비밀번호가 변경되었습니다")
       setPassword({
         current: "",
         new: "",
         confirm: "",
-      });
+      })
     }
-  };
+  }
+
+  useEffect(() => {
+    if (isSuccess && data?.data) {
+      setProfile(data.data)
+    }
+  }, [isSuccess, data])
+
+  if (isError) {
+    return (
+      <div className="container px-4 py-8 mx-auto">
+        <h1 className="mb-6 text-2xl font-bold">내 프로필</h1>
+        <div className="text-red-500">
+          프로필 정보를 불러오는 중 오류가 발생했습니다.
+          <br />
+          {error?.response?.data?.message ||
+            error?.message ||
+            "알 수 없는 오류"}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="container px-4 py-8 mx-auto">
@@ -211,7 +235,7 @@ const Profile = () => {
         </FormCard>
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Profile;
+export default Profile
