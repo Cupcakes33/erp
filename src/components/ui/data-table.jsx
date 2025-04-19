@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -49,7 +49,10 @@ const DataTablePagination = ({ table }) => {
           <select
             className="w-16 h-8 px-2 text-sm bg-white border border-gray-300 rounded-md"
             value={table.getState().pagination.pageSize}
-            onChange={(e) => table.setPageSize(Number(e.target.value))}
+            onChange={(e) => {
+              const newSize = Number(e.target.value);
+              table.setPageSize(newSize);
+            }}
           >
             {[10, 20, 30, 50, 100].map((pageSize) => (
               <option key={pageSize} value={pageSize}>
@@ -60,7 +63,7 @@ const DataTablePagination = ({ table }) => {
         </div>
         <div className="flex w-[100px] items-center justify-center text-sm font-medium">
           페이지 {table.getState().pagination.pageIndex + 1} /{" "}
-          {table.getPageCount()}
+          {table.getPageCount() || 1}
         </div>
         <div className="flex items-center space-x-2">
           <Button
@@ -124,16 +127,46 @@ export const DataTable = ({
   enableMultiSort = true,
   enablePagination = true,
   enableGlobalFilter = true,
+  manualPagination = false,
+  manualSorting = false,
+  pageCount = 0,
+  pageIndex = 0,
+  pageSize = 10,
+  onPageChange,
+  onPageSizeChange,
+  onSortingChange,
+  state = {},
   selectionColumn,
   className = "",
   containerClassName = "",
   variant = "outline",
   ...props
 }) => {
-  const [sorting, setSorting] = useState([]);
+  const [sorting, setSorting] = useState(state.sorting || []);
   const [columnFilters, setColumnFilters] = useState([]);
   const [rowSelection, setRowSelection] = useState({});
   const [globalFilterValue, setGlobalFilterValue] = useState(globalFilter);
+  const [pagination, setPagination] = useState({
+    pageIndex: pageIndex,
+    pageSize: pageSize,
+  });
+
+  // 외부 상태 변경 시 내부 상태 업데이트
+  useEffect(() => {
+    if (state.sorting) {
+      setSorting(state.sorting);
+    }
+  }, [state.sorting]);
+
+  // 페이지네이션 상태 업데이트
+  useEffect(() => {
+    if (manualPagination) {
+      setPagination({
+        pageIndex: pageIndex,
+        pageSize: pageSize,
+      });
+    }
+  }, [manualPagination, pageIndex, pageSize]);
 
   // 데이터 디버깅
   console.log("DataTable 컴포넌트 렌더링:", {
@@ -157,22 +190,57 @@ export const DataTable = ({
     data: Array.isArray(data) ? data : [],
     columns: selectionColumn ? [selectionColumn, ...columns] : columns,
     getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: enablePagination
+    getPaginationRowModel: enablePagination && !manualPagination
       ? getPaginationRowModel()
       : undefined,
-    getSortedRowModel: enableSorting ? getSortedRowModel() : undefined,
+    getSortedRowModel: enableSorting && !manualSorting
+      ? getSortedRowModel()
+      : undefined,
     getFilteredRowModel: getFilteredRowModel(),
-    onSortingChange: setSorting,
+    onSortingChange: manualSorting
+      ? (updater) => {
+          const newSorting = typeof updater === 'function'
+            ? updater(sorting)
+            : updater;
+
+          setSorting(newSorting);
+
+          if (onSortingChange) {
+            onSortingChange(newSorting);
+          }
+        }
+      : setSorting,
     onColumnFiltersChange: setColumnFilters,
     onRowSelectionChange: setRowSelection,
     onGlobalFilterChange: setGlobalFilter || setGlobalFilterValue,
+    onPaginationChange: manualPagination
+      ? (updater) => {
+          const newPagination = typeof updater === 'function'
+            ? updater(pagination)
+            : updater;
+
+          setPagination(newPagination);
+
+          if (onPageChange && newPagination.pageIndex !== pagination.pageIndex) {
+            onPageChange(newPagination.pageIndex);
+          }
+
+          if (onPageSizeChange && newPagination.pageSize !== pagination.pageSize) {
+            onPageSizeChange(newPagination.pageSize);
+          }
+        }
+      : setPagination,
     enableSorting,
     enableMultiSort,
+    manualPagination,
+    manualSorting,
+    pageCount: manualPagination ? pageCount : undefined,
     state: {
       sorting,
       columnFilters,
       rowSelection,
       globalFilter: setGlobalFilter ? globalFilter : globalFilterValue,
+      pagination,
     },
     debugTable: true, // 테이블 디버깅 활성화
   });

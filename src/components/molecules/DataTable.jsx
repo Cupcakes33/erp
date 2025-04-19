@@ -1,6 +1,6 @@
-import React from "react";
-import { FormCard as Card } from "./index";
-import { DataTable as DataTableComponent } from "@/components/ui/data-table";
+import React from "react"
+import { FormCard as Card } from "./index"
+import { DataTable as DataTableComponent } from "@/components/ui/data-table"
 
 /**
  * DataTable - TanStack Table 기반 데이터 테이블
@@ -23,6 +23,15 @@ const DataTable = ({
   enableMultiSort = true,
   enablePagination = true,
   enableGlobalFilter = true,
+  manualPagination = false,
+  manualSorting = false,
+  pageCount = 0,
+  pageIndex = 0,
+  pageSize = 10,
+  onPageChange,
+  onPageSizeChange,
+  onSortingChange,
+  state = {},
   onSelectionChange,
   ...props
 }) => {
@@ -37,19 +46,19 @@ const DataTable = ({
         cell: column.cell
           ? ({ row }) => {
               // row.original을 사용하는 이전 방식의 cell 함수 지원
-              const value = row.getValue(column.accessor);
-              return column.cell({ ...row.original, [column.accessor]: value });
+              const value = row.getValue(column.accessor)
+              return column.cell({ ...row.original, [column.accessor]: value })
             }
           : undefined,
-      };
+      }
     }
 
     // 이미 올바른 형식을 갖추고 있는 경우
-    return column;
-  });
+    return column
+  })
 
-  console.log("DataTable wrapper - 원본 columns:", columns);
-  console.log("DataTable wrapper - 정규화된 columns:", normalizedColumns);
+  console.log("DataTable wrapper - 원본 columns:", columns)
+  console.log("DataTable wrapper - 정규화된 columns:", normalizedColumns)
 
   // 선택 열 설정 (필요시)
   const selectionColumn = enableSelection
@@ -77,7 +86,7 @@ const DataTable = ({
         ),
         enableSorting: false,
       }
-    : undefined;
+    : undefined
 
   return (
     <DataTableComponent
@@ -95,12 +104,21 @@ const DataTable = ({
       enableMultiSort={enableMultiSort}
       enablePagination={enablePagination}
       enableGlobalFilter={enableGlobalFilter}
+      manualPagination={manualPagination}
+      manualSorting={manualSorting}
+      pageCount={pageCount}
+      pageIndex={pageIndex}
+      pageSize={pageSize}
+      onPageChange={onPageChange}
+      onPageSizeChange={onPageSizeChange}
+      onSortingChange={onSortingChange}
+      state={state}
       selectionColumn={selectionColumn}
       className={className}
       containerClassName=""
       {...props}
     />
-  );
-};
+  )
+}
 
-export default DataTable;
+export default DataTable
