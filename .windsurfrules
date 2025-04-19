@@ -147,7 +147,7 @@
 
 ### 마이페이지 조회
 
-- **URL**: `/users/my`
+- **URL**: `/users/me`
 - **Method**: `GET`
 - **Response - 성공 (200 OK)**:
   ```json
@@ -164,7 +164,7 @@
 
 ### 프로필 수정
 
-- **URL**: `/users/my`
+- **URL**: `/users/me`
 - **Method**: `PATCH`
 - **Request Body**:
   ```json

@@ -77,8 +77,7 @@ api.interceptors.response.use(
         const res = await reissueToken()
         // accessToken 저장은 reissueToken 내부에서 이미 처리됨
         // 필요시 res에서 accessToken을 꺼내 originalRequest에 할당
-        const newAccessToken =
-          res?.accessToken || localStorage.getItem("authToken")
+        const newAccessToken = localStorage.getItem("authToken")
         if (newAccessToken) {
           api.defaults.headers.common[
             "Authorization"

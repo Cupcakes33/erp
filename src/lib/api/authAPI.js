@@ -44,7 +44,10 @@ export const login = async (credentials) => {
     })
 
     // 토큰 저장
-    const accessToken = response.headers.authorization
+    let accessToken = response.headers.authorization
+    if (accessToken && accessToken.startsWith("Bearer ")) {
+      accessToken = accessToken.replace(/^Bearer /, "")
+    }
     if (accessToken) {
       localStorage.setItem("authToken", accessToken)
     }
@@ -91,14 +94,13 @@ export const logout = async () => {
 export const reissueToken = async () => {
   try {
     // 실제 API 호출
-    const response = await api.post("/auth/reissue", { withCredentials: true })
+    const response = await api.post("/auth/reissue")
 
     // 새 토큰 저장
-    const accessToken = response.headers.authorization
-    if (accessToken) {
-      localStorage.setItem("authToken", accessToken)
+    let accessToken = response.headers.authorization
+    if (accessToken && accessToken.startsWith("Bearer ")) {
+      accessToken = accessToken.replace(/^Bearer /, "")
     }
-
     return response.data
   } catch (error) {
     console.error("토큰 재발급 실패:", error)
