@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuthStore } from "../lib/zustand";
+import React, { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import { useAuthStore } from "../lib/zustand"
 import {
   FormButton,
   FormInput,
   FormCard,
   // FormCheckbox,
-} from "../components/molecules";
-import { LockKeyhole, User, AlertCircle } from "lucide-react";
-import { useResetPassword } from "../lib/api/userQueries";
-import Modal from "../components/molecules/Modal";
+} from "../components/molecules"
+import { LockKeyhole, User, AlertCircle } from "lucide-react"
+import { useResetPassword } from "../lib/api/userQueries"
+import Modal from "../components/molecules/Modal"
 
 const Login = () => {
-  const navigate = useNavigate();
+  const navigate = useNavigate()
   const {
     login,
     isAuthenticated,
@@ -23,21 +23,21 @@ const Login = () => {
     isAuthenticated: state.isAuthenticated,
     isLoading: state.isLoading,
     error: state.error,
-  }));
+  }))
 
   const [formData, setFormData] = useState({
     username: "",
     password: "",
-  });
+  })
 
-  const [error, setError] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [error, setError] = useState("")
+  const [rememberMe, setRememberMe] = useState(false)
 
-  const [showResetModal, setShowResetModal] = useState(false);
-  const [resetUsername, setResetUsername] = useState("");
-  const [resetError, setResetError] = useState("");
-  const [tempPassword, setTempPassword] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false)
+  const [resetUsername, setResetUsername] = useState("")
+  const [resetError, setResetError] = useState("")
+  const [tempPassword, setTempPassword] = useState("")
+  const [copied, setCopied] = useState(false)
 
   const {
     mutate: resetPassword,
@@ -46,75 +46,78 @@ const Login = () => {
     isError: isResetError,
     error: resetApiError,
     reset: resetResetPasswordState,
-  } = useResetPassword();
+  } = useResetPassword()
 
   // 인증 상태 변경 감지
   useEffect(() => {
     if (isAuthenticated) {
-      navigate("/instructions");
+      navigate("/instructions")
     }
 
     if (authError) {
-      setError(authError);
+      setError(authError)
     }
-  }, [isAuthenticated, authError, navigate]);
+  }, [isAuthenticated, authError, navigate])
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value } = e.target
     setFormData({
       ...formData,
       [name]: value,
-    });
+    })
 
     // 입력 시 에러 메시지 초기화
-    if (error) setError("");
-  };
+    if (error) setError("")
+  }
 
   const handleSubmit = (e) => {
-    e.preventDefault();
+    e.preventDefault()
 
     // 간단한 유효성 검사
     if (!formData.username.trim() || !formData.password.trim()) {
-      setError("아이디와 비밀번호를 모두 입력해주세요.");
-      return;
+      setError("아이디와 비밀번호를 모두 입력해주세요.")
+      return
     }
 
     // Zustand 스토어의 login 함수 호출
-    login(formData);
-  };
+    login(formData)
+  }
 
   // 비밀번호 초기화 요청 핸들러
   const handleResetPassword = (e) => {
-    e.preventDefault();
-    setResetError("");
-    setTempPassword("");
+    e.preventDefault()
+    setResetError("")
+    setTempPassword("")
     if (!resetUsername.trim()) {
-      setResetError("아이디를 입력해주세요.");
-      return;
+      setResetError("아이디를 입력해주세요.")
+      return
     }
     resetPassword(
       { username: resetUsername },
       {
         onSuccess: (data) => {
-          setTempPassword(data?.password || "");
+          console.log(data)
+          setTempPassword(data?.data?.password || "")
         },
         onError: (err) => {
           setResetError(
-            err?.response?.data?.message || err?.message || "비밀번호 초기화 실패"
-          );
+            err?.response?.data?.message ||
+              err?.message ||
+              "비밀번호 초기화 실패",
+          )
         },
-      }
-    );
-  };
+      },
+    )
+  }
 
   // 모달 닫기 시 상태 초기화
   const handleCloseResetModal = () => {
-    setShowResetModal(false);
-    setResetUsername("");
-    setResetError("");
-    setTempPassword("");
-    resetResetPasswordState();
-  };
+    setShowResetModal(false)
+    setResetUsername("")
+    setResetError("")
+    setTempPassword("")
+    resetResetPasswordState()
+  }
 
   return (
     <div className="flex items-center justify-center min-h-screen px-4 bg-gray-100">
@@ -175,8 +178,8 @@ const Login = () => {
               href="#"
               className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
               onClick={(e) => {
-                e.preventDefault();
-                setShowResetModal(true);
+                e.preventDefault()
+                setShowResetModal(true)
               }}
             >
               비밀번호 초기화
@@ -210,16 +213,20 @@ const Login = () => {
               <button
                 className="ml-2 px-2 py-1 text-xs bg-blue-100 rounded hover:bg-blue-200"
                 onClick={() => {
-                  navigator.clipboard.writeText(tempPassword);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1200);
+                  navigator.clipboard.writeText(tempPassword)
+                  setCopied(true)
+                  setTimeout(() => setCopied(false), 1200)
                 }}
                 type="button"
               >
                 {copied ? "복사됨" : "복사"}
               </button>
             </div>
-            <FormButton onClick={handleCloseResetModal} className="w-full" type="button">
+            <FormButton
+              onClick={handleCloseResetModal}
+              className="w-full"
+              type="button"
+            >
               닫기
             </FormButton>
           </div>
@@ -245,7 +252,7 @@ const Login = () => {
         )}
       </Modal>
     </div>
-  );
-};
+  )
+}
 
-export default Login;
+export default Login
