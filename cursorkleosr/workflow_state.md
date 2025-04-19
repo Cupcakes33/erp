@@ -312,7 +312,7 @@ _(The format of items is a table)_
 | auth_logout             | 로그아웃 API 구현: POST /auth/logout, 토큰 무효화 처리                               |
 | auth_reissue            | 토큰 재발급 API 구현: POST /auth/reissue, refresh token으로 access token 재발급      |
 | user_my                 | 마이페이지 조회 API 구현: GET /users/me, 사용자 정보 조회                            |
-| user_profile            | 프로필 수정 API 구현: PATCH /users/me, username, name, email 수정                    |
+| user_profile            | 프로필 수정 API 구현: PATCH /users/name, name 수정                                   |
 | user_pw_change          | 비밀번호 변경 API 구현: PUT /users/pw, oldPassword, newPassword 필드 필요            |
 | user_pw_reset           | 비밀번호 초기화 API 구현: POST /users/pw/reset, username으로 임시 비밀번호 발급      |
 | unit_price_list         | 일위대가 목록 조회 API 구현: GET /unit-price, keyword 검색, 페이지네이션 지원        |

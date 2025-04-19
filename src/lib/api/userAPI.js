@@ -21,17 +21,15 @@ export const getMyProfile = async () => {
 }
 
 /**
- * 프로필 수정 API
+ * 이름 수정 API
  * @param {Object} profileData - 수정할 프로필 정보
- * @param {string} profileData.username - 사용자 아이디
  * @param {string} profileData.name - 사용자 이름
- * @param {string} profileData.email - 사용자 이메일
  * @returns {Promise<Object>} 수정된 프로필 정보
  */
 export const updateProfile = async (profileData) => {
   try {
     // 실제 API 호출
-    const response = await api.patch("/users/me", profileData)
+    const response = await api.patch("/users/name", { ...profileData })
     return response.data
   } catch (error) {
     console.error("프로필 수정 실패:", error)

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { FormButton, FormInput, FormCard } from "../components/molecules"
 import { useAuthStore } from "../lib/zustand"
-import { useMyProfile } from "@/lib/api/userQueries"
+import { useMyProfile, useUpdateProfile } from "@/lib/api/userQueries"
 
 const Profile = () => {
   const { user } = useAuthStore((state) => ({
@@ -11,7 +11,7 @@ const Profile = () => {
   const [profile, setProfile] = useState({
     username: user?.username || "admin",
     name: user?.name || "관리자",
-    email: "admin@example.com",
+    email: "",
   })
 
   const [isEditing, setIsEditing] = useState(false)
@@ -23,6 +23,8 @@ const Profile = () => {
   const [errors, setErrors] = useState({})
 
   const { data, isSuccess, isError, error } = useMyProfile()
+  const { mutate: updateProfileMutate, isLoading: isUpdating } =
+    useUpdateProfile()
 
   const handleProfileChange = (e) => {
     const { name, value } = e.target
@@ -73,6 +75,30 @@ const Profile = () => {
 
   const handleEditToggle = () => {
     setIsEditing((prev) => !prev)
+    setErrors({})
+  }
+
+  const handleUpdateName = (e) => {
+    e.preventDefault()
+    if (
+      !profile.name ||
+      !/^([가-힣]{2,10}|[a-zA-Z]{2,20})$/.test(profile.name)
+    ) {
+      setErrors({ name: "이름은 한글 2~10자 또는 영문 2~20자여야 합니다." })
+      return
+    }
+    updateProfileMutate(
+      { name: profile.name },
+      {
+        onSuccess: () => {
+          setIsEditing(false)
+          setErrors({})
+        },
+        onError: (err) => {
+          setErrors({ name: err?.response?.data?.message || "이름 변경 실패" })
+        },
+      },
+    )
   }
 
   const handleUpdateProfile = (e) => {
@@ -123,7 +149,7 @@ const Profile = () => {
       <div className="flex flex-col gap-6 md:flex-row">
         {/* 프로필 정보 카드 */}
         <FormCard className="flex-1">
-          <form onSubmit={handleUpdateProfile}>
+          <form onSubmit={handleUpdateName}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold">기본 정보</h2>
               <FormButton
@@ -131,7 +157,7 @@ const Profile = () => {
                 variant={isEditing ? "danger" : "primary"}
                 onClick={handleEditToggle}
               >
-                {isEditing ? "취소" : "수정"}
+                {isEditing ? "취소" : "이름 수정"}
               </FormButton>
             </div>
 
@@ -142,8 +168,7 @@ const Profile = () => {
                 label="아이디"
                 placeholder="아이디"
                 value={profile.username}
-                onChange={handleProfileChange}
-                disabled={!isEditing || profile.username === "admin"}
+                disabled
               />
             </div>
 
@@ -156,6 +181,7 @@ const Profile = () => {
                 value={profile.name}
                 onChange={handleProfileChange}
                 disabled={!isEditing}
+                error={errors.name}
               />
             </div>
 
@@ -167,15 +193,18 @@ const Profile = () => {
                 label="이메일"
                 placeholder="이메일"
                 value={profile.email}
-                onChange={handleProfileChange}
-                disabled={!isEditing}
+                disabled
               />
             </div>
 
             {isEditing && (
               <div className="flex justify-end">
-                <FormButton type="submit" variant="success">
-                  저장
+                <FormButton
+                  type="submit"
+                  variant="success"
+                  disabled={isUpdating}
+                >
+                  {isUpdating ? "저장 중..." : "저장"}
                 </FormButton>
               </div>
             )}

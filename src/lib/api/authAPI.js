@@ -122,9 +122,6 @@ export const reissueToken = async () => {
   }
 }
 
-// 개발 환경에서 Mock API 사용을 위한 설정
-const isDevelopment = import.meta.env.DEV
-
 // 실제 API와 Mock API 중 환경에 맞게 내보내기
 export default {
   register,

@@ -162,16 +162,14 @@
   ```
 - **Response - 실패 (400 Bad Request)**
 
-### 프로필 수정
+### 이름 수정
 
-- **URL**: `/users/me`
+- **URL**: `/users/name`
 - **Method**: `PATCH`
 - **Request Body**:
   ```json
   {
-    "username": "tester1",
     "name": "홍길동",
-    "email": "dev123@cc.com"
   }
   ```
 - **Response - 성공 (200 OK)**:
