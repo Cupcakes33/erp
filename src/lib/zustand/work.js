@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-// 작업 관리 Zustand 스토어 (UI 상태 관리용)
+// 일위대가 관리 Zustand 스토어 (UI 상태 관리용)
 const useWorkStore = create((set) => ({
   // UI 상태
   filterOptions: {

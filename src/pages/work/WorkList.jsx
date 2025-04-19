@@ -228,7 +228,7 @@ const WorkList = () => {
   return (
     <div className="mx-auto px-4 py-6">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">작업 관리</h1>
+        <h1 className="text-2xl font-bold">일위대가 관리</h1>
         <div className="flex space-x-2">
           <FormButton
             variant="outline"
@@ -244,7 +244,7 @@ const WorkList = () => {
             className="flex items-center"
           >
             <Plus className="w-4 h-4 mr-2" />
-            신규 작업
+            신규 일위대가
           </FormButton>
         </div>
       </div>
@@ -285,7 +285,7 @@ const WorkList = () => {
             emptyMessage={
               isLoading ? "데이터 로딩 중..." : "등록된 작업이 없습니다."
             }
-            title="작업 목록"
+            title="일위대가 목록"
             subtitle={`전체 ${filteredWorks ? filteredWorks.length : 0}개`}
           />
 

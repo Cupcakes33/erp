@@ -35,12 +35,12 @@ const Sidebar = () => {
       ],
     },
     {
-      title: "작업 관리",
+      title: "일위대가 관리",
       path: "/works",
       icon: Calendar,
       subItems: [
-        { title: "작업 목록", path: "/works" },
-        { title: "작업 생성", path: "/works/create" },
+        { title: "일위대가 목록", path: "/works" },
+        { title: "일위대가 생성", path: "/works/create" },
         // { title: "작업 가져오기", path: "/works/import" },
         // { title: "작업 내보내기", path: "/works/export" },
       ],

@@ -10,7 +10,7 @@ export * from './userQueries';
 // 인사 관리 쿼리 훅
 export * from './personnelQueries';
 
-// 작업 관리 쿼리 훅
+// 일위대가 관리 쿼리 훅
 export * from './workQueries';
 
 // 지시 관리 쿼리 훅

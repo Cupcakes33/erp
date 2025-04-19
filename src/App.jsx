@@ -24,7 +24,7 @@ import InstructionEdit from "./pages/instruction/InstructionEdit";
 import InstructionImport from "./pages/instruction/InstructionImport";
 import InstructionExport from "./pages/instruction/InstructionExport";
 
-// 작업 관련 페이지
+// 일위대가 관련 페이지
 import WorkList from "./pages/work/WorkList";
 import WorkDetail from "./pages/work/WorkDetail";
 import WorkCreate from "./pages/work/WorkCreate";
@@ -79,7 +79,7 @@ const App = () => {
           <Route path="instructions/import" element={<InstructionImport />} />
           <Route path="instructions/export" element={<InstructionExport />} />
 
-          {/* 작업 관련 라우트 */}
+          {/* 일위대가 관련 라우트 */}
           <Route path="works" element={<WorkList />} />
           <Route path="works/:id" element={<WorkDetail />} />
           <Route path="works/create" element={<WorkCreate />} />
