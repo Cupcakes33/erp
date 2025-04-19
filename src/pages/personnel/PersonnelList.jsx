@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import usePersonnelStore, { filterWorkers } from "../../lib/zustand/personnel"
 import {
   useWorkers,
@@ -120,6 +120,25 @@ const PersonnelList = () => {
     // (실제 API에 맞게 수정)
   }
 
+  // 검색 입력값 로컬 상태
+  const [searchInput, setSearchInput] = useState(filterOptions.keyword || "")
+  const debounceTimer = useRef(null)
+
+  // 검색 input 변경 핸들러 (즉시 반영)
+  const handleKeywordChange = (e) => {
+    const value = e.target.value
+    setSearchInput(value)
+    if (debounceTimer.current) clearTimeout(debounceTimer.current)
+    debounceTimer.current = setTimeout(() => {
+      setFilterOptions({ keyword: value, currentPage: 1 })
+    }, 500)
+  }
+
+  // filterOptions.keyword가 외부에서 바뀔 때 input도 동기화
+  useEffect(() => {
+    setSearchInput(filterOptions.keyword || "")
+  }, [filterOptions.keyword])
+
   // 컬럼 정의
   const columns = [
     { accessorKey: "id", header: "ID", className: "w-16 text-center px-2" },
@@ -233,10 +252,8 @@ const PersonnelList = () => {
                 type="text"
                 className="pl-10"
                 placeholder="이름으로 검색..."
-                value={filterOptions.keyword}
-                onChange={(e) =>
-                  setFilterOptions({ keyword: e.target.value, currentPage: 1 })
-                }
+                value={searchInput}
+                onChange={handleKeywordChange}
               />
             </div>
           </div>
