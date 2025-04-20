@@ -141,16 +141,16 @@ const PersonnelList = () => {
 
   // 컬럼 정의
   const columns = [
-    { 
-      accessorKey: "id", 
-      header: "ID", 
+    {
+      accessorKey: "id",
+      header: "ID",
       className: "w-16 text-center px-2",
       enableSorting: true,
       sortDescFirst: false,
     },
-    { 
-      accessorKey: "name", 
-      header: "이름", 
+    {
+      accessorKey: "name",
+      header: "이름",
       className: "px-2",
       enableSorting: true,
       sortDescFirst: false,
@@ -201,25 +201,25 @@ const PersonnelList = () => {
 
   // 정렬 핸들러
   const handleSortingChange = (sortingState) => {
-    console.log("정렬 상태 변경:", sortingState);
-    
+    console.log("정렬 상태 변경:", sortingState)
+
     if (sortingState.length === 0) {
       // 정렬이 없는 경우 기본 ID 오름차순으로 설정
-      setSortBy({ field: "id", direction: "asc" });
-      return;
+      setSortBy({ field: "id", direction: "asc" })
+      return
     }
 
-    const column = sortingState[0];
+    const column = sortingState[0]
     setSortBy({
       field: column.id,
       direction: column.desc ? "desc" : "asc",
-    });
-    
+    })
+
     console.log("정렬 변경:", {
       field: column.id,
       direction: column.desc ? "desc" : "asc",
-    });
-  };
+    })
+  }
 
   // 페이지네이션 핸들러
   const handlePageChange = (nextPage) => {
@@ -243,65 +243,98 @@ const PersonnelList = () => {
         <p className="text-gray-600">작업자 목록 관리</p>
       </div>
 
-      {/* 필터 영역 */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6">
-        <div className="relative w-full sm:max-w-sm">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-          <FormInput
-            type="text"
-            placeholder="이름 검색..."
-            value={searchInput}
-            onChange={handleKeywordChange}
-            className="pl-8"
+      {/* 메인 레이아웃: 왼쪽 테이블, 오른쪽 필터/컨트롤 */}
+      <div className="flex flex-col md:flex-row gap-6">
+        {/* 데이터 테이블 (왼쪽) */}
+        <div className="flex-1">
+          <DataTable
+            columns={columns}
+            data={filtered}
+            loading={isLoading}
+            emptyMessage={
+              isError ? `오류 발생: ${error?.message}` : "작업자가 없습니다."
+            }
+            onRowClick={openEditModal}
+            manualPagination={true}
+            pageCount={totalPage}
+            pageIndex={tableSettings.currentPage - 1}
+            pageSize={tableSettings.pageSize}
+            onPageChange={handlePageChange}
+            onPageSizeChange={handlePageSizeChange}
+            manualSorting={true}
+            onSortingChange={handleSortingChange}
+            state={{
+              sorting: sortBy.field
+                ? [{ id: sortBy.field, desc: sortBy.direction === "desc" }]
+                : [],
+            }}
           />
         </div>
-        <div className="flex flex-wrap gap-4">
-          <FormSelect
-            className="w-40"
-            value={filterOptions.status}
-            onChange={(e) =>
-              setFilterOptions({ status: e.target.value, currentPage: 1 })
-            }
-          >
-            <option value="all">전체 상태</option>
-            <option value="active">재직</option>
-            <option value="inactive">퇴사</option>
-          </FormSelect>
-          <FormButton
-            type="button"
-            variant="primary"
-            className="flex items-center gap-1"
-            onClick={openAddModal}
-          >
-            <PlusCircle className="w-4 h-4" />
+
+        {/* 우측: 컨트롤 섹션 */}
+        <div className="w-full md:w-80 flex-shrink-0 space-y-6">
+          {/* 상태 필터 */}
+          <div className="flex space-x-2 mb-2">
+            <FormButton
+              onClick={() =>
+                setFilterOptions({ status: "all", currentPage: 1 })
+              }
+              variant={filterOptions.status === "all" ? "default" : "outline"}
+              className="text-sm"
+            >
+              전체
+            </FormButton>
+            <FormButton
+              onClick={() =>
+                setFilterOptions({ status: "active", currentPage: 1 })
+              }
+              variant={
+                filterOptions.status === "active" ? "default" : "outline"
+              }
+              className="text-sm"
+            >
+              재직중
+            </FormButton>
+            <FormButton
+              onClick={() =>
+                setFilterOptions({ status: "inactive", currentPage: 1 })
+              }
+              variant={
+                filterOptions.status === "inactive" ? "default" : "outline"
+              }
+              className="text-sm"
+            >
+              퇴사
+            </FormButton>
+          </div>
+          {/* 검색창 */}
+          <div>
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Search className="w-5 h-5 text-gray-400" />
+              </div>
+              <FormInput
+                type="text"
+                className="pl-10"
+                placeholder="이름으로 검색..."
+                value={searchInput}
+                onChange={handleKeywordChange}
+              />
+            </div>
+          </div>
+          {/* 작업자 추가 버튼 */}
+          <FormButton onClick={openAddModal} className="w-full">
+            <PlusCircle className="w-4 h-4 mr-2" />
             작업자 추가
           </FormButton>
+          {/* 에러 메시지 표시 */}
+          {isError && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              <p>데이터를 불러오는 중 오류가 발생했습니다: {error.message}</p>
+            </div>
+          )}
         </div>
       </div>
-
-      {/* 데이터 테이블 */}
-      <DataTable
-        columns={columns}
-        data={filtered}
-        loading={isLoading}
-        emptyMessage={
-          isError ? `오류 발생: ${error?.message}` : "작업자가 없습니다."
-        }
-        onRowClick={openEditModal}
-        manualPagination={true}
-        pageCount={totalPage}
-        pageIndex={tableSettings.currentPage - 1}
-        pageSize={tableSettings.pageSize}
-        onPageChange={handlePageChange}
-        onPageSizeChange={handlePageSizeChange}
-        manualSorting={true}
-        onSortingChange={handleSortingChange}
-        state={{
-          sorting: sortBy.field 
-            ? [{ id: sortBy.field, desc: sortBy.direction === "desc" }] 
-            : [],
-        }}
-      />
 
       {/* 모달 */}
       <Modal
