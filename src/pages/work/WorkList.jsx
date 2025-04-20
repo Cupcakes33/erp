@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { useUnitPrices, useDeleteUnitPrice } from "../../lib/api/workQueries"
+import { useUnitPrices, useDeleteUnitPrice, useUpdateUnitPrice } from "../../lib/api/workQueries"
 import { DataTable, FormButton, FormInput } from "../../components/molecules"
 import { Pencil, Plus, Search, RefreshCw, Trash2 } from "lucide-react"
 import { formatNumberKR } from "@/lib/utils/formatterUtils"
@@ -27,8 +27,21 @@ const WorkList = () => {
   })
 
   const deleteUnitPriceMutation = useDeleteUnitPrice()
+  const updateUnitPriceMutation = useUpdateUnitPrice()
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
   const [targetDeleteId, setTargetDeleteId] = useState(null)
+  const [editTargetId, setEditTargetId] = useState(null)
+  const [editForm, setEditForm] = useState({
+    type: "",
+    code: "",
+    name: "",
+    spec: "",
+    unit: "",
+    material_cost: 0,
+    labor_cost: 0,
+    expense: 0,
+  })
 
   // 삭제 버튼 클릭
   const handleDeleteClick = (id) => {
@@ -55,12 +68,52 @@ const WorkList = () => {
     setTargetDeleteId(null)
   }
 
-  const handleNavigateToCreate = () => {
-    navigate("/works/create")
+  // 수정 버튼 클릭
+  const handleEditClick = (row) => {
+    setEditTargetId(row.id)
+    setEditForm({
+      type: row.type || "",
+      code: row.code || "",
+      name: row.name || "",
+      spec: row.spec || "",
+      unit: row.unit || "",
+      material_cost: row.materialCost ?? 0,
+      labor_cost: row.laborCost ?? 0,
+      expense: row.expense ?? 0,
+    })
+    setEditModalOpen(true)
   }
 
-  const handleNavigateToEdit = (unitPriceId) => {
-    navigate(`/works/${unitPriceId}/edit`)
+  // 수정 폼 핸들러
+  const handleEditFormChange = (e) => {
+    const { name, value, type } = e.target
+    setEditForm((prev) => ({
+      ...prev,
+      [name]: type === "number" ? Number(value) : value,
+    }))
+  }
+
+  // 수정 확인
+  const handleConfirmEdit = async () => {
+    if (!editTargetId) return
+    try {
+      await updateUnitPriceMutation.mutateAsync({ id: editTargetId, unitPriceData: editForm })
+      setEditModalOpen(false)
+      setEditTargetId(null)
+      refetch()
+    } catch (e) {
+      // 에러 처리 필요시 추가
+    }
+  }
+
+  // 수정 취소
+  const handleCancelEdit = () => {
+    setEditModalOpen(false)
+    setEditTargetId(null)
+  }
+
+  const handleNavigateToCreate = () => {
+    navigate("/works/create")
   }
 
   useEffect(() => {
@@ -130,9 +183,9 @@ const WorkList = () => {
           <button
             onClick={(e) => {
               e.stopPropagation()
-              handleNavigateToEdit(row.original.id)
+              handleEditClick(row.original)
             }}
-            className="p-1 text-gray-600 hover:text-gray-800"
+            className="p-1 text-blue-600 hover:text-blue-800"
           >
             <Pencil size={18} />
           </button>
@@ -243,6 +296,94 @@ const WorkList = () => {
         }
       >
         정말로 이 일위대가를 삭제하시겠습니까?
+      </Modal>
+
+      {/* 수정 모달 */}
+      <Modal
+        isOpen={editModalOpen}
+        onClose={handleCancelEdit}
+        title="일위대가 수정"
+        footer={
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+              onClick={handleCancelEdit}
+            >
+              취소
+            </button>
+            <button
+              className="px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700"
+              onClick={handleConfirmEdit}
+              disabled={updateUnitPriceMutation.isLoading}
+            >
+              확인
+            </button>
+          </div>
+        }
+      >
+        <form className="space-y-2">
+          <FormInput
+            label="타입"
+            name="type"
+            value={editForm.type}
+            onChange={handleEditFormChange}
+            required
+          />
+          <FormInput
+            label="코드"
+            name="code"
+            value={editForm.code}
+            onChange={handleEditFormChange}
+            required
+          />
+          <FormInput
+            label="공종명"
+            name="name"
+            value={editForm.name}
+            onChange={handleEditFormChange}
+            required
+          />
+          <FormInput
+            label="규격"
+            name="spec"
+            value={editForm.spec}
+            onChange={handleEditFormChange}
+          />
+          <FormInput
+            label="단위"
+            name="unit"
+            value={editForm.unit}
+            onChange={handleEditFormChange}
+            required
+          />
+          <FormInput
+            label="재료비"
+            name="material_cost"
+            type="number"
+            value={editForm.material_cost}
+            onChange={handleEditFormChange}
+            min={0}
+            required
+          />
+          <FormInput
+            label="노무비"
+            name="labor_cost"
+            type="number"
+            value={editForm.labor_cost}
+            onChange={handleEditFormChange}
+            min={0}
+            required
+          />
+          <FormInput
+            label="경비"
+            name="expense"
+            type="number"
+            value={editForm.expense}
+            onChange={handleEditFormChange}
+            min={0}
+            required
+          />
+        </form>
       </Modal>
     </div>
   )
