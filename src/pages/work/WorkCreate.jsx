@@ -1,132 +1,65 @@
 import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { useCreateUnitPrice } from "../../lib/api/workQueries"
-import { useInstructions } from "../../lib/api/instructionQueries"
-import {
-  FormButton,
-  FormInput,
-  FormSelect,
-  FormTextArea,
-  FormCard,
-} from "../../components/molecules"
+import { FormButton, FormInput, FormCard } from "../../components/molecules"
 import { ArrowLeft } from "lucide-react"
 
 const WorkCreate = () => {
   const navigate = useNavigate()
   const createWorkMutation = useCreateUnitPrice()
-  const {
-    data: instructionsData = { instruction: [] },
-    isLoading: isLoadingInstructions,
-  } = useInstructions()
-
-  // 실제 지시 배열 추출
-  const instructions = instructionsData.instruction || []
 
   const [formData, setFormData] = useState({
+    type: "",
+    code: "",
     name: "",
-    description: "",
-    instructionId: "",
-    location: "",
-    assignedTo: "",
-    status: "대기중",
-    completionRate: 0,
-    startDate: "",
-    dueDate: "",
+    spec: "",
+    unit: "",
+    material_cost: 0,
+    labor_cost: 0,
+    expense: 0,
   })
 
   const [errors, setErrors] = useState({})
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    const { name, value, type } = e.target
     setFormData({
       ...formData,
-      [name]: value,
+      [name]: type === "number" ? Number(value) : value,
     })
-
-    // 입력 시 해당 필드의 오류 메시지 삭제
     if (errors[name]) {
       setErrors({
         ...errors,
         [name]: "",
       })
     }
-
-    // 지시 선택 시 위치 자동 설정
-    if (name === "instructionId" && value) {
-      const selectedInstruction = instructions.find(
-        (instruction) => instruction.id === value,
-      )
-      if (selectedInstruction) {
-        setFormData((prev) => ({
-          ...prev,
-          location: selectedInstruction.location,
-          instructionId: value,
-        }))
-      }
-    }
   }
 
   const validateForm = () => {
     const newErrors = {}
-
-    if (!formData.name.trim()) {
-      newErrors.name = "작업명을 입력해주세요"
-    }
-
-    if (!formData.location.trim()) {
-      newErrors.location = "위치를 입력해주세요"
-    }
-
-    if (!formData.assignedTo) {
-      newErrors.assignedTo = "담당자를 입력해주세요"
-    }
-
-    if (
-      formData.startDate &&
-      formData.dueDate &&
-      new Date(formData.startDate) > new Date(formData.dueDate)
-    ) {
-      newErrors.dueDate = "마감일은 시작일 이후여야 합니다"
-    }
-
+    if (!formData.type.trim()) newErrors.type = "분류를 입력해주세요"
+    if (!formData.code.trim()) newErrors.code = "코드를 입력해주세요"
+    if (!formData.name.trim()) newErrors.name = "공종명을 입력해주세요"
+    if (!formData.unit.trim()) newErrors.unit = "단위를 입력해주세요"
+    if (formData.material_cost === null || formData.material_cost === undefined)
+      newErrors.material_cost = "재료비를 입력해주세요"
+    if (formData.labor_cost === null || formData.labor_cost === undefined)
+      newErrors.labor_cost = "노무비를 입력해주세요"
+    if (formData.expense === null || formData.expense === undefined)
+      newErrors.expense = "경비를 입력해주세요"
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-
-    if (!validateForm()) {
-      return
-    }
-
+    if (!validateForm()) return
     try {
-      // ID는 실제 API에서 생성될 것임, 여기서는 데모 ID 생성
-      const newWork = {
-        ...formData,
-        id: `WRK-${new Date().getFullYear()}-${String(
-          Math.floor(Math.random() * 10000),
-        ).padStart(4, "0")}`,
-        createdAt: new Date().toISOString().split("T")[0],
-        completionRate: parseInt(formData.completionRate) || 0,
-      }
-
-      // 지시 제목 추가
-      if (formData.instructionId) {
-        const instruction = instructions.find(
-          (i) => i.id === formData.instructionId,
-        )
-        if (instruction) {
-          newWork.instructionTitle = instruction.title
-        }
-      }
-
-      await createWorkMutation.mutateAsync(newWork)
+      await createWorkMutation.mutateAsync(formData)
       navigate("/works")
     } catch (error) {
-      console.error("작업 생성 실패:", error)
       setErrors({
-        submit: "작업을 생성하는 중 오류가 발생했습니다.",
+        submit: "생성 중 오류가 발생했습니다.",
       })
     }
   }
@@ -147,9 +80,8 @@ const WorkCreate = () => {
           <ArrowLeft className="w-4 h-4 mr-2" />
           돌아가기
         </FormButton>
-        <h1 className="text-2xl font-bold">새 작업 등록</h1>
+        <h1 className="text-2xl font-bold">일위대가 등록</h1>
       </div>
-
       <FormCard>
         <form onSubmit={handleSubmit}>
           {errors.submit && (
@@ -157,133 +89,92 @@ const WorkCreate = () => {
               {errors.submit}
             </div>
           )}
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <FormInput
-                id="name"
-                name="name"
-                label="작업명"
-                placeholder="작업명을 입력하세요"
-                value={formData.name}
-                onChange={handleChange}
-                error={errors.name}
-                required
-              />
-            </div>
-
-            <div>
-              <FormInput
-                id="location"
-                name="location"
-                label="위치"
-                placeholder="작업 위치를 입력하세요"
-                value={formData.location}
-                onChange={handleChange}
-                error={errors.location}
-                required
-              />
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <FormTextArea
-              id="description"
-              name="description"
-              label="상세 내용"
-              placeholder="작업 내용을 상세하게 입력하세요"
-              value={formData.description}
+            <FormInput
+              id="type"
+              name="type"
+              label="분류"
+              placeholder="분류를 입력하세요"
+              value={formData.type}
               onChange={handleChange}
-              rows={5}
+              error={errors.type}
+              required
+            />
+            <FormInput
+              id="code"
+              name="code"
+              label="코드"
+              placeholder="코드를 입력하세요"
+              value={formData.code}
+              onChange={handleChange}
+              error={errors.code}
+              required
+            />
+            <FormInput
+              id="name"
+              name="name"
+              label="공종명"
+              placeholder="공종명을 입력하세요"
+              value={formData.name}
+              onChange={handleChange}
+              error={errors.name}
+              required
+            />
+            <FormInput
+              id="spec"
+              name="spec"
+              label="규격"
+              placeholder="규격을 입력하세요"
+              value={formData.spec}
+              onChange={handleChange}
+            />
+            <FormInput
+              id="unit"
+              name="unit"
+              label="단위"
+              placeholder="단위를 입력하세요"
+              value={formData.unit}
+              onChange={handleChange}
+              error={errors.unit}
+              required
+            />
+            <FormInput
+              id="material_cost"
+              name="material_cost"
+              label="재료비"
+              placeholder="재료비를 입력하세요"
+              value={formData.material_cost}
+              onChange={handleChange}
+              error={errors.material_cost}
+              required
+              type="number"
+              min="0"
+            />
+            <FormInput
+              id="labor_cost"
+              name="labor_cost"
+              label="노무비"
+              placeholder="노무비를 입력하세요"
+              value={formData.labor_cost}
+              onChange={handleChange}
+              error={errors.labor_cost}
+              required
+              type="number"
+              min="0"
+            />
+            <FormInput
+              id="expense"
+              name="expense"
+              label="경비"
+              placeholder="경비를 입력하세요"
+              value={formData.expense}
+              onChange={handleChange}
+              error={errors.expense}
+              required
+              type="number"
+              min="0"
             />
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <FormSelect
-                id="instructionId"
-                name="instructionId"
-                label="연결된 지시"
-                value={formData.instructionId}
-                onChange={handleChange}
-                options={[
-                  { value: "", label: "선택 안함" },
-                  ...instructions.map((instruction) => ({
-                    value: instruction.id,
-                    label: `${instruction.id} - ${instruction.title}`,
-                  })),
-                ]}
-              />
-            </div>
-
-            <div>
-              <FormInput
-                id="assignedTo"
-                name="assignedTo"
-                label="담당자"
-                placeholder="담당자 이름을 입력하세요"
-                value={formData.assignedTo}
-                onChange={handleChange}
-                error={errors.assignedTo}
-                required
-              />
-            </div>
-
-            <div>
-              <FormSelect
-                id="status"
-                name="status"
-                label="상태"
-                value={formData.status}
-                onChange={handleChange}
-                options={[
-                  { value: "대기중", label: "대기중" },
-                  { value: "진행중", label: "진행중" },
-                  { value: "완료", label: "완료" },
-                  { value: "취소", label: "취소" },
-                ]}
-              />
-            </div>
-
-            <div>
-              <FormInput
-                id="completionRate"
-                name="completionRate"
-                type="number"
-                label="진행률 (%)"
-                placeholder="0"
-                min="0"
-                max="100"
-                value={formData.completionRate}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <FormInput
-                id="startDate"
-                name="startDate"
-                type="date"
-                label="시작일"
-                value={formData.startDate}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div>
-              <FormInput
-                id="dueDate"
-                name="dueDate"
-                type="date"
-                label="마감일"
-                value={formData.dueDate}
-                onChange={handleChange}
-                error={errors.dueDate}
-                required
-              />
-            </div>
-          </div>
-
           <div className="flex justify-end space-x-2">
             <FormButton type="button" variant="outline" onClick={handleCancel}>
               취소

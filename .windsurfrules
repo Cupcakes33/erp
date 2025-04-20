@@ -286,18 +286,16 @@
 - **Method**: `POST`
 - **Request Body**:
   ```json
-  {
-    "unitPrice": {
-      "code": "코드",
-      "name": "공종명",
-      "spec": "규격",
-      "unit": "단위",
-      "matrerial_cost": "재료비",
-      "labor_cost": "노무비",
-      "expense": "경비",
-      "total_cost": "합계"
+    {
+      "type" : 분류,
+      "code" : 코드,
+      "name" : 공종명,
+      "spec" : 규격,
+      "unit" : 단위,
+      "matrerial_cost" : 재료비,
+      "labor_cost" : 노무비,
+      "expense" : 경비
     }
-  }
   ```
 - **Response - 성공 (200 OK)**:
   ```json

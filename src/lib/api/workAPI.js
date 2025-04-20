@@ -40,7 +40,7 @@ export const fetchUnitPriceById = async (id) => {
  */
 export const createUnitPrice = async (unitPriceData) => {
   try {
-    const response = await api.post(`/unit-price/`, unitPriceData)
+    const response = await api.post(`/unit-price`, unitPriceData)
     return response.data
   } catch (error) {
     console.error("일위대가 생성 실패:", error)
