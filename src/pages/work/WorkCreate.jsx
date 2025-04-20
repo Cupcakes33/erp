@@ -93,8 +93,8 @@ const WorkCreate = () => {
             <FormInput
               id="type"
               name="type"
-              label="분류"
-              placeholder="분류를 입력하세요"
+              label="구분"
+              placeholder="구분을 입력하세요"
               value={formData.type}
               onChange={handleChange}
               error={errors.type}

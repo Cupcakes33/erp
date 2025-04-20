@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { useUnitPrices, useDeleteUnitPrice, useUpdateUnitPrice } from "../../lib/api/workQueries"
+import {
+  useUnitPrices,
+  useDeleteUnitPrice,
+  useUpdateUnitPrice,
+} from "../../lib/api/workQueries"
 import { DataTable, FormButton, FormInput } from "../../components/molecules"
 import { Pencil, Plus, Search, RefreshCw, Trash2 } from "lucide-react"
 import { formatNumberKR } from "@/lib/utils/formatterUtils"
@@ -97,7 +101,10 @@ const WorkList = () => {
   const handleConfirmEdit = async () => {
     if (!editTargetId) return
     try {
-      await updateUnitPriceMutation.mutateAsync({ id: editTargetId, unitPriceData: editForm })
+      await updateUnitPriceMutation.mutateAsync({
+        id: editTargetId,
+        unitPriceData: editForm,
+      })
       setEditModalOpen(false)
       setEditTargetId(null)
       refetch()
@@ -132,7 +139,7 @@ const WorkList = () => {
   const columns = [
     {
       accessorKey: "type",
-      header: "타입",
+      header: "구분",
       cell: (info) => info.getValue() ?? null,
     },
     {
@@ -323,7 +330,7 @@ const WorkList = () => {
       >
         <form className="space-y-2">
           <FormInput
-            label="타입"
+            label="구분"
             name="type"
             value={editForm.type}
             onChange={handleEditFormChange}

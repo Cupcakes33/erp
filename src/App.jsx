@@ -26,7 +26,6 @@ import InstructionExport from "./pages/instruction/InstructionExport"
 // 일위대가 관련 페이지
 import WorkList from "./pages/work/WorkList"
 import WorkCreate from "./pages/work/WorkCreate"
-import WorkEdit from "./pages/work/WorkEdit"
 
 // 인사 관련 페이지
 import PersonnelList from "./pages/personnel/PersonnelList"
@@ -78,7 +77,6 @@ const App = () => {
           {/* 일위대가 관련 라우트 */}
           <Route path="works" element={<WorkList />} />
           <Route path="works/create" element={<WorkCreate />} />
-          <Route path="works/:id/edit" element={<WorkEdit />} />
 
           {/* 인사 관련 라우트 */}
           <Route path="personnel" element={<PersonnelList />} />
