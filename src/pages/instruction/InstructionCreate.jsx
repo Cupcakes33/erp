@@ -37,7 +37,7 @@ const InstructionCreate = () => {
     orderId: 0,
     orderNumber: "",
     orderDate: today,
-    title: "",
+    name: "",
     manager: "",
     delegator: "",
     channel: "전화",
@@ -46,6 +46,7 @@ const InstructionCreate = () => {
     lotNumber: "",
     detailAddress: "",
     structure: "",
+    memo: "",
     round: 1,
   });
 
@@ -70,8 +71,8 @@ const InstructionCreate = () => {
   const validateForm = () => {
     const newErrors = {};
 
-    if (!formData.title.trim()) {
-      newErrors.title = "제목을 입력해주세요";
+    if (!formData.name.trim()) {
+      newErrors.name = "제목을 입력해주세요";
     }
 
     setErrors(newErrors);
@@ -86,7 +87,26 @@ const InstructionCreate = () => {
     }
 
     try {
-      await createInstructionMutation.mutateAsync(formData);
+      // 새 스키마에 맞게 데이터 형식 변환
+      const payload = {
+        orderId: formData.orderId,
+        orderNumber: formData.orderNumber,
+        name: formData.name,
+        orderDate: formData.orderDate,
+        manager: formData.manager,
+        delegator: formData.delegator,
+        channel: formData.channel,
+        district: formData.district,
+        dong: formData.dong,
+        lotNumber: formData.lotNumber,
+        detailAddress: formData.detailAddress,
+        structure: formData.structure,
+        memo: formData.memo,
+        status: "접수", // 기본 상태
+        round: formData.round,
+      };
+
+      await createInstructionMutation.mutateAsync(payload);
       showSuccess("지시가 성공적으로 생성되었습니다.");
       navigate("/instructions");
     } catch (error) {
@@ -116,13 +136,13 @@ const InstructionCreate = () => {
           <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
             <div>
               <FormInput
-                id="title"
-                name="title"
+                id="name"
+                name="name"
                 label="제목"
                 placeholder="지시 제목을 입력하세요"
-                value={formData.title}
+                value={formData.name}
                 onChange={handleChange}
-                error={errors.title}
+                error={errors.name}
                 required
               />
             </div>
@@ -197,77 +217,78 @@ const InstructionCreate = () => {
             />
           </div>
 
-          <h3 className="mb-3 text-lg font-medium">위치 정보</h3>
-          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
-            <div>
-              <FormInput
-                id="district"
-                name="district"
-                label="지역"
-                placeholder="지역을 입력하세요"
-                value={formData.district}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <FormInput
-                id="dong"
-                name="dong"
-                label="동"
-                placeholder="동을 입력하세요"
-                value={formData.dong}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <FormInput
-                id="lotNumber"
-                name="lotNumber"
-                label="지번"
-                placeholder="지번을 입력하세요"
-                value={formData.lotNumber}
-                onChange={handleChange}
-              />
-            </div>
+          <h2 className="text-lg font-semibold mb-4 mt-6">위치 정보</h2>
+          <div className="grid grid-cols-3 gap-6">
+            <FormInput
+              id="district"
+              name="district"
+              label="시/군/구"
+              placeholder="시/군/구를 입력하세요"
+              value={formData.district}
+              onChange={handleChange}
+            />
+            <FormInput
+              id="dong"
+              name="dong"
+              label="동/읍/면"
+              placeholder="동/읍/면을 입력하세요"
+              value={formData.dong}
+              onChange={handleChange}
+            />
+            <FormInput
+              id="lotNumber"
+              name="lotNumber"
+              label="지번"
+              placeholder="지번을 입력하세요"
+              value={formData.lotNumber}
+              onChange={handleChange}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-6 mt-6">
+            <FormInput
+              id="detailAddress"
+              name="detailAddress"
+              label="상세주소"
+              placeholder="상세주소를 입력하세요"
+              value={formData.detailAddress}
+              onChange={handleChange}
+            />
+            <FormInput
+              id="structure"
+              name="structure"
+              label="건물구조"
+              placeholder="건물구조를 입력하세요"
+              value={formData.structure}
+              onChange={handleChange}
+            />
           </div>
 
-          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
-            <div>
-              <FormInput
-                id="detailAddress"
-                name="detailAddress"
-                label="상세주소"
-                placeholder="상세주소를 입력하세요"
-                value={formData.detailAddress}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <FormInput
-                id="structure"
-                name="structure"
-                label="구조물"
-                placeholder="구조물을 입력하세요"
-                value={formData.structure}
-                onChange={handleChange}
-              />
-            </div>
+          <div className="mt-6">
+            <FormTextArea
+              id="memo"
+              name="memo"
+              label="비고"
+              placeholder="추가 정보를 입력하세요"
+              value={formData.memo}
+              onChange={handleChange}
+              rows={4}
+            />
           </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="flex justify-end space-x-4 mt-8">
             <FormButton
-              variant="outline"
               type="button"
-              onClick={handleCancel}
-              className="w-24"
+              className="w-32"
+              onClick={() => navigate(-1)}
+              outline
             >
               취소
             </FormButton>
             <FormButton
-              variant="primary"
               type="submit"
-              className="w-24"
-              isLoading={createInstructionMutation.isLoading}
+              className="w-32"
+              disabled={createInstructionMutation.isPending}
+              loading={createInstructionMutation.isPending}
             >
               저장
             </FormButton>

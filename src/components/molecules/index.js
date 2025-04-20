@@ -20,6 +20,7 @@ export { default as Table } from './TableAdapter';
 // UI 컴포넌트 내보내기
 export { Badge } from '../ui/badge';
 export { Button } from '../ui/button';
+export { Input } from '../ui/input';
 export { DetailItem, DetailSection } from '../ui/detail';
 export { Loading } from '../ui/loading';
 export { ConfirmDialog } from '../ui/dialog'; 

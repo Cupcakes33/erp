@@ -77,7 +77,6 @@ export const createInstruction = async (instructionData) => {
  * @returns {Promise<Object>} 수정된 지시 정보
  */
 export const updateInstruction = async (id, instructionData) => {
-  
   try {
     const response = await axios.put(`${API_URL}/instruction/${id}`, instructionData);
     return response.data;
@@ -95,7 +94,10 @@ export const updateInstruction = async (id, instructionData) => {
  */
 export const updateInstructionStatus = async (id, statusData) => {
   try {
-    const response = await axios.post(`${API_URL}/instruction/${id}/status`, statusData);
+    // 상태만 변경하기 위해 status 필드만 포함된 객체 전송
+    const response = await axios.put(`${API_URL}/instruction/${id}`, {
+      status: statusData.status
+    });
     return response.data;
   } catch (error) {
     console.error(`지시 ID ${id} 상태 변경 실패:`, error);
@@ -144,6 +146,220 @@ export const confirmInstruction = async (id) => {
     return response.data;
   } catch (error) {
     console.error(`지시 ID ${id} 확정 실패:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 특정 지시에 속한 공종 목록 조회 API
+ * @param {number} instructionId 지시 ID
+ * @param {Object} params 페이징 파라미터
+ * @param {number} params.page 페이지 번호
+ * @param {number} params.size 페이지 크기
+ * @returns {Promise<Object>} 공종 목록
+ */
+export const fetchProcessesByInstruction = async (instructionId, params = {}) => {
+  try {
+    // 페이지 번호가 1부터 시작하는 경우 0부터 시작하도록 변환
+    const apiParams = { ...params };
+    if (apiParams.page) {
+      apiParams.page = apiParams.page - 1;
+    }
+    
+    // 지시 ID 추가
+    apiParams.instruction = instructionId;
+    
+    const response = await axios.get(`${API_URL}/process`, { params: apiParams });
+    return response.data;
+  } catch (error) {
+    console.error(`지시 ID ${instructionId}의 공종 목록 조회 실패:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 특정 공종 정보 조회 API
+ * @param {number} id 공종 ID
+ * @returns {Promise<Object>} 공종 정보
+ */
+export const fetchProcessById = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/process/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`공종 ID ${id} 조회 실패:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 새 공종 생성 API
+ * @param {number} instructionId 지시 ID
+ * @param {Object} processData 공종 데이터
+ * @returns {Promise<Object>} 생성된 공종 정보
+ */
+export const createProcess = async (instructionId, processData) => {
+  try {
+    const response = await axios.post(`${API_URL}/process?instruction=${instructionId}`, processData);
+    return response.data;
+  } catch (error) {
+    console.error('공종 생성 실패:', error);
+    throw error;
+  }
+}
+
+/**
+ * 공종 정보 수정 API
+ * @param {number} id 공종 ID
+ * @param {Object} processData 업데이트할 공종 데이터
+ * @returns {Promise<Object>} 수정된 공종 정보
+ */
+export const updateProcess = async (id, processData) => {
+  try {
+    const response = await axios.put(`${API_URL}/process/${id}`, processData);
+    return response.data;
+  } catch (error) {
+    console.error(`공종 ID ${id} 수정 실패:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 공종 삭제 API
+ * @param {number} id 공종 ID
+ * @returns {Promise<Object>} 삭제 결과
+ */
+export const deleteProcess = async (id) => {
+  try {
+    const response = await axios.delete(`${API_URL}/process/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`공종 ID ${id} 삭제 실패:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 특정 작업 정보 조회 API
+ * @param {number} id 작업 ID
+ * @returns {Promise<Object>} 작업 정보
+ */
+export const fetchTaskById = async (id) => {
+  try {
+    const response = await axios.get(`${API_URL}/task/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`작업 ID ${id} 조회 실패:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 공종별 작업 목록 조회 API
+ * @param {number} processId 공종 ID
+ * @param {Object} params 페이징 파라미터
+ * @param {number} params.page 페이지 번호
+ * @param {number} params.size 페이지 크기
+ * @returns {Promise<Object>} 작업 목록
+ */
+export const fetchTasksByProcess = async (processId, params = {}) => {
+  try {
+    // 페이지 번호가 1부터 시작하는 경우 0부터 시작하도록 변환
+    const apiParams = { ...params };
+    if (apiParams.page) {
+      apiParams.page = apiParams.page - 1;
+    }
+    
+    // 공종 ID 추가
+    apiParams.process = processId;
+    
+    const response = await axios.get(`${API_URL}/task`, { params: apiParams });
+    return response.data;
+  } catch (error) {
+    console.error(`공종 ID ${processId}의 작업 목록 조회 실패:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 새 작업 생성 API
+ * @param {number} processId 공종 ID
+ * @param {Object} taskData 작업 데이터
+ * @param {number} taskData.unitPriceId 단가 ID
+ * @param {number} taskData.unitCount 수량
+ * @param {string} taskData.calculationDetails 산출 내역
+ * @returns {Promise<Object>} 생성된 작업 정보
+ */
+export const createTask = async (processId, taskData) => {
+  try {
+    const response = await axios.post(`${API_URL}/task?process=${processId}`, taskData);
+    return response.data;
+  } catch (error) {
+    console.error('작업 생성 실패:', error);
+    throw error;
+  }
+}
+
+/**
+ * 작업 정보 수정 API
+ * @param {number} id 작업 ID
+ * @param {Object} taskData 업데이트할 작업 데이터
+ * @param {number} taskData.unitCount 수량
+ * @param {string} taskData.calculationDetails 산출 내역
+ * @returns {Promise<Object>} 수정된 작업 정보
+ */
+export const updateTask = async (id, taskData) => {
+  try {
+    const response = await axios.put(`${API_URL}/task/${id}`, taskData);
+    return response.data;
+  } catch (error) {
+    console.error(`작업 ID ${id} 수정 실패:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 작업 삭제 API
+ * @param {number} id 작업 ID
+ * @returns {Promise<Object>} 삭제 결과
+ */
+export const deleteTask = async (id) => {
+  try {
+    const response = await axios.delete(`${API_URL}/task/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error(`작업 ID ${id} 삭제 실패:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 일위대가 목록 조회 API
+ * @param {Object} params 검색 및 페이징 파라미터
+ * @param {string} params.keyword 검색 키워드
+ * @param {number} params.page 페이지 번호
+ * @param {number} params.size 페이지 크기
+ * @returns {Promise<Object>} 일위대가 목록
+ */
+export const fetchUnitPrices = async (params = {}) => {
+  try {
+    // 페이지 번호가 1부터 시작하는 경우 0부터 시작하도록 변환
+    const apiParams = { ...params };
+    if (apiParams.page) {
+      apiParams.page = apiParams.page - 1;
+    }
+    
+    // 불필요한 빈 파라미터 제거
+    Object.keys(apiParams).forEach(key => {
+      if (apiParams[key] === '' || apiParams[key] === null || apiParams[key] === undefined) {
+        delete apiParams[key];
+      }
+    });
+    
+    const response = await axios.get(`${API_URL}/unit-price`, { params: apiParams });
+    return response.data;
+  } catch (error) {
+    console.error('일위대가 목록 조회 실패:', error);
     throw error;
   }
 }

@@ -213,115 +213,32 @@ RULE_ERR_HANDLE_GENERAL_01:
 
 _Records the progressive execution log for the current session._
 
-2023-08-05 10:00: 작업 시작 - 지시 관련 API 엑셀 구현을 진행합니다.
-2023-08-05 10:01: InstructionCreate.jsx 파일 분석 완료. 현재 기본적인 지시 생성 기능이 구현되어 있음.
-2023-08-05 10:02: instructionAPI.js 및 instructionQueries.js 파일 분석 완료. 엑셀 업로드 API 구현이 필요한 상황임.
-2023-08-05 10:03: ANALYZE 단계 시작 - 엑셀 파일 업로드 API 구현을 위한 요구사항 분석 중.
-2023-08-05 10:30: 지시 관련 기존 컴포넌트 분석 완료. 현재 instructionAPI.js에 구현된 API 함수들:
+2023-09-01 10:00: 지시 관리 API 스키마 변경 사항 적용 작업 시작
+2023-09-01 10:05: API 스키마 확인 - title → name 필드 변경, memo 필드 추가 필요
+2023-09-01 10:10: InstructionEdit.jsx 파일 분석 - 수정 페이지 파악
+2023-09-01 10:15: InstructionCreate.jsx 파일 분석 - 추가 페이지 구조 확인
+2023-09-01 10:20: InstructionDetail.jsx 파일 분석 - 상세 페이지 구조 확인
+2023-09-01 10:25: 수정 페이지를 추가 페이지와 비슷한 스타일로 변경하는 작업 시작
+2023-09-01 10:30: InstructionEdit.jsx 파일 수정 - 폼 레이아웃 개선 및 새 UI 적용
+2023-09-01 10:35: InstructionEdit.jsx 파일 수정 - title → name 필드 변경
+2023-09-01 10:40: InstructionEdit.jsx 파일 수정 - memo 필드 추가
+2023-09-01 10:45: InstructionDetail.jsx 파일 수정 - title → name 필드 변경
+2023-09-01 10:50: InstructionDetail.jsx 파일 수정 - description → memo 필드 변경
+2023-09-01 10:55: InstructionDetail.jsx 파일 수정 - 비고 필드가 항상 표시되도록 조건부 렌더링 수정
+2023-09-01 11:00: InstructionDetail.jsx 파일 수정 - 주소 정보 표시 방식 개선 (시/군/구, 동/읍/면, 지번, 상세주소 분리)
+2023-09-01 11:05: InstructionCreate.jsx 파일 수정 - title → name 필드 변경
+2023-09-01 11:10: InstructionCreate.jsx 파일 수정 - memo 필드 추가
+2023-09-01 11:15: API 요청 데이터 형식을 명시적으로 새 스키마에 맞게 지정 (InstructionCreate.jsx)
+2023-09-01 11:20: API 요청 데이터 형식을 명시적으로 새 스키마에 맞게 지정 (InstructionEdit.jsx)
+2023-09-01 11:30: 모든 파일 변경 완료 및 테스트
+2023-09-01 11:40: 작업 완료 - 새 API 스키마에 맞춰 모든 관련 페이지 수정 완료
 
-- fetchInstructions (GET /instruction) - 지시 목록 조회
-- fetchInstructionById (GET /instruction/{id}) - 지시 상세 조회
-- createInstruction (POST /instruction) - 지시 생성
-- updateInstruction (PUT /instruction/{id}) - 지시 정보 수정
-- updateInstructionStatus (POST /instruction/{id}/status) - 지시 상태 변경 (모의 데이터만 있음)
-- toggleInstructionFavorite (POST /instruction/{id}/favorite) - 지시 즐겨찾기 토글
-- deleteInstruction (DELETE /instruction/{id}) - 지시 삭제
-- confirmInstruction (POST /instruction/{id}/confirm) - 지시 확정 (모의 데이터만 있음)
-  2023-08-05 10:31: InstructionImport.jsx 분석 완료. 현재 JSON/CSV 파일만 지원하며 xlsx 포맷은 미지원 상태.
-  2023-08-05 10:32: 미구현된 API 기능:
-- Excel 파일 업로드 API (POST /instruction/excel)
-- 지시 상태 변경 API (실제 API 호출)
-- 지시 확정 API (실제 API 호출)
-- 지시-공종 관련 API (POST, PUT, DELETE /instruction/{id}/type)
-- 지시-공종-작업 관련 API (POST, PUT, DELETE /instruction/{id}/type/unit)
-  2023-08-05 10:40: API 문서 확인 완료. 지시 관련 API 문서에 상세 요청/응답 형식이 명시되어 있지 않음.
-  2023-08-05 10:45: ANALYZE 단계 완료. 지시 관련 API 및 컴포넌트 현황 파악 완료.
-  2023-08-05 10:50: BLUEPRINT 단계 시작. 엑셀 파일 업로드 API 및 관련 기능 구현을 위한 계획 수립 중.
-  2023-08-05 11:00: 계획 작성 완료. 사용자 검토 및 승인 필요.
-  2023-08-05 11:30: 사용자 요청에 따라 계획 수정. 백엔드 개발은 작업 범위에서 제외하고 프론트엔드 구현에 집중. 엑셀 기능은 향후 필수 작업으로 표시.
-  2023-08-05 11:35: 사용자가 제시한 10가지 지시 관리 요구사항을 반영하여 계획 재수립.
-  2023-08-05 11:40: 수정된 계획 작성 완료. 사용자 검토 및 승인 필요.
-  2023-08-05 11:45: 계획 승인 완료. CONSTRUCT 단계로 전환하여 개발 시작.
-  2023-08-05 11:50: 지시 목록 페이지 개선 작업(Step 1.1) 시작. 현재 InstructionList.jsx 파일 분석 진행 중.
-  2023-08-05 12:00: InstructionList.jsx 분석 완료. 현재 구현 상태:
-- 지시 목록 필터링: 상태(status)와 우선순위(priority)로 필터링 가능
-- 검색 기능: 제목, ID, 위치, 주소, 관리자, 담당자, 채널, 내용 등으로 검색 가능
-- 컬럼 표시 선택: 사용자가 원하는 컬럼만 선택하여 표시 가능
-- 페이지네이션: 페이지 단위로 데이터 로드 가능
-- 지시 추가, 가져오기, 내보내기 버튼 제공
-- 상태 및 우선순위 시각화: 색상 구분으로 표시
-- 개선 필요 사항:
-  1. 번지/동 검색 기능 명확화
-  2. 날짜 범위 필터링 추가
-  3. 지시 상태 필터링 5단계 업데이트
-  4. 최종 수정자 정보 컬럼 추가
-  5. 작업자, 작업현황, 비고, 기성회차 필드 추가
-     2023-08-05 12:10: instructionAPI.js 분석 완료. 현재 Mock 데이터 구조:
-- 기본 필드: id, title, priority, status, createdAt, dueDate, location, address, manager, receiver, channel, description
-- 추가 필드: works(배열), favorite(불리언), paymentRound, lastModifiedBy, lastModifiedAt
-- 개선이 필요한 필드:
-  1. 5단계 상태 체계화: RECEIVED(접수), IN_PROGRESS(작업중), COMPLETED_WORK(작업완료), IN_APPROVAL(결재중), COMPLETED(완료)
-  2. 작업자(worker) 필드 추가
-  3. 작업현황(workStatus) 필드 추가
-  4. 비고(note) 필드 추가
-  5. 동(dong)과 지번(lotNumber) 필드를 명확히 구분
-  6. 세부사항과 작업내용 필드 구분
-     2023-08-05 12:20: 개선 계획 정리:
+변경 내용 요약:
 
-1. InstructionList.jsx 페이지 개선:
-   - 상태 필터 5단계로 업데이트
-   - 날짜 범위 필터 추가
-   - 번지/동 검색 기능 구체화
-   - 목록 컬럼에 작업자, 작업현황, 비고, 기성회차, 최종 수정자 필드 추가
-   - 컬럼 레이아웃 최적화
-2. Mock 데이터 개선:
-   - 기존 mockInstructions 데이터 확장
-   - 새로운 필드 및 5단계 상태 추가
-3. 구현 순서:
-   - 먼저 Mock 데이터 구조 업데이트
-   - 상태 관련 코드 업데이트 (STATUS_MAP)
-   - 날짜 필터링 컴포넌트 추가
-   - 검색 영역 개선
-   - 컬럼 정의 업데이트
-     2023-08-05 12:30: instructionAPI.js 파일의 Mock 데이터 업데이트 완료:
-
-- 상태 체계를 5단계로 확장 (RECEIVED, IN_PROGRESS, COMPLETED_WORK, IN_APPROVAL, COMPLETED)
-- 새로운 데이터 항목 추가: dong, lotNumber, workContent, note, worker, workStatus
-- 기존 데이터 항목 수정 및 확장: description은 세부사항으로, workContent는 작업내용으로 분리
-- 테스트를 위해 추가 샘플 데이터 2개 추가 (IN_APPROVAL, COMPLETED 상태)
-  2023-08-05 12:45: InstructionList.jsx 파일 업데이트 완료:
-- 상태 필터 5단계로 업데이트 (접수, 작업중, 작업완료, 결재중, 완료)
-- 날짜 범위 필터링 기능 추가 (createdAt, dueDate, lastModifiedAt 필드 선택 가능)
-- 검색 기능 개선 (전체 검색, 동 검색, 지번 검색 선택 가능)
-- 테이블 컬럼 추가 (동, 지번, 작업내용, 비고, 작업자, 작업현황, 기성회차, 최종 수정자)
-- 컬럼 표시 선택 기본값 최적화
-- UI 개선 (필터 및 검색 영역 레이아웃 최적화)
-  2023-08-05 13:00: Step 1.1(지시 목록 페이지 개선) 작업 완료.
-
-2023-08-06 14:00: 지시 목록 페이지(InstructionList.jsx) 개선 작업 진행.
-2023-08-06 14:30: DataTable 컴포넌트 분석 완료. 테이블 내 검색 및 페이지네이션 기능 파악.
-2023-08-06 15:00: 지시 목록 페이지의 필터 및 검색 UI 개선 시작.
-2023-08-06 16:00: 사용자 요청에 따라 페이지네이션 및 검색 입력 기능 개선:
-
-- 검색어 입력 필드를 데이터 테이블 컴포넌트 내부로 이동
-- 페이지네이션 버튼을 하단 중앙 정렬로 배치
-- 페이지당 항목 수 선택 기능 추가
-  2023-08-06 17:00: 필터 UI 개선 작업 진행:
-- 필터 컴포넌트를 한 줄로 배치하여 효율적인 공간 활용
-- 제목, 관리자, 상태, 지시일자 필드 중심으로 필터 정리
-- React-DatePicker 라이브러리 설치 및 통합
-  2023-08-06 17:30: DateRange Picker 구현 완료:
-- 시작일과 종료일을 한 번에 선택할 수 있는 UI 제공
-- DatePicker 컴포넌트의 너비 및 스타일 문제 해결
-  2023-08-06 18:00: 필터 적용 로직 개선:
-- 적용 버튼을 통해서만 API 호출하도록 변경
-- 로컬 스토리지 연동으로 필터 상태 유지 기능 구현
-  2023-08-06 18:30: 지시 목록 페이지 개선 작업 완료. 주요 개선 사항:
-- 직관적인 필터 UI 구현 (제목, 관리자, 상태, 지시일자 범위)
-- 필터 상태 로컬 스토리지 저장으로 사용자 경험 향상
-- 페이지 새로고침 후에도 이전 필터 설정 유지
-- DateRange Picker 통합으로 효율적인 날짜 범위 선택 지원
-- 필터 적용/초기화 버튼 UI 및 색상 개선
+1. API 스키마 변경 적용: title → name, 새로운 memo 필드 추가
+2. 수정 페이지 UI 개선: 추가 페이지와 일관된 스타일 적용
+3. 상세 페이지 개선: 주소 정보 표시 개선, 비고 필드 추가
+4. API 요청 형식 표준화: 새 스키마에 맞는 데이터 형식 명시적 지정
 
 ---
 
