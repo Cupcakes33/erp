@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
-import { useUnitPrices } from "../../lib/api/workQueries"
+import { useUnitPrices, useDeleteUnitPrice } from "../../lib/api/workQueries"
 import { DataTable, FormButton, FormInput } from "../../components/molecules"
-import { Eye, Pencil, Plus, Search, FileUp, RefreshCw } from "lucide-react"
+import { Pencil, Plus, Search, RefreshCw, Trash2 } from "lucide-react"
 import { formatNumberKR } from "@/lib/utils/formatterUtils"
+import Modal from "../../components/molecules/Modal"
 
 const WorkList = () => {
   const navigate = useNavigate()
@@ -24,6 +25,35 @@ const WorkList = () => {
     page,
     size,
   })
+
+  const deleteUnitPriceMutation = useDeleteUnitPrice()
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [targetDeleteId, setTargetDeleteId] = useState(null)
+
+  // 삭제 버튼 클릭
+  const handleDeleteClick = (id) => {
+    setTargetDeleteId(id)
+    setDeleteModalOpen(true)
+  }
+
+  // 삭제 확인
+  const handleConfirmDelete = async () => {
+    if (!targetDeleteId) return
+    try {
+      await deleteUnitPriceMutation.mutateAsync(targetDeleteId)
+      setDeleteModalOpen(false)
+      setTargetDeleteId(null)
+      refetch()
+    } catch (e) {
+      // 에러 처리 필요시 추가
+    }
+  }
+
+  // 삭제 취소
+  const handleCancelDelete = () => {
+    setDeleteModalOpen(false)
+    setTargetDeleteId(null)
+  }
 
   const handleNavigateToCreate = () => {
     navigate("/works/create")
@@ -106,6 +136,16 @@ const WorkList = () => {
           >
             <Pencil size={18} />
           </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              handleDeleteClick(row.original.id)
+            }}
+            className="p-1 text-red-600 hover:text-red-800"
+            title="삭제"
+          >
+            <Trash2 size={18} />
+          </button>
         </div>
       ),
     },
@@ -178,6 +218,32 @@ const WorkList = () => {
           )}
         </div>
       </div>
+
+      {/* 삭제 확인 모달 */}
+      <Modal
+        isOpen={deleteModalOpen}
+        onClose={handleCancelDelete}
+        title="일위대가 삭제 확인"
+        footer={
+          <div className="flex justify-end gap-2">
+            <button
+              className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+              onClick={handleCancelDelete}
+            >
+              취소
+            </button>
+            <button
+              className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+              onClick={handleConfirmDelete}
+              disabled={deleteUnitPriceMutation.isLoading}
+            >
+              삭제
+            </button>
+          </div>
+        }
+      >
+        정말로 이 일위대가를 삭제하시겠습니까?
+      </Modal>
     </div>
   )
 }
