@@ -1,5 +1,36 @@
-import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  CheckCircle,
+  ClipboardList,
+  Edit,
+  FileCheck,
+  FileText,
+  Info,
+  Layout,
+  Printer,
+  Trash,
+  Activity,
+  Calculator,
+} from "lucide-react";
+import { useNavigate, useParams } from "react-router-dom";
+import ReactDOM from "react-dom";
+import React, { useState, useEffect, useMemo, useRef } from "react";
+import {
+  FormButton,
+  Loading,
+  Table,
+  DataTable,
+  ConfirmDialog,
+  showConfirm,
+  showDeleteConfirm,
+  showSuccess,
+  showError,
+  RepairConfirmationPDF,
+  RepairDocumentSetPDF,
+  QuantityCalculationPDF,
+  DetailStatementPDF,
+} from "../../components/molecules";
+import { Button } from "../../components/ui/button";
 import {
   useInstruction,
   useUpdateInstruction,
@@ -10,58 +41,90 @@ import {
   useCreateProcess,
   useUpdateProcess,
   useDeleteProcess,
-  useTasksByProcess,
   useCreateTask,
   useUpdateTask,
   useDeleteTask,
   useUnitPrices,
 } from "../../lib/api/instructionQueries";
 import { fetchTasksByProcess } from "../../lib/api/instructionAPI";
-import {
-  FormButton,
-  Table,
-  DataTable,
-  showConfirm,
-  showSuccess,
-  showDeleteConfirm,
-  Button,
-  Loading,
-  ConfirmDialog,
-} from "../../components/molecules";
 import { Input } from "../../components/ui/input";
-import {
-  ArrowLeft,
-  Edit,
-  Trash,
-  CheckCircle,
-  Clock,
-  FileText,
-  Info,
-  Layout,
-  Activity,
-  FileCheck,
-  Send,
-  Wrench,
-  Plus,
-  UserCheck,
-  Calendar,
-  ChevronDown,
-  ChevronUp,
-  Search,
-  X,
-  Check,
-} from "lucide-react";
 import { formatDateTime } from "../../lib/utils/dateUtils";
 
-// 상태 매핑 객체
+// 지시 상태 상수 정의
+const INSTRUCTION_STATUSES = {
+  RECEIVED: {
+    value: "접수",
+    label: "접수",
+    color: "bg-blue-100 text-blue-800",
+    buttonClass: "text-blue-600 border-blue-300 hover:bg-blue-50",
+    buttonVariant: "primary",
+    activeClass: "bg-blue-100 text-blue-800 border-blue-300",
+  },
+  IN_PROGRESS: {
+    value: "진행중",
+    label: "진행중",
+    color: "bg-yellow-100 text-yellow-800",
+    buttonClass: "text-yellow-600 border-yellow-300 hover:bg-yellow-50",
+    buttonVariant: "warning",
+    activeClass: "bg-yellow-100 text-yellow-800 border-yellow-300",
+  },
+  COMPLETED_WORK: {
+    value: "작업완료",
+    label: "작업완료",
+    color: "bg-teal-100 text-teal-800",
+    buttonClass: "text-teal-600 border-teal-300 hover:bg-teal-50",
+    buttonVariant: "info",
+    activeClass: "bg-teal-100 text-teal-800 border-teal-300",
+  },
+  IN_APPROVAL: {
+    value: "결재중",
+    label: "결재중",
+    color: "bg-orange-100 text-orange-800",
+    buttonClass: "text-orange-600 border-orange-300 hover:bg-orange-50",
+    buttonVariant: "warning",
+    activeClass: "bg-orange-100 text-orange-800 border-orange-300",
+  },
+  COMPLETED: {
+    value: "완료",
+    label: "완료",
+    color: "bg-green-100 text-green-800",
+    buttonClass: "text-green-600 border-green-300 hover:bg-green-50",
+    buttonVariant: "success",
+    activeClass: "bg-green-100 text-green-800 border-green-300",
+  },
+};
+
+// 공종 상태 상수 정의
+const PROCESS_STATUSES = {
+  BEFORE_WORK: {
+    value: "작업 전",
+    label: "작업 전",
+    color: "bg-gray-100 text-gray-800",
+  },
+  IN_PROGRESS: {
+    value: "진행중",
+    label: "진행중",
+    color: "bg-yellow-100 text-yellow-800",
+  },
+  COMPLETED: {
+    value: "완료",
+    label: "완료",
+    color: "bg-green-100 text-green-800",
+  },
+};
+
+// 상태 매핑 객체 (기존 코드 호환성 유지)
 const STATUS_MAP = {
-  접수: { label: "접수", color: "blue" },
-  진행중: { label: "진행중", color: "yellow" },
-  작업완료: { label: "작업완료", color: "teal" },
-  결재중: { label: "결재중", color: "orange" },
-  완료: { label: "완료", color: "green" },
-  취소: { label: "취소", color: "red" },
-  확정: { label: "확정", color: "purple" },
+  ...Object.values(INSTRUCTION_STATUSES).reduce(
+    (acc, status) => ({
+      ...acc,
+      [status.value]: {
+        label: status.label,
+        color: status.color.split(" ")[0].replace("bg-", ""),
+      },
+    }),
+    {}
+  ),
   // 기존 영문 상태 코드도 유지 (이전 코드와의 호환성을 위해)
   RECEIVED: { label: "접수", color: "blue" },
   IN_PROGRESS: { label: "진행중", color: "yellow" },
@@ -72,13 +135,14 @@ const STATUS_MAP = {
   CONFIRMED: { label: "확정", color: "purple" },
 };
 
-// 공종 상태 매핑 객체
-const PROCESS_STATUS_MAP = {
-  "작업 전": { label: "작업 전", color: "bg-gray-100 text-gray-800" },
-  진행중: { label: "진행중", color: "bg-yellow-100 text-yellow-800" },
-  완료: { label: "완료", color: "bg-green-100 text-green-800" },
-  취소: { label: "취소", color: "bg-red-100 text-red-800" },
-};
+// 공종 상태 매핑 객체 (기존 코드 호환성 유지)
+const PROCESS_STATUS_MAP = Object.values(PROCESS_STATUSES).reduce(
+  (acc, status) => ({
+    ...acc,
+    [status.value]: { label: status.label, color: status.color },
+  }),
+  {}
+);
 
 const InstructionDetail = () => {
   const { id } = useParams();
@@ -91,8 +155,7 @@ const InstructionDetail = () => {
   const deleteInstructionMutation = useDeleteInstruction();
   const confirmInstructionMutation = useConfirmInstruction();
 
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState("works"); // 'works', 'history', 'files'
+  const [activeTab, setActiveTab] = useState("detail"); // 'detail', 'processes'
 
   const handleEdit = () => {
     navigate(`/instructions/${id}/edit`);
@@ -171,6 +234,121 @@ const InstructionDetail = () => {
     }
   };
 
+  // 출력 드롭다운 상태
+  const [showPrintDropdown, setShowPrintDropdown] = useState(false);
+  const printDropdownRef = useRef(null);
+
+  // 바깥쪽 클릭시 드롭다운 닫기
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (
+        printDropdownRef.current &&
+        !printDropdownRef.current.contains(event.target)
+      ) {
+        setShowPrintDropdown(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  // PDF 출력 함수
+  const handlePrint = (type) => {
+    console.log(`${type} 출력 요청`, instruction);
+    setShowPrintDropdown(false);
+
+    if (!instruction) {
+      showError("출력할 지시 데이터가 없습니다.");
+      return;
+    }
+
+    // 지시 관련 데이터 준비
+    // 공종 및 작업 정보는 API 호출을 통해 얻는 것이 가장 정확하나,
+    // 현재 구현에서는 단순화를 위해 instruction 객체만 사용
+    const { processes = [], tasks = [] } = instruction;
+
+    // 필요한 일반 정보 및 PDF 데이터 수집
+    const pdfData = {
+      orderNumber: instruction.orderNumber,
+      orderDate: instruction.orderDate,
+      id: instruction.id,
+      name: instruction.name,
+      district: instruction.district,
+      address: instruction.dong
+        ? `${instruction.dong} ${instruction.detailAddress || ""}`
+        : instruction.detailAddress,
+      manager: instruction.manager,
+      items: tasks.map((task) => ({
+        code: task.process?.code || "",
+        name: task.process?.name || "",
+        work: task.name || "",
+        spec: task.spec || "",
+        unit: task.unit || "",
+        quantity: task.count || 1,
+        materialCost: task.materialCost || 0,
+        materialAmount: (task.materialCost || 0) * (task.count || 1),
+        laborCost: task.laborCost || 0,
+        laborAmount: (task.laborCost || 0) * (task.count || 1),
+        expenseCost: task.expense || 0,
+        expenseAmount: (task.expense || 0) * (task.count || 1),
+        totalAmount: task.totalCost || 0,
+        note: task.marker || "",
+      })),
+      summary: {
+        materialAmount: tasks.reduce(
+          (sum, task) => sum + (task.materialCost || 0) * (task.count || 1),
+          0
+        ),
+        laborAmount: tasks.reduce(
+          (sum, task) => sum + (task.laborCost || 0) * (task.count || 1),
+          0
+        ),
+        expenseAmount: tasks.reduce(
+          (sum, task) => sum + (task.expense || 0) * (task.count || 1),
+          0
+        ),
+        totalAmount: tasks.reduce(
+          (sum, task) => sum + (task.totalCost || 0),
+          0
+        ),
+      },
+    };
+
+    // 모달 방식으로 표시 - popup 대신 현재 페이지에 모달로 표시
+    const modalContainer = document.createElement("div");
+    modalContainer.id = "pdf-modal-container";
+    document.body.appendChild(modalContainer);
+
+    let pdfContent;
+    const onClose = () => {
+      const pdfElement = document.getElementById("pdf-modal-container");
+      if (pdfElement) {
+        document.body.removeChild(pdfElement);
+      }
+    };
+
+    if (type === "전체") {
+      // 모든 PDF를 탭으로 보여주는 컴포넌트
+      pdfContent = <RepairDocumentSetPDF data={pdfData} onClose={onClose} />;
+    } else if (type === "보수확인서") {
+      pdfContent = <RepairConfirmationPDF data={pdfData} onClose={onClose} />;
+    } else if (type === "물량산출근거") {
+      pdfContent = <QuantityCalculationPDF data={pdfData} onClose={onClose} />;
+    } else if (type === "내역서") {
+      pdfContent = <DetailStatementPDF data={pdfData} onClose={onClose} />;
+    } else {
+      // 지원하지 않는 유형
+      alert(`${type} 출력 기능이 구현될 예정입니다.`);
+      return;
+    }
+
+    // React 컴포넌트 렌더링
+    ReactDOM.render(pdfContent, modalContainer);
+  };
+
   if (isLoading) {
     return <Loading />;
   }
@@ -203,63 +381,6 @@ const InstructionDetail = () => {
     );
   }
 
-  const status = STATUS_MAP[instruction.status] || {
-    label: instruction.status,
-    color: "gray",
-  };
-
-  const statusOptions = [
-    {
-      value: "접수",
-      label: "접수",
-      color: "bg-blue-100 text-blue-800",
-      buttonVariant: "primary",
-      buttonClass: "text-blue-600 border-blue-300 hover:bg-blue-50",
-    },
-    {
-      value: "진행중",
-      label: "진행중",
-      color: "bg-yellow-100 text-yellow-800",
-      buttonVariant: "warning",
-      buttonClass: "text-yellow-600 border-yellow-300 hover:bg-yellow-50",
-    },
-    {
-      value: "작업완료",
-      label: "작업완료",
-      color: "bg-teal-100 text-teal-800",
-      buttonVariant: "info",
-      buttonClass: "text-teal-600 border-teal-300 hover:bg-teal-50",
-    },
-    {
-      value: "결재중",
-      label: "결재중",
-      color: "bg-orange-100 text-orange-800",
-      buttonVariant: "warning",
-      buttonClass: "text-orange-600 border-orange-300 hover:bg-orange-50",
-    },
-    {
-      value: "완료",
-      label: "완료",
-      color: "bg-green-100 text-green-800",
-      buttonVariant: "success",
-      buttonClass: "text-green-600 border-green-300 hover:bg-green-50",
-    },
-    {
-      value: "취소",
-      label: "취소",
-      color: "bg-red-100 text-red-800",
-      buttonVariant: "danger",
-      buttonClass: "text-red-600 border-red-300 hover:bg-red-50",
-    },
-    {
-      value: "확정",
-      label: "확정",
-      color: "bg-purple-100 text-purple-800",
-      buttonVariant: "secondary",
-      buttonClass: "text-purple-600 border-purple-300 hover:bg-purple-50",
-    },
-  ];
-
   const isCompleted = instruction?.status === "완료";
   const isCanceled = instruction?.status === "취소";
   const isConfirmed = instruction?.status === "확정";
@@ -278,39 +399,22 @@ const InstructionDetail = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case "works":
+      case "detail":
       default:
+        return (
+          <DetailTab
+            instruction={instruction}
+            canEdit={canEdit}
+            onStatusChange={handleStatusChange}
+          />
+        );
+      case "processes":
         return <ProcessesTab instructionId={id} />;
-      case "history":
-        return (
-          <div className="p-6 mt-6 bg-white rounded-lg shadow">
-            <h2 className="flex items-center mb-4 text-lg font-medium">
-              <Clock className="w-5 h-5 mr-2 text-blue-600" />
-              변경 이력
-            </h2>
-            <div className="p-4 text-center text-gray-500 rounded-md bg-gray-50">
-              변경 이력이 없습니다.
-            </div>
-          </div>
-        );
-      case "files":
-        return (
-          <div className="p-6 mt-6 bg-white rounded-lg shadow">
-            <h2 className="flex items-center mb-4 text-lg font-medium">
-              <FileText className="w-5 h-5 mr-2 text-blue-600" />
-              첨부 파일
-            </h2>
-            <div className="p-4 text-center text-gray-500 rounded-md bg-gray-50">
-              첨부된 파일이 없습니다.
-            </div>
-          </div>
-        );
     }
   };
 
   return (
     <div className="min-h-screen px-4 py-6 mx-auto bg-gray-50">
-      {/* 헤더 영역 */}
       <div className="p-6 mb-6 bg-white rounded-lg shadow">
         <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center">
@@ -328,175 +432,112 @@ const InstructionDetail = () => {
               {instruction?.name}
             </h1>
           </div>
-        </div>
 
-        {/* 상세 정보 영역 */}
-        <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
-          <div className="bg-white rounded-lg">
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">상태</p>
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      statusOptions.find((s) => s.value === instruction?.status)
-                        ?.color || "bg-gray-100"
-                    } inline-block text-center`}
-                  >
-                    {status.label}
-                  </span>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">지시번호</p>
-                  <p className="font-medium">{instruction?.orderNumber}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">지시일자</p>
-                  <p className="font-medium">
-                    {formatDate(instruction?.orderDate)}
-                  </p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">구분</p>
-                  <p className="font-medium">{instruction?.structure || "-"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">관리자</p>
-                  <p className="font-medium">{instruction?.manager || "-"}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">위임자</p>
-                  <p className="font-medium">{instruction?.delegator || "-"}</p>
-                </div>
-              </div>
-              <div className="pt-4 border-t border-gray-100">
-                <p className="mb-2 text-sm font-medium text-gray-500">
-                  위치 정보
-                </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">
-                      시/군/구
-                    </p>
-                    <p className="font-medium">
-                      {instruction?.district || "-"}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">
-                      동/읍/면
-                    </p>
-                    <p className="font-medium">{instruction?.dong || "-"}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">지번</p>
-                    <p className="font-medium">
-                      {instruction?.lotNumber || "-"}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">
-                      상세주소
-                    </p>
-                    <p className="font-medium">
-                      {instruction?.detailAddress || "-"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="pt-4 border-t border-gray-100">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-gray-500">비고</p>
-                  <p className="p-3 rounded-md bg-gray-50">
-                    {instruction.memo || "-"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div className="flex space-x-2">
+            {/* 출력 드롭다운 버튼 */}
+            <div className="relative" ref={printDropdownRef}>
+              <FormButton
+                variant="outline"
+                size="sm"
+                onClick={() => setShowPrintDropdown(!showPrintDropdown)}
+                className="flex items-center"
+              >
+                <Printer className="w-4 h-4 mr-2" />
+                출력하기
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="w-4 h-4 ml-2"
+                >
+                  <path d="m6 9 6 6 6-6" />
+                </svg>
+              </FormButton>
 
-          <div className="space-y-4 bg-white rounded-lg">
-            {canEdit && (
-              <div className="p-4 rounded-lg bg-gray-50">
-                <h3 className="flex items-center mb-4 font-medium text-md">
-                  <Activity className="w-5 h-5 mr-2 text-blue-600" />
-                  상태 변경
-                </h3>
-                <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-2">
-                  {statusOptions.map((option) => (
-                    <Button
-                      key={option.value}
-                      variant={
-                        instruction?.status === option.value
-                          ? option.buttonVariant
-                          : "outline"
-                      }
-                      size="sm"
-                      onClick={() => handleStatusChange(option.value)}
-                      disabled={instruction?.status === option.value}
-                      className={
-                        instruction?.status === option.value
-                          ? "opacity-75"
-                          : option.buttonClass
-                      }
+              {/* 드롭다운 메뉴 */}
+              {showPrintDropdown && (
+                <div className="absolute right-0 z-10 w-48 mt-2 bg-white border rounded-md shadow-lg">
+                  <div className="py-1">
+                    {/* <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+                      onClick={() => handlePrint("전체")}
                     >
-                      {option.label}
-                    </Button>
-                  ))}
+                      <Printer className="w-4 h-4 mr-2 text-gray-500" />
+                      전체 출력
+                    </button> */}
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+                      onClick={() => handlePrint("보수확인서")}
+                    >
+                      <FileText className="w-4 h-4 mr-2 text-blue-500" />
+                      보수확인서 출력
+                    </button>
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+                      onClick={() => handlePrint("물량산출근거")}
+                    >
+                      <Calculator className="w-4 h-4 mr-2 text-green-500" />
+                      물량산출근거 출력
+                    </button>
+                    <button
+                      className="flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+                      onClick={() => handlePrint("내역서")}
+                    >
+                      <ClipboardList className="w-4 h-4 mr-2 text-orange-500" />
+                      내역서 출력
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
+            </div>
+
+            {instruction.status !== "완료" &&
+              instruction.status !== "결재중" && (
+                <FormButton
+                  onClick={handleComplete}
+                  variant="success"
+                  size="sm"
+                  className="flex items-center"
+                >
+                  <CheckCircle className="w-4 h-4 mr-2" />
+                  완료 처리
+                </FormButton>
+              )}
+            {isCompleted && !isConfirmed && (
+              <FormButton
+                onClick={handleConfirm}
+                variant="secondary"
+                size="sm"
+                className="flex items-center text-purple-600 border-purple-300 hover:bg-purple-50"
+              >
+                <FileCheck className="w-4 h-4 mr-2" />
+                확정
+              </FormButton>
             )}
-
-            <div className="p-4 rounded-lg bg-gray-50">
-              <h3 className="flex items-center mb-4 font-medium text-md">
-                <Send className="w-5 h-5 mr-2 text-blue-600" />
-                액션
-              </h3>
-              <div className="flex flex-wrap gap-2">
-                {canEdit && (
-                  <>
-                    <FormButton
-                      onClick={handleComplete}
-                      variant="success"
-                      size="sm"
-                      className="flex items-center"
-                    >
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      완료 처리
-                    </FormButton>
-                    {isCompleted && !isConfirmed && (
-                      <FormButton
-                        onClick={handleConfirm}
-                        variant="secondary"
-                        size="sm"
-                        className="flex items-center text-purple-600 border-purple-300 hover:bg-purple-50"
-                      >
-                        <FileCheck className="w-4 h-4 mr-2" />
-                        확정
-                      </FormButton>
-                    )}
-                    <FormButton
-                      onClick={handleEdit}
-                      variant="primary"
-                      size="sm"
-                      className="flex items-center"
-                    >
-                      <Edit className="w-4 h-4 mr-2" />
-                      수정
-                    </FormButton>
-                    <FormButton
-                      onClick={() => setShowDeleteDialog(true)}
-                      variant="danger"
-                      size="sm"
-                      className="flex items-center"
-                    >
-                      <Trash className="w-4 h-4 mr-2" />
-                      삭제
-                    </FormButton>
-                  </>
-                )}
-              </div>
-            </div>
+            <FormButton
+              onClick={handleEdit}
+              variant="primary"
+              size="sm"
+              className="flex items-center"
+            >
+              <Edit className="w-4 h-4 mr-2" />
+              수정
+            </FormButton>
+            <FormButton
+              onClick={handleDelete}
+              variant="danger"
+              size="sm"
+              className="flex items-center"
+            >
+              <Trash className="w-4 h-4 mr-2" />
+              삭제
+            </FormButton>
           </div>
         </div>
 
@@ -504,42 +545,29 @@ const InstructionDetail = () => {
         <div className="border-b border-gray-200">
           <nav className="flex -mb-px space-x-8">
             <button
-              onClick={() => setActiveTab("works")}
+              onClick={() => setActiveTab("detail")}
               className={`py-3 px-1 ${
-                activeTab === "works"
+                activeTab === "detail"
                   ? "border-b-2 border-blue-500 text-blue-600 font-medium"
                   : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               <div className="flex items-center">
-                <Wrench className="w-4 h-4 mr-2" />
-                작업
+                <Info className="w-4 h-4 mr-2" />
+                상세정보
               </div>
             </button>
             <button
-              onClick={() => setActiveTab("history")}
+              onClick={() => setActiveTab("processes")}
               className={`py-3 px-1 ${
-                activeTab === "history"
+                activeTab === "processes"
                   ? "border-b-2 border-blue-500 text-blue-600 font-medium"
                   : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
               }`}
             >
               <div className="flex items-center">
-                <Clock className="w-4 h-4 mr-2" />
-                변경 이력
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab("files")}
-              className={`py-3 px-1 ${
-                activeTab === "files"
-                  ? "border-b-2 border-blue-500 text-blue-600 font-medium"
-                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              <div className="flex items-center">
-                <FileText className="w-4 h-4 mr-2" />
-                첨부 파일
+                <Layout className="w-4 h-4 mr-2" />
+                공종/작업 관리
               </div>
             </button>
           </nav>
@@ -548,17 +576,132 @@ const InstructionDetail = () => {
 
       {/* 탭 콘텐츠 영역 */}
       {renderTabContent()}
+    </div>
+  );
+};
 
-      {/* 삭제 확인 대화상자 */}
-      <ConfirmDialog
-        isOpen={showDeleteDialog}
-        title="지시 삭제"
-        message="이 지시를 삭제하시겠습니까? 이 작업은 취소할 수 없습니다."
-        confirmLabel="삭제"
-        cancelLabel="취소"
-        onConfirm={handleDelete}
-        onCancel={() => setShowDeleteDialog(false)}
-      />
+// 상세 정보 탭 컴포넌트
+const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
+  // 날짜 포맷팅 함수
+  const formatDate = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+    });
+  };
+
+  return (
+    <div className="p-6 mt-6 bg-white rounded-lg shadow">
+      <h2 className="flex items-center mb-4 text-lg font-medium">
+        <Info className="w-5 h-5 mr-2 text-blue-600" />
+        상세 정보
+      </h2>
+
+      <div className="space-y-6">
+        {canEdit && (
+          <div className="p-4 rounded-lg bg-gray-50">
+            <h3 className="flex items-center mb-4 font-medium text-md">
+              <Activity className="w-5 h-5 mr-2 text-blue-600" />
+              상태 변경
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {Object.values(INSTRUCTION_STATUSES).map((option) => (
+                <Button
+                  key={option.value}
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onStatusChange(option.value)}
+                  disabled={instruction?.status === option.value}
+                  className={
+                    instruction?.status === option.value
+                      ? option.activeClass
+                      : option.buttonClass
+                  }
+                >
+                  {option.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">상태</p>
+            <span
+              className={`px-2 py-1 text-xs font-medium rounded-full ${
+                INSTRUCTION_STATUSES[
+                  Object.keys(INSTRUCTION_STATUSES).find(
+                    (key) =>
+                      INSTRUCTION_STATUSES[key].value === instruction?.status
+                  )
+                ]?.color || "bg-gray-100 text-gray-800"
+              } inline-block`}
+            >
+              {INSTRUCTION_STATUSES[
+                Object.keys(INSTRUCTION_STATUSES).find(
+                  (key) =>
+                    INSTRUCTION_STATUSES[key].value === instruction?.status
+                )
+              ]?.label || instruction?.status}
+            </span>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">지시번호</p>
+            <p className="font-medium">{instruction?.orderNumber}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">지시일자</p>
+            <p className="font-medium">{formatDate(instruction?.orderDate)}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">구분</p>
+            <p className="font-medium">{instruction?.structure || "-"}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">관리자</p>
+            <p className="font-medium">{instruction?.manager || "-"}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">위임자</p>
+            <p className="font-medium">{instruction?.delegator || "-"}</p>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-gray-100">
+          <p className="mb-2 text-sm font-medium text-gray-500">위치 정보</p>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">시/군/구</p>
+              <p className="font-medium">{instruction?.district || "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">동/읍/면</p>
+              <p className="font-medium">{instruction?.dong || "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">지번</p>
+              <p className="font-medium">{instruction?.lotNumber || "-"}</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-gray-500">상세주소</p>
+              <p className="font-medium">{instruction?.detailAddress || "-"}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t border-gray-100">
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">비고</p>
+            <p className="p-3 rounded-md bg-gray-50">
+              {instruction?.memo || "-"}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
@@ -576,6 +719,34 @@ const ProcessesTab = ({ instructionId }) => {
   const [showTaskDeleteDialog, setShowTaskDeleteDialog] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [showAllTasks, setShowAllTasks] = useState(true); // 기본적으로 모든 작업 표시
+
+  // 필터 상태 추가
+  const [processFilters, setProcessFilters] = useState({
+    query: "",
+    status: "",
+  });
+
+  // 작업 필터 상태 추가
+  const [taskFilter, setTaskFilter] = useState({
+    processId: "",
+  });
+
+  // 필터 변경 핸들러
+  const handleProcessFilterChange = (e) => {
+    const { name, value } = e.target;
+    setProcessFilters((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
+  // 작업 필터 변경 핸들러
+  const handleTaskFilterChange = (e) => {
+    const { value } = e.target;
+    setTaskFilter({
+      processId: value,
+    });
+  };
 
   // 날짜 포맷팅 함수
   const formatDate = (dateString) => {
@@ -625,13 +796,24 @@ const ProcessesTab = ({ instructionId }) => {
           const tasks = result.data?.content || [];
 
           // 각 작업에 공종 정보 추가
-          return tasks.map((task) => ({
-            ...task,
-            process: {
-              id: process.id,
-              name: process.name,
-            },
-          }));
+          return tasks.map((task) => {
+            // unitCount와 price를 count와 totalCost로 변환
+            const count = task.count || task.unitCount || 0;
+            const totalCost =
+              task.totalCost || task.price || task.unitPrice?.price || 0;
+            const totalPrice = task.totalPrice || totalCost * count;
+
+            return {
+              ...task,
+              count,
+              totalCost,
+              totalPrice,
+              process: {
+                id: process.id,
+                name: process.name,
+              },
+            };
+          });
         });
 
         setAllTasks(combinedTasks);
@@ -644,6 +826,41 @@ const ProcessesTab = ({ instructionId }) => {
 
     loadAllTasks();
   }, [processesData]);
+
+  // 필터링된 공종 목록
+  const filteredProcesses = useMemo(() => {
+    const processList = processesData?.processes || [];
+    return processList.filter((process) => {
+      // 통합 검색(공종명 또는 작업자)
+      const searchMatch =
+        !processFilters.query ||
+        process.name
+          ?.toLowerCase()
+          .includes(processFilters.query.toLowerCase()) ||
+        (process.worker &&
+          process.worker
+            .toLowerCase()
+            .includes(processFilters.query.toLowerCase()));
+
+      // 상태 필터링
+      const statusMatch =
+        !processFilters.status || process.status === processFilters.status;
+
+      return searchMatch && statusMatch;
+    });
+  }, [processesData, processFilters]);
+
+  // 필터링된 작업 목록
+  const filteredTasks = useMemo(() => {
+    return allTasks.filter((task) => {
+      if (!taskFilter.processId) return true;
+      return (
+        task.process &&
+        task.process.id &&
+        task.process.id === Number(taskFilter.processId)
+      );
+    });
+  }, [allTasks, taskFilter]);
 
   const createProcessMutation = useCreateProcess();
   const updateProcessMutation = useUpdateProcess();
@@ -815,13 +1032,25 @@ const ProcessesTab = ({ instructionId }) => {
             const process = processesData.processes[index];
             const tasks = result.data?.content || [];
 
-            return tasks.map((task) => ({
-              ...task,
-              process: {
-                id: process.id,
-                name: process.name,
-              },
-            }));
+            // 각 작업에 공종 정보 추가 및 데이터 형식 변환
+            return tasks.map((task) => {
+              // unitCount와 price를 count와 totalCost로 변환
+              const count = task.count || task.unitCount || 0;
+              const totalCost =
+                task.totalCost || task.price || task.unitPrice?.price || 0;
+              const totalPrice = task.totalPrice || totalCost * count;
+
+              return {
+                ...task,
+                count,
+                totalCost,
+                totalPrice,
+                process: {
+                  id: process.id,
+                  name: process.name,
+                },
+              };
+            });
           });
 
           setAllTasks(combinedTasks);
@@ -842,7 +1071,7 @@ const ProcessesTab = ({ instructionId }) => {
     return (
       <div className="p-6 mt-6 bg-white rounded-lg shadow">
         <h2 className="flex items-center mb-4 text-lg font-medium">
-          <Wrench className="w-5 h-5 mr-2 text-blue-600" />
+          <Layout className="w-5 h-5 mr-2 text-blue-600" />
           공종 목록
         </h2>
         <Loading />
@@ -854,7 +1083,7 @@ const ProcessesTab = ({ instructionId }) => {
     return (
       <div className="p-6 mt-6 bg-white rounded-lg shadow">
         <h2 className="flex items-center mb-4 text-lg font-medium">
-          <Wrench className="w-5 h-5 mr-2 text-blue-600" />
+          <Layout className="w-5 h-5 mr-2 text-blue-600" />
           공종 목록
         </h2>
         <div className="p-4 text-center text-red-500 rounded-md bg-red-50">
@@ -966,31 +1195,33 @@ const ProcessesTab = ({ instructionId }) => {
         row.original.name || row.original.unitPrice?.name || "-",
     },
     {
-      accessorKey: "unit",
-      header: "단위",
-      cell: ({ row }) =>
-        row.original.unit || row.original.unitPrice?.unit || "-",
-    },
-    {
-      accessorKey: "unitCount",
+      accessorKey: "count",
       header: "수량",
-      cell: ({ row }) => row.original.unitCount || 0,
+      cell: ({ row }) => row.original.count || row.original.unitCount || 0,
     },
     {
-      accessorKey: "unitPrice",
+      accessorKey: "totalCost",
       header: "단가",
       cell: ({ row }) => {
-        const price = row.original.price || row.original.unitPrice?.price || 0;
+        const price =
+          row.original.totalCost ||
+          row.original.price ||
+          row.original.unitPrice?.price ||
+          0;
         return price.toLocaleString() + "원";
       },
     },
     {
-      accessorKey: "amount",
+      accessorKey: "totalPrice",
       header: "금액",
       cell: ({ row }) => {
-        const price = row.original.price || row.original.unitPrice?.price || 0;
-        const count = row.original.unitCount || 0;
-        return (price * count).toLocaleString() + "원";
+        const total =
+          row.original.totalPrice ||
+          (row.original.totalCost ||
+            row.original.price ||
+            row.original.unitPrice?.price ||
+            0) * (row.original.count || row.original.unitCount || 0);
+        return total.toLocaleString() + "원";
       },
     },
     {
@@ -1021,14 +1252,14 @@ const ProcessesTab = ({ instructionId }) => {
 
   return (
     <div className="p-6 mt-6 bg-white rounded-lg shadow">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4">
         <h2 className="flex items-center text-lg font-medium">
-          <Wrench className="w-5 h-5 mr-2 text-blue-600" />
+          <Layout className="w-5 h-5 mr-2 text-blue-600" />
           공종 목록
         </h2>
         <FormButton
           variant="primary"
-          size="md"
+          size="sm"
           onClick={handleAddProcess}
           className="flex items-center px-4 py-2"
         >
@@ -1036,56 +1267,140 @@ const ProcessesTab = ({ instructionId }) => {
         </FormButton>
       </div>
 
-      {hasProcesses ? (
-        <div className="space-y-6">
-          <DataTable
-            columns={processColumns}
-            data={processes}
-            isLoading={isLoading}
-            emptyMessage="등록된 공종이 없습니다. 위의 '공종 추가' 버튼을 클릭하여 새 공종을 추가하세요."
-            className="w-full"
-            densePadding={true}
-          />
-
-          {/* 통합된 작업 목록 */}
-          <div className="pt-6 mt-8 border-t">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium">작업 목록</h3>
-              <FormButton
-                variant="primary"
-                size="sm"
-                onClick={handleAddTask}
-                className="flex items-center px-3"
-              >
-                작업 추가
-              </FormButton>
-            </div>
-
-            {isAllTasksLoading ? (
-              <Loading />
-            ) : hasTasks ? (
-              <DataTable
-                columns={allTasksColumns}
-                data={allTasks}
-                isLoading={isAllTasksLoading}
-                emptyMessage="등록된 작업이 없습니다. '작업 추가' 버튼을 클릭하여 새 작업을 추가하세요."
-                className="w-full"
-                densePadding={true}
-              />
-            ) : (
-              <div className="p-4 text-center text-gray-500 rounded-md bg-gray-50">
-                등록된 작업이 없습니다. '작업 추가' 버튼을 클릭하여 새 작업을
-                추가하세요.
-              </div>
-            )}
+      {/* 공종 필터링 UI 추가 */}
+      <div className="p-4 mb-4 border rounded-lg bg-gray-50">
+        <h3 className="mb-3 text-sm font-medium text-gray-700">공종 필터</h3>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div>
+            <label className="block mb-1 text-xs text-gray-500">
+              통합 검색
+            </label>
+            <input
+              type="text"
+              name="query"
+              value={processFilters.query}
+              onChange={handleProcessFilterChange}
+              className="w-full px-3 py-2 text-sm border rounded-md border-input bg-background"
+              placeholder="공종명 또는 작업자 검색..."
+            />
+          </div>
+          <div>
+            <label className="block mb-1 text-xs text-gray-500">상태</label>
+            <select
+              name="status"
+              value={processFilters.status}
+              onChange={handleProcessFilterChange}
+              className="w-full px-3 py-2 text-sm border rounded-md border-input bg-background"
+            >
+              <option value="">전체</option>
+              {Object.values(PROCESS_STATUSES).map((status) => (
+                <option key={status.value} value={status.value}>
+                  {status.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
-      ) : (
-        <div className="p-4 text-center text-gray-500 rounded-md bg-gray-50">
-          등록된 공종이 없습니다. 위의 '공종 추가' 버튼을 클릭하여 새 공종을
-          추가하세요.
+      </div>
+
+      <DataTable
+        columns={processColumns}
+        data={filteredProcesses}
+        isLoading={isLoading}
+        emptyMessage="등록된 공종이 없습니다. 위의 '공종 추가' 버튼을 클릭하여 새 공종을 추가하세요."
+        className="w-full"
+        densePadding={true}
+      />
+
+      {/* 통합된 작업 목록 */}
+      <div className="pt-6 mt-8 border-t">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="flex items-center text-lg font-medium">
+            <Layout className="w-5 h-5 mr-2 text-indigo-600" />
+            작업 목록
+          </h2>
+          <FormButton
+            variant="primary"
+            size="sm"
+            onClick={handleAddTask}
+            className="flex items-center px-4 py-2"
+          >
+            작업 추가
+          </FormButton>
         </div>
-      )}
+
+        {/* 작업 필터 추가 */}
+        <div className="p-4 mb-4 border rounded-lg bg-gray-50">
+          <h3 className="mb-3 text-sm font-medium text-gray-700">작업 필터</h3>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div>
+              <label className="block mb-1 text-xs text-gray-500">
+                공종 선택
+              </label>
+              <select
+                name="processId"
+                value={taskFilter.processId}
+                onChange={handleTaskFilterChange}
+                className="w-full px-3 py-2 text-sm border rounded-md border-input bg-background"
+              >
+                <option value="">모든 공종</option>
+                {processesData?.processes?.map((process) => (
+                  <option key={process.id} value={process.id}>
+                    {process.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {/* 추가 필터를 위한 공간 확보 */}
+            <div className="hidden md:block"></div>
+          </div>
+        </div>
+
+        {isAllTasksLoading ? (
+          <Loading />
+        ) : hasTasks ? (
+          <>
+            <DataTable
+              columns={allTasksColumns}
+              data={filteredTasks}
+              isLoading={isAllTasksLoading}
+              emptyMessage="등록된 작업이 없습니다. '작업 추가' 버튼을 클릭하여 새 작업을 추가하세요."
+              className="w-full"
+              densePadding={true}
+            />
+            <div className="flex justify-end p-4 mt-4 border rounded-lg bg-gray-50">
+              <div className="flex items-center space-x-4">
+                <span className="text-sm font-medium text-gray-500">
+                  총 작업수:
+                </span>
+                <span className="font-bold">{filteredTasks.length}개</span>
+                <span className="ml-4 text-sm font-medium text-gray-500">
+                  총 금액:
+                </span>
+                <span className="text-lg font-bold text-blue-700">
+                  {filteredTasks
+                    .reduce((sum, task) => {
+                      const total =
+                        task.totalPrice ||
+                        (task.totalCost ||
+                          task.price ||
+                          task.unitPrice?.price ||
+                          0) * (task.count || task.unitCount || 0);
+                      return sum + total;
+                    }, 0)
+                    .toLocaleString()}
+                  원
+                </span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="p-4 text-center text-gray-500 rounded-md bg-gray-50">
+            등록된 작업이 없습니다. '작업 추가' 버튼을 클릭하여 새 작업을
+            추가하세요.
+          </div>
+        )}
+      </div>
 
       {/* 공종 추가/수정 모달 */}
       {showProcessModal && (
@@ -1162,12 +1477,9 @@ const ProcessFormModal = ({ process, isOpen, onClose, onSave }) => {
     onSave(formData);
   };
 
-  const PROCESS_STATUS_OPTIONS = [
-    { value: "작업 전", label: "작업 전" },
-    { value: "진행중", label: "진행중" },
-    { value: "완료", label: "완료" },
-    { value: "취소", label: "취소" },
-  ];
+  const PROCESS_STATUS_OPTIONS = Object.values(PROCESS_STATUSES).map(
+    (status) => ({ value: status.value, label: status.label })
+  );
 
   return (
     <div
@@ -1279,9 +1591,8 @@ const TaskFormModal = ({
     processId: task?.process?.id || selectedProcessId || "",
     unitPriceId: task?.unitPrice?.id || task?.unitPriceId || 0,
     name: task?.name || task?.unitPrice?.name || "",
-    unit: task?.unit || task?.unitPrice?.unit || "",
-    unitCount: task?.unitCount || 0,
-    price: task?.price || task?.unitPrice?.price || 0,
+    count: task?.count || task?.unitCount || 0,
+    totalCost: task?.totalCost || task?.price || task?.unitPrice?.price || 0,
     calculationDetails: task?.calculationDetails || "",
   });
 
@@ -1303,8 +1614,8 @@ const TaskFormModal = ({
     setFormData({
       ...formData,
       [name]:
-        name === "unitCount" ||
-        name === "price" ||
+        name === "count" ||
+        name === "totalCost" ||
         name === "processId" ||
         name === "unitPriceId"
           ? Number(value) || 0
@@ -1318,10 +1629,11 @@ const TaskFormModal = ({
     const apiData = {
       processId: formData.processId,
       unitPriceId: formData.unitPriceId,
-      unitCount: formData.unitCount,
+      count: formData.count,
+      totalCost: formData.totalCost,
+      totalPrice: formData.count * formData.totalCost,
       calculationDetails: formData.calculationDetails,
       name: formData.name,
-      unit: formData.unit,
     };
     onSave(apiData);
   };
@@ -1337,8 +1649,7 @@ const TaskFormModal = ({
       ...formData,
       unitPriceId: unitPrice.id,
       name: unitPrice.name,
-      unit: unitPrice.unit,
-      price: unitPrice.totalCost,
+      totalCost: unitPrice.totalCost,
     });
     setShowUnitPriceSearch(false);
   };
@@ -1349,7 +1660,7 @@ const TaskFormModal = ({
   );
 
   // 금액 계산
-  const amount = formData.price * formData.unitCount;
+  const amount = formData.totalCost * formData.count;
 
   return (
     <div
@@ -1531,37 +1842,19 @@ const TaskFormModal = ({
               </p>
             </div>
 
-            <div>
-              <label
-                htmlFor="unit"
-                className="block mb-1 text-sm font-medium text-gray-700"
-              >
-                단위
-              </label>
-              <input
-                type="text"
-                id="unit"
-                name="unit"
-                value={formData.unit}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                placeholder="예: m², 개, EA"
-              />
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label
-                  htmlFor="unitCount"
+                  htmlFor="count"
                   className="block mb-1 text-sm font-medium text-gray-700"
                 >
                   수량 <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
-                  id="unitCount"
-                  name="unitCount"
-                  value={formData.unitCount}
+                  id="count"
+                  name="count"
+                  value={formData.count}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   min="0"
@@ -1572,16 +1865,16 @@ const TaskFormModal = ({
 
               <div>
                 <label
-                  htmlFor="price"
+                  htmlFor="totalCost"
                   className="block mb-1 text-sm font-medium text-gray-700"
                 >
                   단가
                 </label>
                 <input
                   type="number"
-                  id="price"
-                  name="price"
-                  value={formData.price}
+                  id="totalCost"
+                  name="totalCost"
+                  value={formData.totalCost}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                   min="0"
@@ -1591,8 +1884,8 @@ const TaskFormModal = ({
 
             <div className="p-3 rounded-md bg-gray-50">
               <p className="text-sm font-medium text-gray-900">
-                <span className="font-medium">금액:</span>{" "}
-                {amount.toLocaleString()}원
+                <span className="font-medium">총 금액:</span>{" "}
+                {(formData.count * formData.totalCost).toLocaleString()}원
               </p>
             </div>
 

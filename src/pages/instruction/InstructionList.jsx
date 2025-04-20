@@ -130,7 +130,7 @@ const InstructionList = () => {
     return {
       status: "",
       manager: "",
-      title: "",
+      name: "",
       startDate: null,
       endDate: null,
       searchType: "all",
@@ -164,7 +164,7 @@ const InstructionList = () => {
     if (
       filters.status ||
       filters.manager ||
-      filters.title ||
+      filters.name ||
       filters.startDate ||
       filters.endDate
     ) {
@@ -176,7 +176,7 @@ const InstructionList = () => {
   const [visibleColumns, setVisibleColumns] = useState([
     "id",
     "orderNumber",
-    "title",
+    "name",
     "status",
     "district",
     "dong",
@@ -202,7 +202,7 @@ const InstructionList = () => {
       ...filterParams,
       page: 1, // 필터 변경 시 첫 페이지로 돌아가기
       status: filters.status || "",
-      title: filters.title || "",
+      name: filters.name || "",
       manager: filters.manager || "",
     };
 
@@ -307,7 +307,7 @@ const InstructionList = () => {
       } else {
         // 모든 필드 검색 (기존 방식)
         matchesSearch =
-          instruction.title?.toLowerCase().includes(searchLower) ||
+          instruction.name?.toLowerCase().includes(searchLower) ||
           String(instruction.id)?.toLowerCase().includes(searchLower) ||
           String(instruction.orderId)?.toLowerCase().includes(searchLower) ||
           instruction.orderNumber?.toLowerCase().includes(searchLower) ||
@@ -377,9 +377,9 @@ const InstructionList = () => {
       cell: ({ row }) => formatDate(row.getValue("orderDate")),
     },
     {
-      accessorKey: "title",
+      accessorKey: "name",
       header: "제목",
-      cell: ({ row }) => truncateText(row.getValue("title"), 25),
+      cell: ({ row }) => truncateText(row.getValue("name"), 25),
     },
     {
       accessorKey: "status",
@@ -536,7 +536,7 @@ const InstructionList = () => {
         "orderId",
         "orderNumber",
         "orderDate",
-        "title",
+        "name",
         "status",
         "round",
       ],
@@ -550,116 +550,6 @@ const InstructionList = () => {
       columns: ["manager", "delegator", "channel"],
     },
   ];
-
-  const handleImportSampleData = async () => {
-    // 랜덤 데이터 생성을 위한 배열들
-    const districts = [
-      "고덕3단지",
-      "고덕1단지",
-      "리버스트",
-      "강동리버스트7",
-      "강일리버파크4",
-      "리엔파크11",
-      "리엔파크3",
-      "고덕아르테온",
-    ];
-
-    const managers = ["강태석", "이오수", "김인득", "서종호", "김기영", "없음"];
-
-    const structures = ["설비", "건축", "전기", "조경"];
-
-    const titles = [
-      "누수-공용욕실 하부",
-      "폽업,트랩 교체-공용욕실",
-      "미닫이문 개폐불량 보수-공용욕실",
-      "양변기 교체-공용욕실",
-      "문짝 교체-주방하부장",
-      "창 손잡이-거실창 우측 외부",
-      "선반 교체-거실앞 실외기실",
-      "수전-주방",
-      "타일보수-공용욕실 벽타일",
-      "거울-공용욕실",
-      "거울-안방욕실",
-      "수납장-공용욕실",
-      "환풍기-공용욕실",
-      "인조대리석-주방상판",
-      "코킹-공용욕실 욕조",
-      "변기 메지-안방욕실",
-    ];
-
-    const statuses = ["접수", "작업중", "작업완료", "결재중", "완료", "취소"];
-
-    const channels = ["전화", "이메일", "직접방문", "기타"];
-
-    // 랜덤 값 가져오기 함수
-    const getRandomItem = (array) =>
-      array[Math.floor(Math.random() * array.length)];
-
-    // 랜덤 숫자 생성 함수
-    const getRandomNumber = (min, max) =>
-      Math.floor(Math.random() * (max - min + 1)) + min;
-
-    // 오늘 날짜 기준으로 최근 30일 내 랜덤 날짜 생성
-    const getRandomDate = () => {
-      const today = new Date();
-      const daysAgo = getRandomNumber(0, 30);
-      const randomDate = new Date(today);
-      randomDate.setDate(today.getDate() - daysAgo);
-      return randomDate.toISOString().split("T")[0];
-    };
-
-    // 랜덤 샘플 데이터 생성
-    const generateRandomSample = (index) => {
-      const orderDate = getRandomDate();
-      const district = getRandomItem(districts);
-      const dong = String(getRandomNumber(100, 350));
-      const lotNumber = String(getRandomNumber(100, 1800));
-
-      return {
-        orderNumber: `샘플-${orderDate.replace(/-/g, "")}-${index + 1}`,
-        orderId: index + 1,
-        orderDate: orderDate,
-        title: getRandomItem(titles),
-        manager: getRandomItem(managers),
-        delegator: getRandomItem(managers),
-        channel: getRandomItem(channels),
-        district: district,
-        dong: dong,
-        lotNumber: lotNumber,
-        detailAddress:
-          Math.random() > 0.7
-            ? `${dong}호 ${getRandomItem(["세대 내", "거실", "주방", "욕실"])}`
-            : "",
-        structure: getRandomItem(structures),
-        round: getRandomNumber(1, 10),
-        status: getRandomItem(statuses),
-      };
-    };
-
-    try {
-      // 샘플 데이터 수 결정 (5~10개)
-      const sampleCount = getRandomNumber(5, 10);
-      const sampleData = [];
-
-      // 랜덤 샘플 데이터 생성
-      for (let i = 0; i < sampleCount; i++) {
-        sampleData.push(generateRandomSample(i));
-      }
-
-      // 샘플 데이터를 순차적으로 생성
-      for (const data of sampleData) {
-        await createInstructionMutation.mutateAsync(data);
-      }
-
-      showSuccess(
-        `${sampleCount}개의 샘플 데이터가 성공적으로 등록되었습니다.`
-      );
-      refetch(); // 목록 갱신
-    } catch (error) {
-      console.error("샘플 데이터 등록 실패:", error);
-      showError("샘플 데이터 등록에 실패했습니다.");
-    }
-  };
 
   // 상태 변경 핸들러 (API 호출 즉시 반영하지 않고 필터 상태만 변경)
   const handleStatusChange = (e) => {
@@ -774,7 +664,7 @@ const InstructionList = () => {
     const defaultFilters = {
       status: "",
       manager: "",
-      title: "",
+      name: "",
       startDate: null,
       endDate: null,
       searchType: "all",
@@ -792,7 +682,7 @@ const InstructionList = () => {
     setFilterParams({
       ...filterParams,
       status: "",
-      title: "",
+      name: "",
       manager: "",
       startDate: "",
       endDate: "",
@@ -841,31 +731,6 @@ const InstructionList = () => {
               <PlusCircle className="w-4 h-4 mr-1" />
               지시 등록
             </FormButton>
-            {/* <FormButton
-              variant="outline"
-              onClick={handleImportClick}
-              className="flex items-center h-9"
-            >
-              <FileUp className="w-4 h-4 mr-1" />
-              가져오기
-            </FormButton>
-            <FormButton
-              variant="outline"
-              onClick={handleExportClick}
-              className="flex items-center h-9"
-            >
-              <FileDown className="w-4 h-4 mr-1" />
-              내보내기
-            </FormButton> */}
-
-            <FormButton
-              variant="ghost"
-              onClick={handleImportSampleData}
-              className="flex items-center text-purple-700 h-9 bg-purple-50 hover:bg-purple-100"
-            >
-              <Database className="w-4 h-4 mr-1" />
-              샘플 데이터
-            </FormButton>
           </div>
         </div>
 
@@ -880,8 +745,8 @@ const InstructionList = () => {
               <div className="relative">
                 <input
                   type="text"
-                  name="title"
-                  value={filters.title}
+                  name="name"
+                  value={filters.name}
                   onChange={handleFilterChange}
                   placeholder="제목으로 검색"
                   className="w-full h-10 px-3 py-2 pl-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
@@ -1247,9 +1112,9 @@ const InstructionList = () => {
 
             <div className="overflow-y-auto max-h-96">
               {columnGroups.map((group) => (
-                <div key={group.title} className="mb-6">
+                <div key={group.name} className="mb-6">
                   <h3 className="pb-1 mb-3 font-medium text-gray-700 border-b text-md">
-                    {group.title}
+                    {group.name}
                   </h3>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                     {group.columns.map((columnKey) => {
@@ -1285,7 +1150,7 @@ const InstructionList = () => {
             <div className="flex justify-between pt-4 mt-4 border-t border-gray-200">
               <FormButton
                 variant="outline"
-                onClick={() => setVisibleColumns(["id", "title", "status"])}
+                onClick={() => setVisibleColumns(["id", "name", "status"])}
               >
                 최소 컬럼만
               </FormButton>

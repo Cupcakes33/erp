@@ -94,10 +94,18 @@ export const updateInstruction = async (id, instructionData) => {
  */
 export const updateInstructionStatus = async (id, statusData) => {
   try {
-    // 상태만 변경하기 위해 status 필드만 포함된 객체 전송
-    const response = await axios.put(`${API_URL}/instruction/${id}`, {
+    // 먼저 현재 지시 정보를 가져옵니다
+    const currentInstruction = await fetchInstructionById(id);
+    const instructionData = currentInstruction.data;
+    
+    // 현재 지시 정보에서 상태만 업데이트합니다
+    const updatedData = {
+      ...instructionData,
       status: statusData.status
-    });
+    };
+    
+    // 업데이트된 데이터로 PUT 요청을 보냅니다
+    const response = await axios.put(`${API_URL}/instruction/${id}`, updatedData);
     return response.data;
   } catch (error) {
     console.error(`지시 ID ${id} 상태 변경 실패:`, error);
