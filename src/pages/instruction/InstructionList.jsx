@@ -1,12 +1,17 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useInstructions } from "../../lib/api/instructionQueries";
+import {
+  useInstructions,
+  useCreateInstruction,
+} from "../../lib/api/instructionQueries";
 import {
   DataTable,
   FormButton,
   FormCard,
   FormInput,
   FormSelect,
+  showSuccess,
+  showError,
 } from "../../components/molecules";
 import {
   PlusCircle,
@@ -23,16 +28,36 @@ import {
   Table,
   File,
   Bookmark,
+  Database,
+  ChevronsLeft,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsRight,
+  User,
 } from "lucide-react";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+
+// DatePicker 스타일 오버라이드를 위한 CSS 추가
+const customDatePickerStyle = `
+  .react-datepicker-wrapper {
+    width: 100%;
+    display: block;
+  }
+  .react-datepicker__input-container {
+    width: 100%;
+    display: block;
+  }
+`;
 
 // 상태와 우선순위 매핑 객체 (5단계 상태로 업데이트)
 const STATUS_MAP = {
-  RECEIVED: { label: "접수", color: "yellow" },
-  IN_PROGRESS: { label: "작업중", color: "blue" },
-  COMPLETED_WORK: { label: "작업완료", color: "green" },
-  IN_APPROVAL: { label: "결재중", color: "orange" },
-  COMPLETED: { label: "완료", color: "purple" },
-  CANCELED: { label: "취소", color: "red" }, // 선택적 상태로 유지
+  접수: { label: "접수", color: "yellow" },
+  작업중: { label: "작업중", color: "blue" },
+  작업완료: { label: "작업완료", color: "green" },
+  결재중: { label: "결재중", color: "orange" },
+  완료: { label: "완료", color: "purple" },
+  취소: { label: "취소", color: "red" }, // 선택적 상태로 유지
 };
 
 const PRIORITY_MAP = {
@@ -41,12 +66,19 @@ const PRIORITY_MAP = {
   LOW: { label: "낮음", color: "green" },
 };
 
+// 로컬 스토리지 키 정의
+const FILTER_STORAGE_KEY = "instruction_list_filters";
+
 const InstructionList = () => {
   const navigate = useNavigate();
   const [filterParams, setFilterParams] = useState({
     status: "",
     page: 1,
     size: 10,
+    keyword: "",
+    searchType: "all",
+    startDate: "",
+    endDate: "",
   });
 
   const {
@@ -58,7 +90,10 @@ const InstructionList = () => {
     },
     isLoading,
     error,
+    refetch,
   } = useInstructions(filterParams);
+
+  const createInstructionMutation = useCreateInstruction();
 
   // 실제 지시 배열 추출
   const instructions = instructionData.instruction || [];
@@ -70,58 +105,143 @@ const InstructionList = () => {
   const [importFile, setImportFile] = useState(null);
   const [exportFormat, setExportFormat] = useState("excel");
 
-  const [filters, setFilters] = useState({
-    status: "",
-    priority: "",
-    search: "",
-    searchType: "all", // 검색 유형 (all, dong, lotNumber)
-    startDate: "", // 시작 날짜
-    endDate: "", // 종료 날짜
-    dateField: "createdAt", // 날짜 필드 (createdAt, dueDate)
-  });
+  // 로컬 스토리지에서 필터 상태 불러오기
+  const loadFiltersFromStorage = () => {
+    try {
+      const savedFilters = localStorage.getItem(FILTER_STORAGE_KEY);
+      if (savedFilters) {
+        const parsedFilters = JSON.parse(savedFilters);
+
+        // 날짜 문자열을 Date 객체로 변환
+        if (parsedFilters.startDate) {
+          parsedFilters.startDate = new Date(parsedFilters.startDate);
+        }
+        if (parsedFilters.endDate) {
+          parsedFilters.endDate = new Date(parsedFilters.endDate);
+        }
+
+        return parsedFilters;
+      }
+    } catch (e) {
+      console.error("필터 상태 로드 오류:", e);
+    }
+
+    // 기본 필터 상태 반환
+    return {
+      status: "",
+      manager: "",
+      title: "",
+      startDate: null,
+      endDate: null,
+      searchType: "all",
+      search: "",
+      dateField: "orderDate",
+    };
+  };
+
+  // 필터 상태 초기화
+  const [filters, setFilters] = useState(loadFiltersFromStorage);
+
+  // 필터 상태가 변경될 때 로컬 스토리지에 저장
+  useEffect(() => {
+    try {
+      // 날짜 객체는 문자열로 변환하여 저장
+      const filtersToSave = {
+        ...filters,
+        startDate: filters.startDate ? filters.startDate.toISOString() : null,
+        endDate: filters.endDate ? filters.endDate.toISOString() : null,
+      };
+
+      localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filtersToSave));
+    } catch (e) {
+      console.error("필터 상태 저장 오류:", e);
+    }
+  }, [filters]);
+
+  // 컴포넌트 마운트 시 저장된 필터가 있으면 API 호출
+  useEffect(() => {
+    // 저장된 필터가 있고 기본값이 아닌 경우에만 API 호출
+    if (
+      filters.status ||
+      filters.manager ||
+      filters.title ||
+      filters.startDate ||
+      filters.endDate
+    ) {
+      handleApplyFilter();
+    }
+  }, []);
 
   // 테이블에 표시할 컬럼 선택 상태 (새로운 필드 추가)
   const [visibleColumns, setVisibleColumns] = useState([
     "id",
+    "orderNumber",
     "title",
-    "priority",
     "status",
-    "location",
+    "district",
     "dong",
     "lotNumber",
     "manager",
-    "receiver",
-    "createdAt",
-    "dueDate",
-    "lastModifiedBy", // 마지막 수정자 표시
+    "orderDate",
+    "round",
   ]);
 
+  // 필터 변경 핸들러
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters({
       ...filters,
       [name]: value,
     });
+  };
 
+  // 필터 적용 함수
+  const handleApplyFilter = () => {
     // API 필터링을 위한 상태 업데이트
-    if (name === "status") {
-      setFilterParams({
-        ...filterParams,
-        status: value,
-        page: 1, // 필터 변경 시 첫 페이지로 돌아가기
-      });
+    const newFilterParams = {
+      ...filterParams,
+      page: 1, // 필터 변경 시 첫 페이지로 돌아가기
+      status: filters.status || "",
+      title: filters.title || "",
+      manager: filters.manager || "",
+    };
+
+    // 날짜 범위 필터 처리
+    if (filters.startDate) {
+      newFilterParams.startDate = filters.startDate.toISOString().split("T")[0];
+    } else {
+      newFilterParams.startDate = "";
     }
+
+    if (filters.endDate) {
+      newFilterParams.endDate = filters.endDate.toISOString().split("T")[0];
+    } else {
+      newFilterParams.endDate = "";
+    }
+
+    // 검색어 처리
+    if (filters.search) {
+      newFilterParams.keyword = filters.search;
+
+      if (filters.searchType === "dong") {
+        newFilterParams.searchType = "dong";
+      } else if (filters.searchType === "lotNumber") {
+        newFilterParams.searchType = "lotNumber";
+      } else {
+        newFilterParams.searchType = "all";
+      }
+    } else {
+      // 검색어가 없으면 검색 관련 파라미터 제거
+      newFilterParams.keyword = "";
+      newFilterParams.searchType = "all";
+    }
+
+    setFilterParams(newFilterParams);
   };
 
   // 날짜 필터 적용
   const handleApplyDateFilter = () => {
-    // 클라이언트 측 필터링만 구현 (실제 API가 있다면 API 파라미터로 전달)
-    console.log(
-      "날짜 필터 적용:",
-      filters.startDate,
-      filters.endDate,
-      filters.dateField
-    );
+    handleApplyFilter();
   };
 
   const handleRowClick = (instruction) => {
@@ -169,13 +289,8 @@ const InstructionList = () => {
     return text.length > length ? `${text.substring(0, length)}...` : text;
   };
 
-  // 필터링된 지시 목록 (검색어, 우선순위, 날짜에 대한 클라이언트 측 필터링)
+  // 필터링된 지시 목록 (검색어, 날짜에 대한 클라이언트 측 필터링)
   const filteredInstructions = instructions.filter((instruction) => {
-    // 우선순위 필터
-    const matchesPriority = filters.priority
-      ? instruction.priority === filters.priority
-      : true;
-
     // 검색어 필터 - 검색 타입에 따라 다른 필드 검색
     let matchesSearch = true;
     if (filters.search) {
@@ -194,17 +309,16 @@ const InstructionList = () => {
         matchesSearch =
           instruction.title?.toLowerCase().includes(searchLower) ||
           String(instruction.id)?.toLowerCase().includes(searchLower) ||
-          instruction.location?.toLowerCase().includes(searchLower) ||
+          String(instruction.orderId)?.toLowerCase().includes(searchLower) ||
+          instruction.orderNumber?.toLowerCase().includes(searchLower) ||
+          instruction.district?.toLowerCase().includes(searchLower) ||
           instruction.dong?.toLowerCase().includes(searchLower) ||
           instruction.lotNumber?.toLowerCase().includes(searchLower) ||
-          instruction.address?.toLowerCase().includes(searchLower) ||
+          instruction.detailAddress?.toLowerCase().includes(searchLower) ||
           instruction.manager?.toLowerCase().includes(searchLower) ||
-          instruction.receiver?.toLowerCase().includes(searchLower) ||
-          instruction.worker?.toLowerCase().includes(searchLower) || // 작업자 필드 추가
-          instruction.description?.toLowerCase().includes(searchLower) ||
-          instruction.workContent?.toLowerCase().includes(searchLower) || // 작업내용 필드 추가
-          instruction.note?.toLowerCase().includes(searchLower) || // 비고 필드 추가
-          instruction.channel?.toLowerCase().includes(searchLower);
+          instruction.delegator?.toLowerCase().includes(searchLower) ||
+          instruction.channel?.toLowerCase().includes(searchLower) ||
+          instruction.structure?.toLowerCase().includes(searchLower);
       }
     }
 
@@ -219,7 +333,7 @@ const InstructionList = () => {
       matchesDate = fieldDate >= startDate && fieldDate <= endDate;
     }
 
-    return matchesPriority && matchesSearch && matchesDate;
+    return matchesSearch && matchesDate;
   });
 
   // 상태에 따른 배경색 클래스 반환
@@ -249,23 +363,23 @@ const InstructionList = () => {
       ),
     },
     {
+      accessorKey: "orderId",
+      header: "주문 ID",
+    },
+    {
+      accessorKey: "orderNumber",
+      header: "지시번호",
+      cell: ({ row }) => truncateText(row.getValue("orderNumber"), 15),
+    },
+    {
+      accessorKey: "orderDate",
+      header: "지시일자",
+      cell: ({ row }) => formatDate(row.getValue("orderDate")),
+    },
+    {
       accessorKey: "title",
       header: "제목",
       cell: ({ row }) => truncateText(row.getValue("title"), 25),
-    },
-    {
-      accessorKey: "priority",
-      header: "우선순위",
-      cell: ({ row }) => (
-        <span
-          className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getPriorityClass(
-            row.getValue("priority")
-          )}`}
-        >
-          {PRIORITY_MAP[row.getValue("priority")]?.label ||
-            row.getValue("priority")}
-        </span>
-      ),
     },
     {
       accessorKey: "status",
@@ -281,19 +395,24 @@ const InstructionList = () => {
       ),
     },
     {
-      accessorKey: "createdAt",
-      header: "생성일",
-      cell: ({ row }) => formatDate(row.getValue("createdAt")),
+      accessorKey: "manager",
+      header: "관리자",
+      cell: ({ row }) => truncateText(row.getValue("manager"), 10),
     },
     {
-      accessorKey: "dueDate",
-      header: "마감일",
-      cell: ({ row }) => formatDate(row.getValue("dueDate")),
+      accessorKey: "delegator",
+      header: "위임자",
+      cell: ({ row }) => truncateText(row.getValue("delegator"), 10),
     },
     {
-      accessorKey: "location",
-      header: "위치",
-      cell: ({ row }) => truncateText(row.getValue("location"), 15),
+      accessorKey: "channel",
+      header: "채널",
+      cell: ({ row }) => truncateText(row.getValue("channel"), 10),
+    },
+    {
+      accessorKey: "district",
+      header: "지역",
+      cell: ({ row }) => truncateText(row.getValue("district"), 15),
     },
     {
       accessorKey: "dong",
@@ -306,75 +425,18 @@ const InstructionList = () => {
       cell: ({ row }) => row.getValue("lotNumber") || "-",
     },
     {
-      accessorKey: "address",
-      header: "주소",
-      cell: ({ row }) => truncateText(row.getValue("address"), 20),
+      accessorKey: "detailAddress",
+      header: "상세주소",
+      cell: ({ row }) => truncateText(row.getValue("detailAddress"), 20),
     },
     {
-      accessorKey: "description",
-      header: "세부사항",
-      cell: ({ row }) => truncateText(row.getValue("description"), 30),
+      accessorKey: "structure",
+      header: "구조물",
+      cell: ({ row }) => truncateText(row.getValue("structure"), 15),
     },
     {
-      accessorKey: "workContent",
-      header: "작업내용",
-      cell: ({ row }) => truncateText(row.getValue("workContent"), 30),
-    },
-    {
-      accessorKey: "note",
-      header: "비고",
-      cell: ({ row }) => truncateText(row.getValue("note"), 20),
-    },
-    {
-      accessorKey: "manager",
-      header: "관리자",
-      cell: ({ row }) => truncateText(row.getValue("manager"), 10),
-    },
-    {
-      accessorKey: "receiver",
-      header: "담당자",
-      cell: ({ row }) => truncateText(row.getValue("receiver"), 10),
-    },
-    {
-      accessorKey: "worker",
-      header: "작업자",
-      cell: ({ row }) => truncateText(row.getValue("worker"), 10),
-    },
-    {
-      accessorKey: "workStatus",
-      header: "작업현황",
-      cell: ({ row }) => truncateText(row.getValue("workStatus"), 25),
-    },
-    {
-      accessorKey: "channel",
-      header: "접수 채널",
-      cell: ({ row }) => {
-        const channels = {
-          PHONE: "전화",
-          EMAIL: "이메일",
-          SYSTEM: "시스템",
-          OTHER: "기타",
-        };
-        return channels[row.getValue("channel")] || row.getValue("channel");
-      },
-    },
-    {
-      accessorKey: "paymentRound",
-      header: "기성회차",
-    },
-    {
-      accessorKey: "lastModifiedBy",
-      header: "최종 수정자",
-      cell: ({ row }) => {
-        const modifiedBy = row.getValue("lastModifiedBy");
-        const modifiedAt = row.original.lastModifiedAt;
-        return modifiedBy ? `${modifiedBy} (${formatDate(modifiedAt)})` : "-";
-      },
-    },
-    {
-      accessorKey: "favorite",
-      header: "즐겨찾기",
-      cell: ({ row }) => renderFavorite(row.getValue("favorite")),
+      accessorKey: "round",
+      header: "회차",
     },
   ];
 
@@ -394,19 +456,46 @@ const InstructionList = () => {
     visibleColumns.includes(column.accessorKey)
   );
 
+  // DataTable에 전달할 페이지네이션 상태
+  const tableState = {
+    pagination: {
+      pageIndex: filterParams.page - 1, // 0-기반 인덱스로 변환
+      pageSize: filterParams.size,
+    },
+  };
+
+  // 페이지 변경을 처리하는 함수
   const handlePageChange = (newPage) => {
     setFilterParams({
       ...filterParams,
-      page: newPage,
+      page: newPage + 1, // DataTable은 0-기반 인덱스를 사용하므로 1을 더해줌
     });
   };
 
+  // 페이지 크기 변경 핸들러
+  const handlePageSizeChange = (newSize) => {
+    setFilterParams({
+      ...filterParams,
+      size: newSize,
+      page: 1, // 페이지 크기 변경 시 첫 페이지로 돌아가기
+    });
+  };
+
+  // DataTable 검색 필터 상태
+  const [globalFilter, setGlobalFilter] = useState("");
+
+  // 글로벌 검색 핸들러 (DataTable 내장 검색 사용)
+  const handleGlobalFilterChange = (value) => {
+    setGlobalFilter(value);
+  };
+
   const statusOptions = [
-    { value: "", label: "모든 상태" },
-    ...Object.entries(STATUS_MAP).map(([value, { label }]) => ({
-      value,
-      label,
-    })),
+    { value: "접수", label: "접수" },
+    { value: "작업중", label: "작업중" },
+    { value: "작업완료", label: "작업완료" },
+    { value: "결재중", label: "결재중" },
+    { value: "완료", label: "완료" },
+    { value: "취소", label: "취소" },
   ];
 
   const priorityOptions = [
@@ -423,11 +512,7 @@ const InstructionList = () => {
     { value: "lotNumber", label: "지번 검색" },
   ];
 
-  const dateFieldOptions = [
-    { value: "createdAt", label: "생성일" },
-    { value: "dueDate", label: "마감일" },
-    { value: "lastModifiedAt", label: "수정일" },
-  ];
+  const dateFieldOptions = [{ value: "orderDate", label: "지시일자" }];
 
   const columnOptions = allColumns.map((column) => ({
     value: column.accessorKey,
@@ -446,32 +531,304 @@ const InstructionList = () => {
   const columnGroups = [
     {
       title: "기본 정보",
-      columns: ["id", "title", "priority", "status", "favorite"],
-    },
-    {
-      title: "날짜",
-      columns: ["createdAt", "dueDate", "lastModifiedBy"],
+      columns: [
+        "id",
+        "orderId",
+        "orderNumber",
+        "orderDate",
+        "title",
+        "status",
+        "round",
+      ],
     },
     {
       title: "위치 정보",
-      columns: ["location", "dong", "lotNumber", "address"],
-    },
-    {
-      title: "세부 정보",
-      columns: ["description", "workContent", "note", "workStatus"],
+      columns: ["district", "dong", "lotNumber", "detailAddress", "structure"],
     },
     {
       title: "담당자",
-      columns: ["manager", "receiver", "worker", "channel", "paymentRound"],
+      columns: ["manager", "delegator", "channel"],
     },
   ];
 
+  const handleImportSampleData = async () => {
+    // 랜덤 데이터 생성을 위한 배열들
+    const districts = [
+      "고덕3단지",
+      "고덕1단지",
+      "리버스트",
+      "강동리버스트7",
+      "강일리버파크4",
+      "리엔파크11",
+      "리엔파크3",
+      "고덕아르테온",
+    ];
+
+    const managers = ["강태석", "이오수", "김인득", "서종호", "김기영", "없음"];
+
+    const structures = ["설비", "건축", "전기", "조경"];
+
+    const titles = [
+      "누수-공용욕실 하부",
+      "폽업,트랩 교체-공용욕실",
+      "미닫이문 개폐불량 보수-공용욕실",
+      "양변기 교체-공용욕실",
+      "문짝 교체-주방하부장",
+      "창 손잡이-거실창 우측 외부",
+      "선반 교체-거실앞 실외기실",
+      "수전-주방",
+      "타일보수-공용욕실 벽타일",
+      "거울-공용욕실",
+      "거울-안방욕실",
+      "수납장-공용욕실",
+      "환풍기-공용욕실",
+      "인조대리석-주방상판",
+      "코킹-공용욕실 욕조",
+      "변기 메지-안방욕실",
+    ];
+
+    const statuses = ["접수", "작업중", "작업완료", "결재중", "완료", "취소"];
+
+    const channels = ["전화", "이메일", "직접방문", "기타"];
+
+    // 랜덤 값 가져오기 함수
+    const getRandomItem = (array) =>
+      array[Math.floor(Math.random() * array.length)];
+
+    // 랜덤 숫자 생성 함수
+    const getRandomNumber = (min, max) =>
+      Math.floor(Math.random() * (max - min + 1)) + min;
+
+    // 오늘 날짜 기준으로 최근 30일 내 랜덤 날짜 생성
+    const getRandomDate = () => {
+      const today = new Date();
+      const daysAgo = getRandomNumber(0, 30);
+      const randomDate = new Date(today);
+      randomDate.setDate(today.getDate() - daysAgo);
+      return randomDate.toISOString().split("T")[0];
+    };
+
+    // 랜덤 샘플 데이터 생성
+    const generateRandomSample = (index) => {
+      const orderDate = getRandomDate();
+      const district = getRandomItem(districts);
+      const dong = String(getRandomNumber(100, 350));
+      const lotNumber = String(getRandomNumber(100, 1800));
+
+      return {
+        orderNumber: `샘플-${orderDate.replace(/-/g, "")}-${index + 1}`,
+        orderId: index + 1,
+        orderDate: orderDate,
+        title: getRandomItem(titles),
+        manager: getRandomItem(managers),
+        delegator: getRandomItem(managers),
+        channel: getRandomItem(channels),
+        district: district,
+        dong: dong,
+        lotNumber: lotNumber,
+        detailAddress:
+          Math.random() > 0.7
+            ? `${dong}호 ${getRandomItem(["세대 내", "거실", "주방", "욕실"])}`
+            : "",
+        structure: getRandomItem(structures),
+        round: getRandomNumber(1, 10),
+        status: getRandomItem(statuses),
+      };
+    };
+
+    try {
+      // 샘플 데이터 수 결정 (5~10개)
+      const sampleCount = getRandomNumber(5, 10);
+      const sampleData = [];
+
+      // 랜덤 샘플 데이터 생성
+      for (let i = 0; i < sampleCount; i++) {
+        sampleData.push(generateRandomSample(i));
+      }
+
+      // 샘플 데이터를 순차적으로 생성
+      for (const data of sampleData) {
+        await createInstructionMutation.mutateAsync(data);
+      }
+
+      showSuccess(
+        `${sampleCount}개의 샘플 데이터가 성공적으로 등록되었습니다.`
+      );
+      refetch(); // 목록 갱신
+    } catch (error) {
+      console.error("샘플 데이터 등록 실패:", error);
+      showError("샘플 데이터 등록에 실패했습니다.");
+    }
+  };
+
+  // 상태 변경 핸들러 (API 호출 즉시 반영하지 않고 필터 상태만 변경)
+  const handleStatusChange = (e) => {
+    const { value } = e.target;
+    setFilters((prev) => ({ ...prev, status: value }));
+    // 즉시 API 호출하지 않고 필터 상태만 변경
+    // setFilterParams((prev) => ({
+    //   ...prev,
+    //   status: value,
+    //   page: 1, // 필터 변경 시 첫 페이지로 돌아가기
+    // }));
+  };
+
+  // 커스텀 페이지네이션 컴포넌트
+  const renderPaginationButtons = () => {
+    const totalPage = instructionData.totalPage || 1;
+    const currentPage = filterParams.page;
+
+    // 페이지 버튼을 몇 개까지 보여줄지 결정 (10개로 변경)
+    const maxButtons = 10;
+    let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+    let endPage = Math.min(totalPage, startPage + maxButtons - 1);
+
+    // 버튼 개수 조정
+    if (endPage - startPage + 1 < maxButtons && startPage > 1) {
+      startPage = Math.max(1, endPage - maxButtons + 1);
+    }
+
+    const pages = [];
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+
+    return (
+      <div className="flex justify-center mt-4 mb-4 space-x-2">
+        {/* 첫 페이지 버튼 */}
+        <button
+          onClick={() => handlePageChange(0)}
+          disabled={currentPage === 1}
+          className={`w-8 h-8 p-0 border rounded-md ${
+            currentPage === 1
+              ? "text-gray-400 border-gray-200"
+              : "text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
+        >
+          <span className="sr-only">첫 페이지</span>
+          <ChevronsLeft className="w-4 h-4 mx-auto" />
+        </button>
+
+        {/* 이전 페이지 버튼 */}
+        <button
+          onClick={() => handlePageChange(currentPage - 2)}
+          disabled={currentPage === 1}
+          className={`w-8 h-8 p-0 border rounded-md ${
+            currentPage === 1
+              ? "text-gray-400 border-gray-200"
+              : "text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
+        >
+          <span className="sr-only">이전 페이지</span>
+          <ChevronLeft className="w-4 h-4 mx-auto" />
+        </button>
+
+        {/* 페이지 번호 버튼들 */}
+        {pages.map((page) => (
+          <button
+            key={page}
+            onClick={() => handlePageChange(page - 1)}
+            className={`w-8 h-8 text-sm font-medium rounded-md ${
+              currentPage === page
+                ? "bg-blue-50 text-blue-600 border border-blue-200"
+                : "text-gray-700 hover:bg-gray-50 border border-gray-300"
+            }`}
+          >
+            {page}
+          </button>
+        ))}
+
+        {/* 다음 페이지 버튼 */}
+        <button
+          onClick={() => handlePageChange(currentPage)}
+          disabled={currentPage === totalPage}
+          className={`w-8 h-8 p-0 border rounded-md ${
+            currentPage === totalPage
+              ? "text-gray-400 border-gray-200"
+              : "text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
+        >
+          <span className="sr-only">다음 페이지</span>
+          <ChevronRight className="w-4 h-4 mx-auto" />
+        </button>
+
+        {/* 마지막 페이지 버튼 */}
+        <button
+          onClick={() => handlePageChange(totalPage - 1)}
+          disabled={currentPage === totalPage}
+          className={`w-8 h-8 p-0 border rounded-md ${
+            currentPage === totalPage
+              ? "text-gray-400 border-gray-200"
+              : "text-gray-700 border-gray-300 hover:bg-gray-50"
+          }`}
+        >
+          <span className="sr-only">마지막 페이지</span>
+          <ChevronsRight className="w-4 h-4 mx-auto" />
+        </button>
+      </div>
+    );
+  };
+
+  // 필터 초기화 함수
+  const resetFilters = () => {
+    const defaultFilters = {
+      status: "",
+      manager: "",
+      title: "",
+      startDate: null,
+      endDate: null,
+      searchType: "all",
+      search: "",
+      dateField: "orderDate",
+    };
+
+    // 필터 상태 초기화
+    setFilters(defaultFilters);
+
+    // 로컬 스토리지에서 필터 삭제
+    localStorage.removeItem(FILTER_STORAGE_KEY);
+
+    // API 호출 파라미터 초기화
+    setFilterParams({
+      ...filterParams,
+      status: "",
+      title: "",
+      manager: "",
+      startDate: "",
+      endDate: "",
+      page: 1,
+    });
+  };
+
+  // 관리자 옵션 - 실제 데이터에서 동적으로 생성한다면 더 좋을 것입니다
+  const managerOptions = [
+    { value: "", label: "모든 관리자" },
+    { value: "강태석", label: "강태석" },
+    { value: "이오수", label: "이오수" },
+    { value: "김인득", label: "김인득" },
+    { value: "서종호", label: "서종호" },
+    { value: "김기영", label: "김기영" },
+  ];
+
+  // 날짜 범위 선택 핸들러
+  const handleDateRangeChange = (dates) => {
+    const [start, end] = dates;
+    setFilters({
+      ...filters,
+      startDate: start,
+      endDate: end,
+    });
+  };
+
   return (
-    <div className="mx-auto px-4 py-6 bg-gray-50 min-h-screen">
+    <div className="min-h-screen px-4 py-6 mx-auto bg-gray-50">
+      {/* DatePicker 스타일 오버라이드 */}
+      <style>{customDatePickerStyle}</style>
+
       {/* 헤더 영역 */}
-      <div className="bg-white p-6 rounded-lg shadow-sm mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h1 className="text-2xl font-bold flex items-center text-gray-800">
+      <div className="p-6 mb-6 bg-white rounded-lg shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h1 className="flex items-center text-2xl font-bold text-gray-800">
             <ListFilter className="w-6 h-6 mr-2 text-blue-600" />
             지시 목록
           </h1>
@@ -484,7 +841,7 @@ const InstructionList = () => {
               <PlusCircle className="w-4 h-4 mr-1" />
               지시 등록
             </FormButton>
-            <FormButton
+            {/* <FormButton
               variant="outline"
               onClick={handleImportClick}
               className="flex items-center h-9"
@@ -499,146 +856,122 @@ const InstructionList = () => {
             >
               <FileDown className="w-4 h-4 mr-1" />
               내보내기
-            </FormButton>
+            </FormButton> */}
+
             <FormButton
               variant="ghost"
-              onClick={() => setShowColumnModal(true)}
-              className="flex items-center h-9"
+              onClick={handleImportSampleData}
+              className="flex items-center text-purple-700 h-9 bg-purple-50 hover:bg-purple-100"
             >
-              <Table className="w-4 h-4 mr-1" />
-              컬럼 설정
+              <Database className="w-4 h-4 mr-1" />
+              샘플 데이터
             </FormButton>
           </div>
         </div>
 
-        {/* 필터 및 검색 영역 - 완전히 개선된 깔끔한 UI */}
-        <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-          <div className="flex items-center mb-3">
-            <Filter className="w-4 h-4 mr-2 text-blue-600" />
-            <h3 className="text-sm font-medium text-gray-700">필터 및 검색</h3>
-          </div>
+        {/* 새로운 간소화된 필터 - 한 줄로 배치 */}
+        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <div className="flex flex-wrap items-start justify-between w-full gap-4">
+            {/* 제목 필터 */}
+            <div className="flex-1 min-w-[180px]">
+              <label className="block mb-1 text-xs font-medium text-gray-700">
+                제목
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="title"
+                  value={filters.title}
+                  onChange={handleFilterChange}
+                  placeholder="제목으로 검색"
+                  className="w-full h-10 px-3 py-2 pl-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+                />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                  <Search className="w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+            </div>
 
-          <div className="grid grid-cols-12 gap-3">
+            {/* 관리자 필터 - 드롭다운에서 입력 필드로 변경 */}
+            <div className="flex-1 min-w-[150px]">
+              <label className="block mb-1 text-xs font-medium text-gray-700">
+                관리자
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="manager"
+                  value={filters.manager}
+                  onChange={handleFilterChange}
+                  placeholder="관리자명 입력"
+                  className="w-full h-10 px-3 py-2 pl-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+                />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                  <User className="w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+            </div>
+
             {/* 상태 필터 */}
-            <div className="col-span-3">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
+            <div className="flex-1 min-w-[120px]">
+              <label className="block mb-1 text-xs font-medium text-gray-700">
                 상태
               </label>
               <FormSelect
                 id="status-filter"
                 name="status"
                 value={filters.status}
-                onChange={handleFilterChange}
+                onChange={handleStatusChange}
                 options={statusOptions}
+                className="h-10 py-0 text-sm"
                 fullWidth={true}
               />
             </div>
 
-            {/* 우선순위 필터 */}
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                우선순위
+            {/* 지시일자 필터 - DateRangePicker 사용 */}
+            <div className="flex-1 min-w-[220px]">
+              <label className="block mb-1 text-xs font-medium text-gray-700">
+                지시일자 범위
               </label>
-              <FormSelect
-                id="priority-filter"
-                name="priority"
-                value={filters.priority}
-                onChange={handleFilterChange}
-                options={priorityOptions}
-                fullWidth={true}
-              />
-            </div>
-
-            {/* 검색 유형 */}
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                검색 유형
-              </label>
-              <FormSelect
-                id="search-type"
-                name="searchType"
-                value={filters.searchType}
-                onChange={handleFilterChange}
-                options={searchTypeOptions}
-                fullWidth={true}
-              />
-            </div>
-
-            {/* 검색어 입력 */}
-            <div className="col-span-5">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                검색어
-              </label>
-              <div className="relative">
-                <FormInput
-                  id="search-input"
-                  name="search"
-                  value={filters.search}
-                  onChange={handleFilterChange}
-                  placeholder="검색어를 입력하세요..."
-                  className="pl-8"
-                  fullWidth={true}
+              <div className="relative w-full">
+                <DatePicker
+                  selected={filters.startDate}
+                  onChange={handleDateRangeChange}
+                  startDate={filters.startDate}
+                  endDate={filters.endDate}
+                  selectsRange
+                  dateFormat="yyyy-MM-dd"
+                  placeholderText="시작일 ~ 종료일"
+                  className="w-full h-10 px-3 py-2 pl-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+                  isClearable
+                  wrapperClassName="w-full"
                 />
-                <div className="absolute inset-y-0 left-0 pl-2 flex items-center pointer-events-none">
-                  <Search className="h-4 w-4 text-gray-400" />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                  <Calendar className="w-4 h-4 text-gray-400" />
                 </div>
               </div>
             </div>
 
-            {/* 날짜 필드 선택 */}
-            <div className="col-span-2">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                날짜 필드
-              </label>
-              <FormSelect
-                id="date-field"
-                name="dateField"
-                value={filters.dateField}
-                onChange={handleFilterChange}
-                options={dateFieldOptions}
-                fullWidth={true}
-              />
-            </div>
-
-            {/* 시작일 */}
-            <div className="col-span-4">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                시작일
-              </label>
-              <FormInput
-                id="start-date"
-                name="startDate"
-                type="date"
-                value={filters.startDate}
-                onChange={handleFilterChange}
-                fullWidth={true}
-              />
-            </div>
-
-            {/* 종료일 */}
-            <div className="col-span-4">
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                종료일
-              </label>
-              <FormInput
-                id="end-date"
-                name="endDate"
-                type="date"
-                value={filters.endDate}
-                onChange={handleFilterChange}
-                fullWidth={true}
-              />
-            </div>
-
-            {/* 필터 적용 버튼 */}
-            <div className="col-span-2 flex items-end">
+            {/* 버튼 그룹 */}
+            <div className="flex items-end mt-5 space-x-2">
+              {/* 필터 적용 버튼 */}
               <FormButton
-                variant="outline"
-                onClick={handleApplyDateFilter}
-                className="flex items-center h-9 w-full justify-center"
+                variant="primary"
+                onClick={handleApplyFilter}
+                className="flex items-center h-10 px-4"
               >
                 <Filter className="w-4 h-4 mr-1" />
-                필터 적용
+                적용
+              </FormButton>
+
+              {/* 필터 초기화 버튼 */}
+              <FormButton
+                variant="outline"
+                onClick={resetFilters}
+                className="flex items-center h-10 px-4 text-red-600 border-red-300 hover:bg-red-50"
+              >
+                <X className="w-4 h-4 mr-1" />
+                초기화
               </FormButton>
             </div>
           </div>
@@ -646,40 +979,101 @@ const InstructionList = () => {
       </div>
 
       {/* 데이터 테이블 카드 */}
-      <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+      <div className="overflow-hidden bg-white rounded-lg shadow-sm">
         <div className="px-5 py-3 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-medium text-gray-800 flex items-center">
+          <div className="flex items-center justify-between">
+            <h2 className="flex items-center text-lg font-medium text-gray-800">
               <File className="w-5 h-5 mr-2 text-blue-600" />
               지시 데이터
             </h2>
-            <div className="text-sm text-gray-500">
-              총 {instructionData.totalCount || 0}개 항목
+            <div className="flex items-center space-x-3">
+              <div className="mr-3 text-sm text-gray-500">
+                총 {instructionData.totalCount || 0}개 항목
+              </div>
+
+              {/* 글로벌 검색 필드 - 크기 확대 */}
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="검색어 입력..."
+                  value={globalFilter || ""}
+                  onChange={(e) => handleGlobalFilterChange(e.target.value)}
+                  className="px-8 py-2 text-sm border rounded-md w-72 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+                />
+                <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                  <Search className="w-4 h-4 text-gray-400" />
+                </div>
+                {globalFilter && (
+                  <button
+                    onClick={() => handleGlobalFilterChange("")}
+                    className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* 페이지 사이즈 선택 */}
+              <div className="flex items-center">
+                <select
+                  className="px-2 py-2 text-sm border rounded-md"
+                  value={filterParams.size}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+                >
+                  {[10, 20, 30, 50, 100].map((size) => (
+                    <option key={size} value={size}>
+                      {size}행
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <FormButton
+                variant="ghost"
+                onClick={() => setShowColumnModal(true)}
+                className="flex items-center h-9"
+              >
+                <Table className="w-4 h-4 mr-1" />
+                컬럼 설정
+              </FormButton>
             </div>
           </div>
         </div>
+
         <DataTable
           columns={filteredColumns}
-          data={filteredInstructions}
+          data={instructions}
           isLoading={isLoading}
           error={error}
           onRowClick={handleRowClick}
-          pagination={{
-            currentPage: instructionData.currentPage || 1,
-            totalPages: instructionData.totalPage || 1,
-            onPageChange: handlePageChange,
-          }}
+          // 페이지네이션 설정
+          manualPagination={true}
+          pageCount={instructionData.totalPage || 1}
+          pageSize={filterParams.size}
+          pageIndex={filterParams.page - 1}
+          onPageChange={handlePageChange}
+          onPageSizeChange={handlePageSizeChange}
+          // DataTable 내장 페이지네이션 비활성화
+          enablePagination={false}
+          // 내장 검색 활성화
+          enableGlobalFilter={true}
+          globalFilter={globalFilter}
+          setGlobalFilter={handleGlobalFilterChange}
+          state={tableState}
           emptyMessage="지시 데이터가 없습니다."
           errorMessage="지시 목록을 불러오는 데 실패했습니다."
         />
+
+        {/* 커스텀 페이지네이션 렌더링 */}
+        {!isLoading && instructions.length > 0 && renderPaginationButtons()}
       </div>
 
       {/* 가져오기 모달 */}
       {showImportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold flex items-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="flex items-center text-xl font-semibold">
                 <FileUp className="w-5 h-5 mr-2 text-blue-600" />
                 지시 데이터 가져오기
               </h2>
@@ -695,11 +1089,11 @@ const InstructionList = () => {
             </div>
 
             <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-2">
+              <p className="mb-2 text-sm text-gray-600">
                 지시 데이터가 포함된 Excel, CSV 또는 JSON 파일을 선택하세요.
               </p>
 
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50">
+              <div className="p-8 text-center border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
                 <input
                   type="file"
                   id="file-upload"
@@ -716,8 +1110,8 @@ const InstructionList = () => {
               </div>
 
               {importFile && (
-                <div className="mt-2 p-2 bg-blue-50 rounded flex items-center">
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-2">
+                <div className="flex items-center p-2 mt-2 rounded bg-blue-50">
+                  <div className="flex items-center justify-center w-8 h-8 mr-2 bg-blue-100 rounded-full">
                     <FileUp className="w-4 h-4 text-blue-600" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -762,10 +1156,10 @@ const InstructionList = () => {
 
       {/* 내보내기 모달 */}
       {showExportModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold flex items-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="flex items-center text-xl font-semibold">
                 <FileDown className="w-5 h-5 mr-2 text-blue-600" />
                 지시 데이터 내보내기
               </h2>
@@ -778,7 +1172,7 @@ const InstructionList = () => {
             </div>
 
             <div className="mb-4">
-              <p className="text-sm text-gray-600 mb-4">
+              <p className="mb-4 text-sm text-gray-600">
                 내보내기 형식을 선택하세요:
               </p>
 
@@ -836,10 +1230,10 @@ const InstructionList = () => {
 
       {/* 컬럼 설정 모달 */}
       {showColumnModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-3xl p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold flex items-center">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-3xl p-6 bg-white rounded-lg shadow-xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="flex items-center text-xl font-semibold">
                 <Table className="w-5 h-5 mr-2 text-blue-600" />
                 표시할 컬럼 설정
               </h2>
@@ -851,13 +1245,13 @@ const InstructionList = () => {
               </button>
             </div>
 
-            <div className="max-h-96 overflow-y-auto">
+            <div className="overflow-y-auto max-h-96">
               {columnGroups.map((group) => (
                 <div key={group.title} className="mb-6">
-                  <h3 className="text-md font-medium text-gray-700 mb-3 pb-1 border-b">
+                  <h3 className="pb-1 mb-3 font-medium text-gray-700 border-b text-md">
                     {group.title}
                   </h3>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                     {group.columns.map((columnKey) => {
                       const column = columnOptions.find(
                         (c) => c.value === columnKey
@@ -871,7 +1265,7 @@ const InstructionList = () => {
                         >
                           <input
                             type="checkbox"
-                            className="form-checkbox h-4 w-4 text-blue-600"
+                            className="w-4 h-4 text-blue-600 form-checkbox"
                             checked={visibleColumns.includes(column.value)}
                             onChange={() =>
                               handleVisibleColumnsChange(column.value)
@@ -888,7 +1282,7 @@ const InstructionList = () => {
               ))}
             </div>
 
-            <div className="flex justify-between mt-4 pt-4 border-t border-gray-200">
+            <div className="flex justify-between pt-4 mt-4 border-t border-gray-200">
               <FormButton
                 variant="outline"
                 onClick={() => setVisibleColumns(["id", "title", "status"])}

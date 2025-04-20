@@ -10,35 +10,43 @@ import {
   showSuccess,
 } from "../../components/molecules";
 
-// 상태 및 우선순위 상수
+// 상태 및 채널 상수
 const STATUS_OPTIONS = [
-  { value: "RECEIVED", label: "접수" },
-  { value: "IN_PROGRESS", label: "진행중" },
-  { value: "COMPLETED", label: "완료" },
-  { value: "CANCELED", label: "취소" },
+  { value: "접수", label: "접수" },
+  { value: "작업중", label: "작업중" },
+  { value: "작업완료", label: "작업완료" },
+  { value: "결재중", label: "결재중" },
+  { value: "완료", label: "완료" },
 ];
 
-const PRIORITY_OPTIONS = [
-  { value: "HIGH", label: "높음" },
-  { value: "MEDIUM", label: "중간" },
-  { value: "LOW", label: "낮음" },
+const CHANNEL_OPTIONS = [
+  { value: "전화", label: "전화" },
+  { value: "이메일", label: "이메일" },
+  { value: "직접방문", label: "직접방문" },
+  { value: "기타", label: "기타" },
 ];
 
 const InstructionCreate = () => {
   const navigate = useNavigate();
   const createInstructionMutation = useCreateInstruction();
 
+  // 오늘 날짜 YYYY-MM-DD 형식으로 가져오기
+  const today = new Date().toISOString().split("T")[0];
+
   const [formData, setFormData] = useState({
+    orderId: 0,
+    orderNumber: "",
+    orderDate: today,
     title: "",
-    description: "",
-    location: "",
-    priority: "MEDIUM",
-    status: "RECEIVED",
-    dueDate: "",
-    address: "",
     manager: "",
-    receiver: "",
-    channel: "PHONE",
+    delegator: "",
+    channel: "전화",
+    district: "",
+    dong: "",
+    lotNumber: "",
+    detailAddress: "",
+    structure: "",
+    round: 1,
   });
 
   const [errors, setErrors] = useState({});
@@ -66,26 +74,6 @@ const InstructionCreate = () => {
       newErrors.title = "제목을 입력해주세요";
     }
 
-    if (!formData.description.trim()) {
-      newErrors.description = "내용을 입력해주세요";
-    }
-
-    if (!formData.location.trim()) {
-      newErrors.location = "위치를 입력해주세요";
-    }
-
-    if (!formData.dueDate) {
-      newErrors.dueDate = "마감일을 선택해주세요";
-    }
-
-    if (!formData.manager) {
-      newErrors.manager = "관리자를 입력해주세요";
-    }
-
-    if (!formData.receiver) {
-      newErrors.receiver = "담당자를 입력해주세요";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -98,14 +86,7 @@ const InstructionCreate = () => {
     }
 
     try {
-      const newInstruction = {
-        ...formData,
-        favorite: false,
-        works: [],
-        paymentRound: 1,
-      };
-
-      await createInstructionMutation.mutateAsync(newInstruction);
+      await createInstructionMutation.mutateAsync(formData);
       showSuccess("지시가 성공적으로 생성되었습니다.");
       navigate("/instructions");
     } catch (error) {
@@ -118,13 +99,6 @@ const InstructionCreate = () => {
 
   const handleCancel = () => {
     navigate("/instructions");
-  };
-
-  // 현재 날짜로부터 1주일 후 날짜 계산 (기본 마감일)
-  const getDefaultDueDate = () => {
-    const date = new Date();
-    date.setDate(date.getDate() + 7);
-    return date.toISOString().split("T")[0];
   };
 
   return (
@@ -155,92 +129,41 @@ const InstructionCreate = () => {
 
             <div>
               <FormInput
-                id="location"
-                name="location"
-                label="위치"
-                placeholder="작업 위치를 입력하세요"
-                value={formData.location}
+                id="orderNumber"
+                name="orderNumber"
+                label="지시번호"
+                placeholder="지시번호를 입력하세요"
+                value={formData.orderNumber}
                 onChange={handleChange}
-                error={errors.location}
-                required
               />
             </div>
           </div>
 
-          <div className="mb-6">
-            <FormInput
-              id="address"
-              name="address"
-              label="주소"
-              placeholder="상세 주소를 입력하세요"
-              value={formData.address}
-              onChange={handleChange}
-              error={errors.address}
-            />
-          </div>
-
-          <div className="mb-6">
-            <FormTextArea
-              id="description"
-              name="description"
-              label="상세 내용"
-              placeholder="지시 내용을 상세하게 입력하세요"
-              value={formData.description}
-              onChange={handleChange}
-              error={errors.description}
-              rows={5}
-              required
-            />
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
-            <div>
-              <FormSelect
-                id="status"
-                name="status"
-                label="상태"
-                value={formData.status}
-                onChange={handleChange}
-              >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </FormSelect>
-            </div>
-
-            <div>
-              <FormSelect
-                id="priority"
-                name="priority"
-                label="우선순위"
-                value={formData.priority}
-                onChange={handleChange}
-              >
-                {PRIORITY_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </FormSelect>
-            </div>
-
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
             <div>
               <FormInput
-                id="dueDate"
-                name="dueDate"
-                label="마감일"
+                id="orderDate"
+                name="orderDate"
+                label="지시일자"
                 type="date"
-                value={formData.dueDate || getDefaultDueDate()}
+                value={formData.orderDate}
                 onChange={handleChange}
-                error={errors.dueDate}
-                required
+              />
+            </div>
+            <div>
+              <FormInput
+                id="round"
+                name="round"
+                label="회차"
+                type="number"
+                min="1"
+                value={formData.round}
+                onChange={handleChange}
               />
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
             <div>
               <FormInput
                 id="manager"
@@ -249,49 +172,104 @@ const InstructionCreate = () => {
                 placeholder="관리자 이름을 입력하세요"
                 value={formData.manager}
                 onChange={handleChange}
-                error={errors.manager}
-                required
               />
             </div>
-
             <div>
               <FormInput
-                id="receiver"
-                name="receiver"
-                label="담당자"
-                placeholder="담당자 이름을 입력하세요"
-                value={formData.receiver}
+                id="delegator"
+                name="delegator"
+                label="위임자"
+                placeholder="위임자 이름을 입력하세요"
+                value={formData.delegator}
                 onChange={handleChange}
-                error={errors.receiver}
-                required
               />
-            </div>
-
-            <div>
-              <FormSelect
-                id="channel"
-                name="channel"
-                label="접수 채널"
-                value={formData.channel}
-                onChange={handleChange}
-              >
-                <option value="PHONE">전화</option>
-                <option value="EMAIL">이메일</option>
-                <option value="SYSTEM">시스템</option>
-                <option value="OTHER">기타</option>
-              </FormSelect>
             </div>
           </div>
 
-          <div className="flex justify-end space-x-2">
-            <FormButton type="button" variant="outline" onClick={handleCancel}>
+          <div className="mb-6">
+            <FormSelect
+              id="channel"
+              name="channel"
+              label="채널"
+              value={formData.channel}
+              onChange={handleChange}
+              options={CHANNEL_OPTIONS}
+            />
+          </div>
+
+          <h3 className="mb-3 text-lg font-medium">위치 정보</h3>
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
+            <div>
+              <FormInput
+                id="district"
+                name="district"
+                label="지역"
+                placeholder="지역을 입력하세요"
+                value={formData.district}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <FormInput
+                id="dong"
+                name="dong"
+                label="동"
+                placeholder="동을 입력하세요"
+                value={formData.dong}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <FormInput
+                id="lotNumber"
+                name="lotNumber"
+                label="지번"
+                placeholder="지번을 입력하세요"
+                value={formData.lotNumber}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
+            <div>
+              <FormInput
+                id="detailAddress"
+                name="detailAddress"
+                label="상세주소"
+                placeholder="상세주소를 입력하세요"
+                value={formData.detailAddress}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <FormInput
+                id="structure"
+                name="structure"
+                label="구조물"
+                placeholder="구조물을 입력하세요"
+                value={formData.structure}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end space-x-3 mt-6">
+            <FormButton
+              variant="outline"
+              type="button"
+              onClick={handleCancel}
+              className="w-24"
+            >
               취소
             </FormButton>
             <FormButton
+              variant="primary"
               type="submit"
-              disabled={createInstructionMutation.isLoading}
+              className="w-24"
+              isLoading={createInstructionMutation.isLoading}
             >
-              {createInstructionMutation.isLoading ? "처리 중..." : "저장"}
+              저장
             </FormButton>
           </div>
         </form>

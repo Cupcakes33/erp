@@ -4,26 +4,16 @@ import {
   useInstruction,
   useUpdateInstruction,
   useUpdateInstructionStatus,
-  useToggleInstructionFavorite,
   useDeleteInstruction,
   useConfirmInstruction,
 } from "../../lib/api/instructionQueries";
 import {
   FormButton,
-  FormInput,
-  FormCard,
-  FormTextArea,
-  FormGroup,
   Table,
-  DataTable,
   showConfirm,
   showSuccess,
   showDeleteConfirm,
-  showTextAreaPrompt,
-  Badge,
   Button,
-  DetailItem,
-  DetailSection,
   Loading,
   ConfirmDialog,
 } from "../../components/molecules";
@@ -32,30 +22,27 @@ import {
   Edit,
   Trash,
   CheckCircle,
-  XCircle,
   Clock,
-  Trash2,
   FileText,
   Info,
-  MapPin,
-  Calendar,
-  User,
-  Star,
   Layout,
   Activity,
-  Star as StarIcon,
   FileCheck,
   Send,
-  Globe,
-  AlignLeft,
-  ThumbsUp,
   Wrench,
 } from "lucide-react";
-import Card from "../../components/atoms/Card";
 import { formatDateTime } from "../../lib/utils/dateUtils";
 
-// 상태와 우선순위 매핑 객체
+// 상태 매핑 객체
 const STATUS_MAP = {
+  접수: { label: "접수", color: "blue" },
+  진행중: { label: "진행중", color: "orange" },
+  작업완료: { label: "작업완료", color: "green" },
+  결재중: { label: "결재중", color: "yellow" },
+  완료: { label: "완료", color: "green" },
+  취소: { label: "취소", color: "red" },
+  확정: { label: "확정", color: "purple" },
+  // 기존 영문 상태 코드도 유지 (이전 코드와의 호환성을 위해)
   RECEIVED: { label: "접수", color: "blue" },
   IN_PROGRESS: { label: "진행중", color: "orange" },
   COMPLETED_WORK: { label: "작업완료", color: "green" },
@@ -65,32 +52,19 @@ const STATUS_MAP = {
   CONFIRMED: { label: "확정", color: "purple" },
 };
 
-const PRIORITY_MAP = {
-  HIGH: { label: "높음", color: "red" },
-  MEDIUM: { label: "중간", color: "yellow" },
-  LOW: { label: "낮음", color: "green" },
-};
-
-const CHANNEL_MAP = {
-  PHONE: "전화",
-  EMAIL: "이메일",
-  SYSTEM: "시스템",
-  OTHER: "기타",
-};
-
 const InstructionDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { data: instruction, isLoading, error } = useInstruction(id);
+  const { data: response, isLoading, error } = useInstruction(id);
+  const instruction = response;
   const updateInstructionMutation = useUpdateInstruction();
   const updateStatusMutation = useUpdateInstructionStatus();
-  const toggleFavoriteMutation = useToggleInstructionFavorite();
   const deleteInstructionMutation = useDeleteInstruction();
   const confirmInstructionMutation = useConfirmInstruction();
 
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [activeTab, setActiveTab] = useState("info"); // 'info', 'works', 'history', 'files'
+  const [activeTab, setActiveTab] = useState("works"); // 'works', 'history', 'files'
 
   const handleEdit = () => {
     navigate(`/instructions/${id}/edit`);
@@ -130,7 +104,7 @@ const InstructionDetail = () => {
       try {
         await updateStatusMutation.mutateAsync({
           id,
-          status: "COMPLETED",
+          status: "완료",
         });
         showSuccess("지시가 완료 처리되었습니다.");
       } catch (error) {
@@ -166,19 +140,6 @@ const InstructionDetail = () => {
       showSuccess(`상태가 ${STATUS_MAP[newStatus]?.label}로 변경되었습니다.`);
     } catch (error) {
       console.error("상태 변경 실패:", error);
-    }
-  };
-
-  const handleToggleFavorite = async () => {
-    try {
-      await toggleFavoriteMutation.mutateAsync(id);
-      showSuccess(
-        instruction.favorite
-          ? "즐겨찾기가 해제되었습니다."
-          : "즐겨찾기에 추가되었습니다."
-      );
-    } catch (error) {
-      console.error("즐겨찾기 토글 실패:", error);
     }
   };
 
@@ -218,90 +179,32 @@ const InstructionDetail = () => {
     label: instruction.status,
     color: "gray",
   };
-  const priority = PRIORITY_MAP[instruction.priority] || {
-    label: instruction.priority,
-    color: "gray",
-  };
-  const channel = CHANNEL_MAP[instruction.channel] || instruction.channel;
 
   const statusOptions = [
-    { value: "RECEIVED", label: "접수", color: "bg-blue-100 text-blue-800" },
+    { value: "접수", label: "접수", color: "bg-blue-100 text-blue-800" },
     {
-      value: "IN_PROGRESS",
+      value: "진행중",
       label: "진행중",
       color: "bg-yellow-100 text-yellow-800",
     },
     {
-      value: "COMPLETED_WORK",
+      value: "작업완료",
       label: "작업완료",
       color: "bg-teal-100 text-teal-800",
     },
     {
-      value: "IN_APPROVAL",
+      value: "결재중",
       label: "결재중",
       color: "bg-orange-100 text-orange-800",
     },
-    { value: "COMPLETED", label: "완료", color: "bg-green-100 text-green-800" },
-    { value: "CANCELED", label: "취소", color: "bg-red-100 text-red-800" },
-    {
-      value: "CONFIRMED",
-      label: "확정",
-      color: "bg-purple-100 text-purple-800",
-    },
+    { value: "완료", label: "완료", color: "bg-green-100 text-green-800" },
+    { value: "취소", label: "취소", color: "bg-red-100 text-red-800" },
+    { value: "확정", label: "확정", color: "bg-purple-100 text-purple-800" },
   ];
 
-  const priorityColors = {
-    HIGH: "text-red-600",
-    MEDIUM: "text-yellow-600",
-    LOW: "text-green-600",
-  };
-
-  const workColumns = [
-    { title: "작업 ID", dataIndex: "id" },
-    { title: "작업명", dataIndex: "name" },
-    {
-      title: "상태",
-      dataIndex: "status",
-      render: (rowData) => {
-        const statusClasses = {
-          RECEIVED: "bg-blue-100 text-blue-800",
-          IN_PROGRESS: "bg-yellow-100 text-yellow-800",
-          COMPLETED_WORK: "bg-teal-100 text-teal-800",
-          IN_APPROVAL: "bg-orange-100 text-orange-800",
-          COMPLETED: "bg-green-100 text-green-800",
-          CANCELED: "bg-red-100 text-red-800",
-          CONFIRMED: "bg-purple-100 text-purple-800",
-        };
-
-        return (
-          <span
-            className={`px-2 py-1 text-xs rounded-full ${
-              statusClasses[rowData.status] || "bg-gray-100"
-            }`}
-          >
-            {STATUS_MAP[rowData.status]?.label || rowData.status}
-          </span>
-        );
-      },
-    },
-    { title: "담당자", dataIndex: "assignedTo" },
-  ];
-
-  const materialColumns = [
-    { title: "자재명", dataIndex: "name" },
-    { title: "수량", dataIndex: "quantity" },
-    { title: "단위", dataIndex: "unit" },
-  ];
-
-  const historyColumns = [
-    { title: "날짜", dataIndex: "date" },
-    { title: "작업", dataIndex: "action" },
-    { title: "담당자", dataIndex: "user" },
-  ];
-
-  const isCompleted = instruction.status === "COMPLETED";
-  const isCanceled = instruction.status === "CANCELED";
-  const isConfirmed = instruction.status === "CONFIRMED";
+  const isCompleted = instruction?.status === "완료";
+  const isCanceled = instruction?.status === "취소";
+  const isConfirmed = instruction?.status === "확정";
   const canEdit = !isCompleted && !isCanceled && !isConfirmed;
 
   // 날짜 포맷팅 함수
@@ -318,51 +221,28 @@ const InstructionDetail = () => {
   const renderTabContent = () => {
     switch (activeTab) {
       case "works":
+      default:
         return (
           <div className="p-6 mt-6 bg-white rounded-lg shadow">
             <h2 className="flex items-center mb-4 text-lg font-medium">
               <Wrench className="w-5 h-5 mr-2 text-blue-600" />
               관련 작업
             </h2>
-            {instruction.works && instruction.works.length > 0 ? (
-              <Table
-                columns={workColumns}
-                data={instruction.works.map((workId) => ({
-                  id: workId,
-                  name: `작업 ${workId}`,
-                  status: "IN_PROGRESS",
-                  assignedTo: instruction.receiver,
-                }))}
-              />
-            ) : (
-              <div className="p-4 text-center text-gray-500 rounded-md bg-gray-50">
-                관련 작업이 없습니다.
-              </div>
-            )}
+            <div className="p-4 text-center text-gray-500 rounded-md bg-gray-50">
+              관련 작업이 없습니다.
+            </div>
           </div>
         );
       case "history":
-        // 예시 데이터
-        const historyData = [
-          {
-            date: formatDate(instruction.createdAt),
-            action: "지시 생성",
-            user: instruction.manager,
-          },
-          {
-            date: formatDate(instruction.lastModifiedAt),
-            action: "정보 수정",
-            user: instruction.lastModifiedBy,
-          },
-        ];
-
         return (
           <div className="p-6 mt-6 bg-white rounded-lg shadow">
             <h2 className="flex items-center mb-4 text-lg font-medium">
               <Clock className="w-5 h-5 mr-2 text-blue-600" />
               변경 이력
             </h2>
-            <Table columns={historyColumns} data={historyData} />
+            <div className="p-4 text-center text-gray-500 rounded-md bg-gray-50">
+              변경 이력이 없습니다.
+            </div>
           </div>
         );
       case "files":
@@ -374,261 +254,6 @@ const InstructionDetail = () => {
             </h2>
             <div className="p-4 text-center text-gray-500 rounded-md bg-gray-50">
               첨부된 파일이 없습니다.
-            </div>
-          </div>
-        );
-      case "info":
-      default:
-        return (
-          <div className="grid grid-cols-1 gap-6 mt-6 md:grid-cols-2">
-            <div className="p-6 bg-white rounded-lg shadow">
-              <h2 className="flex items-center mb-4 text-lg font-medium">
-                <Info className="w-5 h-5 mr-2 text-blue-600" />
-                기본 정보
-              </h2>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">ID</p>
-                    <p className="font-medium">{instruction.id}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">위치</p>
-                    <p className="font-medium">{instruction.location}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">상태</p>
-                    <p className="font-medium">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          statusOptions.find(
-                            (s) => s.value === instruction.status
-                          )?.color || "bg-gray-100"
-                        }`}
-                      >
-                        {status.label}
-                      </span>
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">
-                      우선순위
-                    </p>
-                    <p
-                      className={`font-medium ${
-                        priorityColors[instruction.priority]
-                      }`}
-                    >
-                      {priority.label}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">생성일</p>
-                    <p className="font-medium">
-                      {formatDate(instruction.createdAt)}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">마감일</p>
-                    <p className="font-medium">
-                      {formatDate(instruction.dueDate)}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">관리자</p>
-                    <p className="font-medium">{instruction.manager}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">담당자</p>
-                    <p className="font-medium">{instruction.receiver}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">
-                      접수 채널
-                    </p>
-                    <p className="font-medium">{channel}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">
-                      즐겨찾기
-                    </p>
-                    <p className="flex items-center font-medium">
-                      {instruction.favorite ? (
-                        <span className="flex items-center text-yellow-500">
-                          <Star className="w-4 h-4 mr-1 text-yellow-500 fill-yellow-500" />
-                          즐겨찾기됨
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">-</span>
-                      )}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">
-                      기성 회차
-                    </p>
-                    <p className="font-medium">
-                      {instruction.paymentRound || "-"}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">
-                      최종 수정자
-                    </p>
-                    <p className="font-medium">
-                      {instruction.lastModifiedBy || "-"}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-gray-500">
-                      최종 수정일
-                    </p>
-                    <p className="font-medium">
-                      {formatDate(instruction.lastModifiedAt)}
-                    </p>
-                  </div>
-                </div>
-                <div className="pt-4 space-y-1 border-t border-gray-100">
-                  <p className="text-sm font-medium text-gray-500">주소</p>
-                  <p className="font-medium">{instruction.address}</p>
-                </div>
-                <div className="pt-4 space-y-1 border-t border-gray-100">
-                  <p className="text-sm font-medium text-gray-500">설명</p>
-                  <p className="p-3 rounded-md bg-gray-50">
-                    {instruction.description}
-                  </p>
-                </div>
-                {instruction.workContent && (
-                  <div className="pt-4 space-y-1 border-t border-gray-100">
-                    <p className="text-sm font-medium text-gray-500">
-                      작업내용
-                    </p>
-                    <p className="p-3 rounded-md bg-gray-50">
-                      {instruction.workContent}
-                    </p>
-                  </div>
-                )}
-                {instruction.note && (
-                  <div className="pt-4 space-y-1 border-t border-gray-100">
-                    <p className="text-sm font-medium text-gray-500">비고</p>
-                    <p className="p-3 rounded-md bg-gray-50">
-                      {instruction.note}
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="p-6 bg-white rounded-lg shadow">
-                <h2 className="flex items-center mb-4 text-lg font-medium">
-                  <Layout className="w-5 h-5 mr-2 text-blue-600" />
-                  작업 정보
-                </h2>
-                {instruction.worker || instruction.workStatus ? (
-                  <div className="space-y-4">
-                    {instruction.worker && (
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-gray-500">
-                          작업자
-                        </p>
-                        <p className="font-medium">{instruction.worker}</p>
-                      </div>
-                    )}
-                    {instruction.workStatus && (
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-gray-500">
-                          작업 현황
-                        </p>
-                        <p className="p-3 font-medium rounded-md bg-gray-50">
-                          {instruction.workStatus}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="p-4 text-center text-gray-500 rounded-md bg-gray-50">
-                    작업 정보가 없습니다.
-                  </div>
-                )}
-              </div>
-
-              {canEdit && (
-                <div className="p-6 bg-white rounded-lg shadow">
-                  <h2 className="flex items-center mb-4 text-lg font-medium">
-                    <Activity className="w-5 h-5 mr-2 text-blue-600" />
-                    상태 변경
-                  </h2>
-                  <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-2">
-                    {statusOptions.map((option) => (
-                      <Button
-                        key={option.value}
-                        variant={
-                          instruction.status === option.value
-                            ? "primary"
-                            : "outline"
-                        }
-                        size="sm"
-                        onClick={() => handleStatusChange(option.value)}
-                        disabled={instruction.status === option.value}
-                        className={
-                          instruction.status === option.value
-                            ? "opacity-75"
-                            : ""
-                        }
-                      >
-                        {option.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <div className="p-6 bg-white rounded-lg shadow">
-                <h2 className="flex items-center mb-4 text-lg font-medium">
-                  <Send className="w-5 h-5 mr-2 text-blue-600" />
-                  액션
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  <FormButton
-                    variant="outline"
-                    size="sm"
-                    onClick={handleToggleFavorite}
-                    className="flex items-center"
-                  >
-                    <Star
-                      className={`w-4 h-4 mr-2 ${
-                        instruction.favorite
-                          ? "fill-yellow-400 text-yellow-400"
-                          : ""
-                      }`}
-                    />
-                    {instruction.favorite ? "즐겨찾기 해제" : "즐겨찾기 추가"}
-                  </FormButton>
-                  {canEdit && (
-                    <>
-                      <FormButton
-                        onClick={handleEdit}
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center"
-                      >
-                        <Edit className="w-4 h-4 mr-2" />
-                        수정
-                      </FormButton>
-                      <FormButton
-                        onClick={() => setShowDeleteDialog(true)}
-                        variant="outline"
-                        size="sm"
-                        className="flex items-center text-red-500 border-red-300 hover:bg-red-50"
-                      >
-                        <Trash className="w-4 h-4 mr-2" />
-                        삭제
-                      </FormButton>
-                    </>
-                  )}
-                </div>
-              </div>
             </div>
           </div>
         );
@@ -652,123 +277,166 @@ const InstructionDetail = () => {
             </FormButton>
             <h1 className="flex items-center text-2xl font-bold text-gray-800">
               <FileText className="w-6 h-6 mr-2 text-blue-600" />
-              {instruction.title}
-              {instruction.favorite && (
-                <Star className="w-5 h-5 ml-2 text-yellow-400 fill-yellow-400" />
-              )}
+              {instruction?.title}
             </h1>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {canEdit && (
-              <>
-                <FormButton
-                  onClick={handleComplete}
-                  variant="success"
-                  size="sm"
-                  className="flex items-center h-10"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  완료 처리
-                </FormButton>
-                {isCompleted && !isConfirmed && (
-                  <FormButton
-                    onClick={handleConfirm}
-                    variant="primary"
-                    size="sm"
-                    className="flex items-center h-10"
-                  >
-                    <FileCheck className="w-4 h-4 mr-2" />
-                    확정
-                  </FormButton>
-                )}
-                <FormButton
-                  onClick={handleEdit}
-                  variant="primary"
-                  size="sm"
-                  className="flex items-center h-10"
-                >
-                  <Edit className="w-4 h-4 mr-2" />
-                  수정
-                </FormButton>
-                <FormButton
-                  onClick={() => setShowDeleteDialog(true)}
-                  variant="danger"
-                  size="sm"
-                  className="flex items-center h-10"
-                >
-                  <Trash className="w-4 h-4 mr-2" />
-                  삭제
-                </FormButton>
-              </>
-            )}
           </div>
         </div>
 
-        {/* 상태 요약 영역 */}
-        <div className="grid grid-cols-2 gap-4 p-4 mb-6 rounded-lg sm:grid-cols-3 md:grid-cols-5 bg-gray-50">
-          <div className="flex flex-col">
-            <span className="mb-1 text-sm font-medium text-gray-600">상태</span>
-            <span
-              className={`px-2 py-1 text-xs font-medium rounded-full ${
-                statusOptions.find((s) => s.value === instruction.status)
-                  ?.color || "bg-gray-100"
-              } inline-block text-center`}
-            >
-              {status.label}
-            </span>
+        {/* 상세 정보 영역 */}
+        <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
+          <div className="bg-white rounded-lg">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500">상태</p>
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${
+                      statusOptions.find((s) => s.value === instruction?.status)
+                        ?.color || "bg-gray-100"
+                    } inline-block text-center`}
+                  >
+                    {status.label}
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500">지시번호</p>
+                  <p className="font-medium">{instruction?.orderNumber}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500">지시일자</p>
+                  <p className="font-medium">
+                    {formatDate(instruction?.orderDate)}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500">구분</p>
+                  <p className="font-medium">{instruction?.structure || "-"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500">동</p>
+                  <p className="font-medium">{instruction?.dong || "-"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500">호수</p>
+                  <p className="font-medium">{instruction?.lotNumber || "-"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500">관리자</p>
+                  <p className="font-medium">{instruction?.manager || "-"}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500">위임자</p>
+                  <p className="font-medium">{instruction?.delegator || "-"}</p>
+                </div>
+              </div>
+              <div className="pt-4 border-t border-gray-100">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-gray-500">주소</p>
+                  <p className="font-medium">
+                    {instruction?.district} {instruction?.dong}{" "}
+                    {instruction?.lotNumber} {instruction?.detailAddress}
+                  </p>
+                </div>
+              </div>
+              {instruction?.description && (
+                <div className="pt-4 border-t border-gray-100">
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium text-gray-500">설명</p>
+                    <p className="p-3 rounded-md bg-gray-50">
+                      {instruction.description}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="mb-1 text-sm font-medium text-gray-600">
-              우선순위
-            </span>
-            <span
-              className={`px-2 py-1 text-xs font-medium rounded-full bg-${priority.color}-100 text-${priority.color}-800 inline-block text-center`}
-            >
-              {priority.label}
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="mb-1 text-sm font-medium text-gray-600">
-              생성일
-            </span>
-            <span className="inline-block text-sm font-medium">
-              {formatDate(instruction.createdAt)}
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="mb-1 text-sm font-medium text-gray-600">
-              마감일
-            </span>
-            <span className="inline-block text-sm font-medium">
-              {formatDate(instruction.dueDate)}
-            </span>
-          </div>
-          <div className="flex flex-col">
-            <span className="mb-1 text-sm font-medium text-gray-600">
-              담당자
-            </span>
-            <span className="inline-block text-sm font-medium">
-              {instruction.receiver}
-            </span>
+
+          <div className="space-y-4 bg-white rounded-lg">
+            {canEdit && (
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h3 className="flex items-center mb-4 text-md font-medium">
+                  <Activity className="w-5 h-5 mr-2 text-blue-600" />
+                  상태 변경
+                </h3>
+                <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:gap-2">
+                  {statusOptions.map((option) => (
+                    <Button
+                      key={option.value}
+                      variant={
+                        instruction?.status === option.value
+                          ? "primary"
+                          : "outline"
+                      }
+                      size="sm"
+                      onClick={() => handleStatusChange(option.value)}
+                      disabled={instruction?.status === option.value}
+                      className={
+                        instruction?.status === option.value ? "opacity-75" : ""
+                      }
+                    >
+                      {option.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="p-4 bg-gray-50 rounded-lg">
+              <h3 className="flex items-center mb-4 text-md font-medium">
+                <Send className="w-5 h-5 mr-2 text-blue-600" />
+                액션
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {canEdit && (
+                  <>
+                    <FormButton
+                      onClick={handleComplete}
+                      variant="success"
+                      size="sm"
+                      className="flex items-center"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      완료 처리
+                    </FormButton>
+                    {isCompleted && !isConfirmed && (
+                      <FormButton
+                        onClick={handleConfirm}
+                        variant="primary"
+                        size="sm"
+                        className="flex items-center"
+                      >
+                        <FileCheck className="w-4 h-4 mr-2" />
+                        확정
+                      </FormButton>
+                    )}
+                    <FormButton
+                      onClick={handleEdit}
+                      variant="primary"
+                      size="sm"
+                      className="flex items-center"
+                    >
+                      <Edit className="w-4 h-4 mr-2" />
+                      수정
+                    </FormButton>
+                    <FormButton
+                      onClick={() => setShowDeleteDialog(true)}
+                      variant="danger"
+                      size="sm"
+                      className="flex items-center"
+                    >
+                      <Trash className="w-4 h-4 mr-2" />
+                      삭제
+                    </FormButton>
+                  </>
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
         {/* 탭 네비게이션 */}
         <div className="border-b border-gray-200">
           <nav className="flex -mb-px space-x-8">
-            <button
-              onClick={() => setActiveTab("info")}
-              className={`py-3 px-1 ${
-                activeTab === "info"
-                  ? "border-b-2 border-blue-500 text-blue-600 font-medium"
-                  : "text-gray-500 hover:text-gray-700 hover:border-gray-300"
-              }`}
-            >
-              <div className="flex items-center">
-                <Info className="w-4 h-4 mr-2" />
-                기본 정보
-              </div>
-            </button>
             <button
               onClick={() => setActiveTab("works")}
               className={`py-3 px-1 ${
@@ -780,11 +448,6 @@ const InstructionDetail = () => {
               <div className="flex items-center">
                 <Wrench className="w-4 h-4 mr-2" />
                 작업
-                {instruction.works && instruction.works.length > 0 && (
-                  <span className="ml-2 bg-blue-100 text-blue-800 text-xs font-medium rounded-full px-2 py-0.5">
-                    {instruction.works.length}
-                  </span>
-                )}
               </div>
             </button>
             <button

@@ -28,7 +28,20 @@ export const useInstructions = (params = {}) => {
     queryFn: () => fetchInstructions(params),
     select: (data) => {
       // API 응답 형식에 맞게 데이터 변환
-      return data?.data?.instructionList || { instruction: [], totalCount: 0, totalPage: 0, currentPage: 1 };
+      const content = data?.data?.content || [];
+      
+      // API가 0부터 시작하는 페이지 인덱스를 사용하므로 UI에서는 1부터 시작하도록 변환
+      const currentPage = (data?.data?.currentPage ?? 0) + 1;
+      
+      return {
+        instruction: content,
+        totalCount: data?.data?.totalElements || 0,
+        totalPage: data?.data?.totalPages || 0, 
+        currentPage: currentPage,
+        size: data?.data?.size || 10,
+        hasNext: data?.data?.hasNext || false,
+        hasPrevious: data?.data?.hasPrevious || false
+      };
     }
   });
 };
@@ -45,7 +58,7 @@ export const useInstruction = (id) => {
     enabled: !!id, // ID가 있을 때만 쿼리 실행
     select: (data) => {
       // API 응답 형식에 맞게 데이터 변환
-      return data?.data?.instruction || null;
+      return data;
     }
   });
 };
@@ -58,7 +71,7 @@ export const useCreateInstruction = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: (instructionData) => createInstruction({ instruction: instructionData }),
+    mutationFn: (instructionData) => createInstruction(instructionData),
     onSuccess: () => {
       // 지시 목록 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: [INSTRUCTIONS_QUERY_KEY] });
