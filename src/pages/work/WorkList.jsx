@@ -5,7 +5,12 @@ import {
   useDeleteUnitPrice,
   useUpdateUnitPrice,
 } from "../../lib/api/workQueries"
-import { DataTable, FormButton, FormInput } from "../../components/molecules"
+import {
+  DataTable,
+  FormButton,
+  FormInput,
+  Pagination,
+} from "../../components/molecules"
 import { Pencil, Plus, Search, RefreshCw, Trash2 } from "lucide-react"
 import { formatNumberKR } from "@/lib/utils/formatterUtils"
 import Modal from "../../components/molecules/Modal"
@@ -19,16 +24,22 @@ const WorkList = () => {
   const [size, setSize] = useState(10)
   const [rawUnitPrices, setRawUnitPrices] = useState([])
   const [paginationInfo, setPaginationInfo] = useState({})
+
+  // 검색어 입력 상태와 API 요청에 사용할 키워드 상태 분리
+  const [searchInput, setSearchInput] = useState("")
+  const [searchParams, setSearchParams] = useState({
+    keyword: "",
+    page: 0,
+    size: 10,
+  })
+
+  // API 요청 훅
   const {
     data: unitPrices,
     isLoading,
     refetch,
     error,
-  } = useUnitPrices({
-    keyword: searchTerm,
-    page,
-    size,
-  })
+  } = useUnitPrices(searchParams)
 
   const deleteUnitPriceMutation = useDeleteUnitPrice()
   const updateUnitPriceMutation = useUpdateUnitPrice()
@@ -46,6 +57,39 @@ const WorkList = () => {
     labor_cost: 0,
     expense: 0,
   })
+
+  // 페이지 변경 핸들러
+  const handlePageChange = (newPage) => {
+    setSearchParams((prev) => ({
+      ...prev,
+      page: newPage, // API는 0부터 시작하는 페이지 번호를 사용
+    }))
+  }
+
+  // 페이지 크기 변경 핸들러
+  const handlePageSizeChange = (newSize) => {
+    setSearchParams((prev) => ({
+      ...prev,
+      size: newSize,
+      page: 0, // 페이지 크기 변경 시 첫 페이지(0)로 돌아가기
+    }))
+  }
+
+  // 검색 핸들러
+  const handleSearch = () => {
+    setSearchParams((prev) => ({
+      ...prev,
+      keyword: searchInput,
+      page: 0, // 검색 시 첫 페이지(0)로 돌아가기
+    }))
+  }
+
+  // 엔터 키로 검색 실행
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") {
+      handleSearch()
+    }
+  }
 
   // 삭제 버튼 클릭
   const handleDeleteClick = (id) => {
@@ -233,9 +277,10 @@ const WorkList = () => {
             <div className="relative flex-1">
               <FormInput
                 type="text"
-                placeholder="타입, 코드, 공종명, 규격 등으로 검색"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="공종명으로 검색"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={handleKeyDown}
                 className="pl-10"
               />
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -244,6 +289,14 @@ const WorkList = () => {
             </div>
 
             <div className="flex gap-2">
+              <FormButton
+                variant="outline"
+                onClick={handleSearch}
+                className="flex items-center"
+              >
+                <Search className="w-4 h-4 mr-2" />
+                검색
+              </FormButton>
               <FormButton
                 variant="outline"
                 onClick={() => refetch()}
@@ -267,7 +320,23 @@ const WorkList = () => {
               paginationInfo.totalElements ? paginationInfo.totalElements : 0
             }개`}
             enableSorting={false}
+            pageSize={searchParams.size}
+            manualPagination={true}
+            enablePagination={false}
           />
+
+          {/* 페이지네이션 */}
+          {!isLoading && rawUnitPrices && rawUnitPrices.length > 0 && (
+            <Pagination
+              currentPage={searchParams.page}
+              totalPages={paginationInfo.totalPages || 1}
+              onPageChange={handlePageChange}
+              pageSize={searchParams.size}
+              onPageSizeChange={handlePageSizeChange}
+              pageSizeOptions={[10, 20, 50, 100]}
+              maxButtons={10}
+            />
+          )}
 
           {/* 데이터 상태 표시 (디버깅용) */}
           {error && (

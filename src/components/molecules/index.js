@@ -17,6 +17,9 @@ export { default as SweetAlert } from './SweetAlert';
 export { default as DataTable } from './DataTable';
 export { default as Table } from './TableAdapter';
 
+// 페이지네이션 컴포넌트 내보내기
+export { default as Pagination } from './Pagination';
+
 // UI 컴포넌트 내보내기
 export { Badge } from '../ui/badge';
 export { Button } from '../ui/button';
@@ -30,4 +33,4 @@ export { default as QuantityCalculationPDF } from './QuantityCalculationPDF';
 export { default as DetailStatementPDF } from './DetailStatementPDF';
 
 // Utility functions
-export { showSuccess, showError, showConfirm, showDeleteConfirm } from './SweetAlert'; 
+export { showSuccess, showError, showConfirm, showDeleteConfirm } from './SweetAlert';
