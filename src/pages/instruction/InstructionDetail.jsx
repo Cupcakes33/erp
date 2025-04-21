@@ -11,6 +11,9 @@ import {
   Trash,
   Activity,
   Calculator,
+  Search,
+  X,
+  Check,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import ReactDOM from "react-dom";
@@ -92,6 +95,14 @@ const INSTRUCTION_STATUSES = {
     buttonVariant: "success",
     activeClass: "bg-green-100 text-green-800 border-green-300",
   },
+  ENDED: {
+    value: "종료",
+    label: "종료",
+    color: "bg-purple-100 text-purple-800",
+    buttonClass: "text-purple-600 border-purple-300 hover:bg-purple-50",
+    buttonVariant: "secondary",
+    activeClass: "bg-purple-100 text-purple-800 border-purple-300",
+  },
 };
 
 // 공종 상태 상수 정의
@@ -131,6 +142,7 @@ const STATUS_MAP = {
   COMPLETED_WORK: { label: "작업완료", color: "teal" },
   IN_APPROVAL: { label: "결재중", color: "orange" },
   COMPLETED: { label: "완료", color: "green" },
+  ENDED: { label: "종료", color: "purple" },
   CANCELED: { label: "취소", color: "red" },
   CONFIRMED: { label: "확정", color: "purple" },
 };
@@ -184,22 +196,19 @@ const InstructionDetail = () => {
 
   const handleComplete = async () => {
     const result = await showConfirm({
-      title: "지시 완료 처리",
+      title: "지시 종료 처리",
       message:
-        "이 지시를 완료 처리하시겠습니까? 지시가 완료되면 더 이상 수정할 수 없습니다.",
-      confirmText: "완료 처리",
+        "이 지시를 종료 처리하시겠습니까? 지시가 종료되면 더 이상 수정할 수 없습니다.",
+      confirmText: "종료 처리",
       icon: "success",
     });
 
     if (result.isConfirmed) {
       try {
-        await updateStatusMutation.mutateAsync({
-          id,
-          status: "완료",
-        });
-        showSuccess("지시가 완료 처리되었습니다.");
+        await confirmInstructionMutation.mutateAsync(id);
+        showSuccess("지시가 종료 처리되었습니다.");
       } catch (error) {
-        console.error("지시 완료 처리 실패:", error);
+        console.error("지시 종료 처리 실패:", error);
       }
     }
   };
@@ -384,7 +393,10 @@ const InstructionDetail = () => {
   const isCompleted = instruction?.status === "완료";
   const isCanceled = instruction?.status === "취소";
   const isConfirmed = instruction?.status === "확정";
-  const canEdit = !isCompleted && !isCanceled && !isConfirmed;
+  const isInApproval = instruction?.status === "결재중";
+  const isEnded = instruction?.status === "종료";
+  const canEdit = !isCompleted && !isCanceled && !isConfirmed && !isEnded;
+  const canComplete = isInApproval; // 결재중 상태일 때만 종료 가능
 
   // 날짜 포맷팅 함수
   const formatDate = (dateString) => {
@@ -430,6 +442,11 @@ const InstructionDetail = () => {
             <h1 className="flex items-center text-2xl font-bold text-gray-800">
               <FileText className="w-6 h-6 mr-2 text-blue-600" />
               {instruction?.name}
+              {isEnded && (
+                <span className="ml-3 px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                  종료됨
+                </span>
+              )}
             </h1>
           </div>
 
@@ -497,18 +514,17 @@ const InstructionDetail = () => {
               )}
             </div>
 
-            {instruction.status !== "완료" &&
-              instruction.status !== "결재중" && (
-                <FormButton
-                  onClick={handleComplete}
-                  variant="success"
-                  size="sm"
-                  className="flex items-center"
-                >
-                  <CheckCircle className="w-4 h-4 mr-2" />
-                  완료 처리
-                </FormButton>
-              )}
+            {canComplete && (
+              <FormButton
+                onClick={handleComplete}
+                variant="success"
+                size="sm"
+                className="flex items-center"
+              >
+                <CheckCircle className="w-4 h-4 mr-2" />
+                종료 처리
+              </FormButton>
+            )}
             {isCompleted && !isConfirmed && (
               <FormButton
                 onClick={handleConfirm}
@@ -520,24 +536,28 @@ const InstructionDetail = () => {
                 확정
               </FormButton>
             )}
-            <FormButton
-              onClick={handleEdit}
-              variant="primary"
-              size="sm"
-              className="flex items-center"
-            >
-              <Edit className="w-4 h-4 mr-2" />
-              수정
-            </FormButton>
-            <FormButton
-              onClick={handleDelete}
-              variant="danger"
-              size="sm"
-              className="flex items-center"
-            >
-              <Trash className="w-4 h-4 mr-2" />
-              삭제
-            </FormButton>
+            {canEdit && (
+              <>
+                <FormButton
+                  onClick={handleEdit}
+                  variant="primary"
+                  size="sm"
+                  className="flex items-center"
+                >
+                  <Edit className="w-4 h-4 mr-2" />
+                  수정
+                </FormButton>
+                <FormButton
+                  onClick={handleDelete}
+                  variant="danger"
+                  size="sm"
+                  className="flex items-center"
+                >
+                  <Trash className="w-4 h-4 mr-2" />
+                  삭제
+                </FormButton>
+              </>
+            )}
           </div>
         </div>
 
@@ -593,6 +613,8 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
     });
   };
 
+  const isEnded = instruction?.status === "종료";
+
   return (
     <div className="p-6 mt-6 bg-white rounded-lg shadow">
       <h2 className="flex items-center mb-4 text-lg font-medium">
@@ -601,6 +623,18 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
       </h2>
 
       <div className="space-y-6">
+        {isEnded && (
+          <div className="p-4 rounded-lg bg-purple-50 border border-purple-200">
+            <h3 className="flex items-center mb-2 font-medium text-purple-800 text-md">
+              <CheckCircle className="w-5 h-5 mr-2 text-purple-600" />이 지시는
+              종료 처리되었습니다
+            </h3>
+            <p className="text-sm text-purple-700">
+              종료된 지시는 더 이상 수정하거나 상태를 변경할 수 없습니다.
+            </p>
+          </div>
+        )}
+
         {canEdit && (
           <div className="p-4 rounded-lg bg-gray-50">
             <h3 className="flex items-center mb-4 font-medium text-md">
@@ -608,22 +642,26 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
               상태 변경
             </h3>
             <div className="flex flex-wrap gap-2">
-              {Object.values(INSTRUCTION_STATUSES).map((option) => (
-                <Button
-                  key={option.value}
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onStatusChange(option.value)}
-                  disabled={instruction?.status === option.value}
-                  className={
-                    instruction?.status === option.value
-                      ? option.activeClass
-                      : option.buttonClass
-                  }
-                >
-                  {option.label}
-                </Button>
-              ))}
+              {Object.values(INSTRUCTION_STATUSES)
+                .filter(
+                  (option) => option.value !== "완료" && option.value !== "종료"
+                ) // '완료'와 '종료' 상태 버튼 제외
+                .map((option) => (
+                  <Button
+                    key={option.value}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onStatusChange(option.value)}
+                    disabled={instruction?.status === option.value}
+                    className={
+                      instruction?.status === option.value
+                        ? option.activeClass
+                        : option.buttonClass
+                    }
+                  >
+                    {option.label}
+                  </Button>
+                ))}
             </div>
           </div>
         )}

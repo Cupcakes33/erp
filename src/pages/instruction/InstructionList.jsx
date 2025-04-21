@@ -184,6 +184,7 @@ const InstructionList = () => {
     "manager",
     "orderDate",
     "round",
+    "modifier",
   ]);
 
   // 필터 변경 핸들러
@@ -437,6 +438,11 @@ const InstructionList = () => {
     {
       accessorKey: "round",
       header: "회차",
+    },
+    {
+      accessorKey: "modifier",
+      header: "수정자",
+      cell: ({ row }) => truncateText(row.getValue("modifier") || "-", 10),
     },
   ];
 
