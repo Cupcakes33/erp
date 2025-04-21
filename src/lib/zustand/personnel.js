@@ -40,8 +40,7 @@ export function filterWorkers(
       const aId = parseInt(a.id, 10) || 0
       const bId = parseInt(b.id, 10) || 0
       return sortBy.direction === "asc" ? aId - bId : bId - aId
-    } 
-    else if (sortBy.field === "active") {
+    } else if (sortBy.field === "active") {
       // 상태 정렬: 불리언 값 비교 (true가 먼저 오도록)
       if (a.active === b.active) {
         // 상태가 같으면 ID로 정렬
@@ -49,37 +48,39 @@ export function filterWorkers(
         const bId = parseInt(b.id, 10) || 0
         return aId - bId
       }
-      return sortBy.direction === "asc" 
-        ? (a.active === true ? -1 : 1) 
-        : (a.active === true ? 1 : -1)
-    }
-    else if (sortBy.field === "name") {
+      return sortBy.direction === "asc"
+        ? a.active === true
+          ? -1
+          : 1
+        : a.active === true
+        ? 1
+        : -1
+    } else if (sortBy.field === "name") {
       // 이름 정렬: 문자열 비교
       const aName = a.name || ""
       const bName = b.name || ""
       const comparison = aName.localeCompare(bName)
       return sortBy.direction === "asc" ? comparison : -comparison
-    }
-    else {
+    } else {
       // 기타 필드: 일반 비교
       const aValue = a[sortBy.field] ?? ""
       const bValue = b[sortBy.field] ?? ""
-      
+
       // 문자열 비교
       if (typeof aValue === "string" && typeof bValue === "string") {
         const comparison = aValue.localeCompare(bValue)
         return sortBy.direction === "asc" ? comparison : -comparison
       }
-      
+
       // 숫자 비교
       if (typeof aValue === "number" && typeof bValue === "number") {
         return sortBy.direction === "asc" ? aValue - bValue : bValue - aValue
       }
-      
+
       // 기타 타입 비교
       if (aValue < bValue) return sortBy.direction === "asc" ? -1 : 1
       if (aValue > bValue) return sortBy.direction === "asc" ? 1 : -1
-      
+
       // 값이 같으면 ID로 정렬 (보조 정렬)
       const aId = parseInt(a.id, 10) || 0
       const bId = parseInt(b.id, 10) || 0
@@ -90,15 +91,15 @@ export function filterWorkers(
   // 페이지네이션
   const totalCount = filtered.length
   const totalPage = Math.max(1, Math.ceil(totalCount / pageSize))
-  
+
   // 현재 페이지가 유효한지 확인하고 조정
   const validCurrentPage = Math.min(Math.max(1, currentPage), totalPage)
-  
+
   const paged = filtered.slice(
     (validCurrentPage - 1) * pageSize,
     validCurrentPage * pageSize,
   )
-  
+
   console.log("페이지네이션 정보:", {
     총데이터수: totalCount,
     총페이지수: totalPage,
@@ -108,7 +109,7 @@ export function filterWorkers(
     첫번째ID: paged[0]?.id,
     정렬기준: sortBy,
   })
-  
+
   return { paged, totalCount, totalPage }
 }
 
@@ -123,7 +124,7 @@ const usePersonnelStore = create((set) => ({
 
   // 정렬 상태
   sortBy: {
-    field: "name",
+    field: "id",
     direction: "asc",
   },
 

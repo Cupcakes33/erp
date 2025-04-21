@@ -10,6 +10,7 @@ import {
   FormButton,
   FormInput,
   FormSelect,
+  Pagination,
 } from "../../components/molecules"
 import { PlusCircle, Search } from "lucide-react"
 import Modal from "../../components/molecules/Modal"
@@ -268,7 +269,20 @@ const PersonnelList = () => {
                 ? [{ id: sortBy.field, desc: sortBy.direction === "desc" }]
                 : [],
             }}
+            enablePagination={false}
           />
+          {/* 커스텀 페이지네이션 */}
+          {!isLoading && filtered.length > 0 && (
+            <Pagination
+              currentPage={tableSettings.currentPage - 1}
+              totalPages={totalPage}
+              onPageChange={handlePageChange}
+              pageSize={tableSettings.pageSize}
+              onPageSizeChange={handlePageSizeChange}
+              pageSizeOptions={[10, 20, 50, 100]}
+              maxButtons={5}
+            />
+          )}
         </div>
 
         {/* 우측: 컨트롤 섹션 */}
