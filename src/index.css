@@ -16,8 +16,12 @@
   --danger-color: #ef4444; /* red-500 */
 }
 
+html {
+  overflow: hidden;
+}
+
 body {
-  font-family: 'Noto Sans KR', sans-serif;
+  font-family: "Noto Sans KR", sans-serif;
   color: var(--text-color);
   background-color: var(--background-color);
 }
