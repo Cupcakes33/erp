@@ -56,6 +56,57 @@ export const fetchInstructionById = async (id) => {
 }
 
 /**
+ * 출력용 지시 상세 정보 조회 API
+ * @param {number} id 지시 ID
+ * @returns {Promise<Object>} 출력용 지시 상세 정보
+ */
+export const fetchInstructionDetail = async (id) => {
+  // AbortController를 사용하여 요청 취소 기능 구현
+  const controller = new AbortController();
+  const signal = controller.signal;
+  
+  try {
+    // 요청이 이미 취소되었는지 확인
+    if (signal.aborted) {
+      throw new axios.Cancel('Operation canceled by the user.');
+    }
+    
+    // 임시로 id를 2로 고정
+    const requestId = 2; // id 대신 고정값 사용
+    
+    // 실제 API 호출
+    const response = await axios.get(`${API_URL}/instruction/${requestId}/detail`, { signal });
+    
+    // AbortController 반환하여 컴포넌트에서 요청 취소 가능하도록 함
+    return {
+      ...response.data,
+      controller
+    };
+  } catch (error) {
+    // 요청이 취소된 경우 에러 무시
+    if (axios.isCancel(error) || error.name === 'CanceledError' || error.name === 'AbortError') {
+      console.log('요청이 취소됨:', error.message);
+      // 애러가 발생해도 controller를 전달하여 정리할 수 있도록 함
+      return { 
+        data: null, 
+        message: "요청 취소됨", 
+        controller,
+        canceled: true 
+      };
+    }
+    
+    console.error(`지시 ID ${id} 출력용 상세 정보 조회 실패:`, error);
+    // 에러가 발생해도 controller를 함께 반환하여 cleanup 가능하게 함
+    return { 
+      data: null, 
+      message: error.message, 
+      controller,
+      error: true
+    };
+  }
+}
+
+/**
  * 새 지시를 생성하는 API
  * @param {Object} instructionData 지시 데이터
  * @returns {Promise<Object>} 생성된 지시 정보

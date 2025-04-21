@@ -57,8 +57,6 @@ const DataTable = ({
     return column
   })
 
-  console.log("DataTable wrapper - 원본 columns:", columns)
-  console.log("DataTable wrapper - 정규화된 columns:", normalizedColumns)
 
   // 선택 열 설정 (필요시)
   const selectionColumn = enableSelection
@@ -72,7 +70,7 @@ const DataTable = ({
               (table.getIsSomePageRowsSelected() && "indeterminate")
             }
             onChange={table.getToggleAllPageRowsSelectedHandler()}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-600"
           />
         ),
         cell: ({ row }) => (
@@ -81,7 +79,7 @@ const DataTable = ({
             checked={row.getIsSelected()}
             onChange={row.getToggleSelectedHandler()}
             onClick={(e) => e.stopPropagation()}
-            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-600"
+            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-600"
           />
         ),
         enableSorting: false,

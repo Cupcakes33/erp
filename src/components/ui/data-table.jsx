@@ -88,22 +88,7 @@ export const DataTable = ({
     }
   }, [manualPagination, pageIndex, pageSize]);
 
-  // 데이터 디버깅
-  console.log("DataTable 컴포넌트 렌더링:", {
-    columns,
-    data,
-    loading,
-    emptyMessage,
-  });
-
-  // 추가 디버깅 로그
-  console.log(
-    "DataTable 컬럼 구조:",
-    columns.map((col) => ({ accessorKey: col.accessorKey, header: col.header }))
-  );
-  if (data && data.length > 0) {
-    console.log("DataTable 첫 번째 데이터 항목:", data[0]);
-  }
+ 
 
   // 테이블 설정
   const table = useReactTable({
@@ -169,7 +154,6 @@ export const DataTable = ({
     debugTable: true, // 테이블 디버깅 활성화
   });
 
-  console.log("테이블 모델:", table.getRowModel());
 
   return (
     <FormCard

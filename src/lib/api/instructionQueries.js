@@ -18,12 +18,15 @@ import {
   createTask,
   updateTask,
   deleteTask,
-  fetchUnitPrices
+  fetchUnitPrices,
+  fetchInstructionDetail
 } from './instructionAPI'
+import React from 'react'
 
 // 쿼리 키
 const INSTRUCTIONS_QUERY_KEY = 'instructions';
 const INSTRUCTION_DETAIL_QUERY_KEY = 'instruction';
+const INSTRUCTION_PDF_DETAIL_QUERY_KEY = 'instruction_pdf_detail';
 
 /**
  * 지시 목록을 조회하는 React Query 훅
@@ -70,6 +73,57 @@ export const useInstruction = (id) => {
     select: (data) => {
       // API 응답 형식에 맞게 데이터 변환
       return data.data;
+    }
+  });
+};
+
+/**
+ * 출력용 지시 상세 정보를 조회하는 React Query 훅
+ * @param {number} id 지시 ID
+ * @returns {UseQueryResult} 쿼리 결과
+ */
+export const useInstructionDetail = (id) => {
+  // controller 참조를 저장할 ref
+  const controllerRef = React.useRef(null);
+  const queryClient = useQueryClient();
+
+  // 컴포넌트 언마운트 시 실행될 cleanup
+  React.useEffect(() => {
+    // 컴포넌트가 언마운트될 때 실행
+    return () => {
+      if (controllerRef.current) {
+        controllerRef.current.abort();
+        controllerRef.current = null;
+      }
+    };
+  }, []);
+
+  return useQuery({
+    queryKey: [INSTRUCTION_PDF_DETAIL_QUERY_KEY, id],
+    queryFn: () => fetchInstructionDetail(id),
+    enabled: !!id, // ID가 있을 때만 쿼리 실행
+    staleTime: 60 * 1000, // 1분 동안 데이터가 신선하게 유지됨
+    cacheTime: 5 * 60 * 1000, // 5분 동안 캐시에 유지됨
+    select: (data) => {
+      // controller 저장
+      if (data?.controller) {
+        // 이전 controller가 있으면 abort
+        if (controllerRef.current) {
+          controllerRef.current.abort();
+        }
+        controllerRef.current = data.controller;
+      }
+      
+      // API 응답 형식에 맞게 데이터 변환
+      return data;
+    },
+    onError: (error) => {
+      // 취소된 요청 에러는 무시
+      if (error?.name === "CanceledError" || error?.name === "AbortError") {
+        console.log("PDF 상세 정보 요청이 취소되었습니다.");
+        return;
+      }
+      console.error("PDF 상세 정보 로드 실패:", error);
     }
   });
 };
