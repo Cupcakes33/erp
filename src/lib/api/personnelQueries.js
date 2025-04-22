@@ -46,11 +46,11 @@ export const useUpdateWorker = () => {
         active: workerData.active,
       })
     },
-    onSuccess: (data, variables) => {
+    onSuccess: (data, variables, context) => {
       // 작업자 목록 및 상세 정보 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: [WORKERS_QUERY_KEY] })
       queryClient.invalidateQueries({
-        queryKey: [WORKER_DETAIL_QUERY_KEY, variables.id],
+        queryKey: [WORKERS_QUERY_KEY, variables.id],
       })
     },
   })
