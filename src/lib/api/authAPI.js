@@ -83,7 +83,7 @@ export const logout = async () => {
     throw error
   } finally {
     localStorage.removeItem("authToken")
-    window.location.href = "/login"
+    window.location.href = "/react-app/#/login"
   }
 }
 

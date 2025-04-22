@@ -41,7 +41,6 @@ const useAuthStore = create(
           await authAPI.logout()
 
           set({
-            user: null,
             isAuthenticated: false,
           })
         },
@@ -51,25 +50,15 @@ const useAuthStore = create(
           set({ isLoading: true })
 
           // 실제 구현에서는 토큰 유효성 검증
-          const token = localStorage.getItem("token")
+          const token = localStorage.getItem("authToken")
 
           if (token) {
-            // 토큰이 있으면 사용자 정보 설정 (실제 구현에서는 토큰 검증 후 사용자 정보 가져오기)
-            const user = {
-              id: 1,
-              username: "admin",
-              name: "관리자",
-              role: "admin",
-            }
-
             set({
-              user,
               isAuthenticated: true,
               isLoading: false,
             })
           } else {
             set({
-              user: null,
               isAuthenticated: false,
               isLoading: false,
             })
