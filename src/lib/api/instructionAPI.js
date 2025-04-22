@@ -340,6 +340,16 @@ export const fetchTasksByProcess = async (processId, params = {}) => {
   }
 }
 
+export const tempFetchTasksByProcess = async (processId) => {
+  try {
+    const response = await axios.get(`${API_URL}/instruction/${processId}/tasks`)
+    return response.data
+  } catch (error) {
+    console.error(`공종 ID ${processId}의 작업 목록 조회 실패:`, error);
+    throw error;
+  }
+}
+
 /**
  * 새 작업 생성 API
  * @param {number} processId 공종 ID
