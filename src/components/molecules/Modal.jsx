@@ -1,5 +1,5 @@
-import React from "react";
-import { FormButton } from "./index";
+import React from "react"
+import { FormButton } from "./index"
 
 const Modal = ({
   isOpen,
@@ -12,7 +12,7 @@ const Modal = ({
   showCloseButton = true,
   className = "",
 }) => {
-  if (!isOpen) return null;
+  if (!isOpen) return null
 
   // 모달 크기에 따른 클래스
   const sizeClass =
@@ -25,39 +25,39 @@ const Modal = ({
       "3xl": "max-w-3xl",
       "4xl": "max-w-4xl",
       full: "max-w-full",
-    }[size] || "max-w-md";
+    }[size] || "max-w-md"
 
   // 배경 클릭 시 닫기
   const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) {
-      onClose();
+    if (closeOnOverlayClick && e.target === e.currentTarget) {
+      onClose()
     }
-  };
+  }
 
   // ESC 키로 닫기
   React.useEffect(() => {
     const handleEsc = (e) => {
       if (e.key === "Escape") {
-        onClose();
+        onClose()
       }
-    };
-    window.addEventListener("keydown", handleEsc);
+    }
+    window.addEventListener("keydown", handleEsc)
     return () => {
-      window.removeEventListener("keydown", handleEsc);
-    };
-  }, [onClose]);
+      window.removeEventListener("keydown", handleEsc)
+    }
+  }, [onClose])
 
   // 모달 열릴 때 스크롤 방지
   React.useEffect(() => {
     if (isOpen) {
-      document.body.style.overflow = "hidden";
+      document.body.style.overflow = "hidden"
     } else {
-      document.body.style.overflow = "auto";
+      document.body.style.overflow = "auto"
     }
     return () => {
-      document.body.style.overflow = "auto";
-    };
-  }, [isOpen]);
+      document.body.style.overflow = "auto"
+    }
+  }, [isOpen])
 
   return (
     <div
@@ -102,7 +102,7 @@ const Modal = ({
         )}
       </div>
     </div>
-  );
-};
+  )
+}
 
-export default Modal;
+export default Modal

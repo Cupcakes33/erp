@@ -284,7 +284,7 @@ const WorkList = () => {
                 className="pl-10"
               />
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <Search className="w-5 h-5 text-gray-400" />
+                <Search className="w-5 h-5 text-gray-400 mb-3.5" />
               </div>
             </div>
 
@@ -353,6 +353,7 @@ const WorkList = () => {
         isOpen={deleteModalOpen}
         onClose={handleCancelDelete}
         title="일위대가 삭제 확인"
+        closeOnOverlayClick={false}
         footer={
           <div className="flex justify-end gap-2">
             <button
@@ -379,6 +380,7 @@ const WorkList = () => {
         isOpen={editModalOpen}
         onClose={handleCancelEdit}
         title="일위대가 수정"
+        closeOnOverlayClick={false}
         footer={
           <div className="flex justify-end gap-2">
             <button
