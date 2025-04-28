@@ -58,9 +58,7 @@ const Sidebar = () => {
       path: "/payments",
       icon: Banknote,
       subItems: [
-        { title: "공종별 조회", path: "/payments/by-type" },
-        { title: "주소별 조회", path: "/payments/by-address" },
-        { title: "기성별 조회", path: "/payments/by-payment" },
+        { title: "기성 조회", path: "/payments" },
       ],
     },
     { title: "프로필", path: "/profile", icon: User },

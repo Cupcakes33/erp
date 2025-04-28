@@ -1,10 +1,5 @@
 import React, { useEffect } from "react"
-import {
-  HashRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-} from "react-router-dom"
+import { HashRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import { useAuthStore } from "./lib/zustand"
 
 // 레이아웃
@@ -29,6 +24,7 @@ import WorkCreate from "./pages/work/WorkCreate"
 
 // 인사 관련 페이지
 import PersonnelList from "./pages/personnel/PersonnelList"
+import Payments from "./pages/payments/Payments"
 
 // 인증 상태 확인 컴포넌트
 const PrivateRoute = ({ children }) => {
@@ -80,6 +76,9 @@ const App = () => {
 
           {/* 인사 관련 라우트 */}
           <Route path="personnel" element={<PersonnelList />} />
+
+          {/* 기성 관련 라우트 */}
+          <Route path="payments" element={<Payments />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />
