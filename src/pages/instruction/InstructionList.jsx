@@ -12,6 +12,8 @@ import {
   FormSelect,
   showSuccess,
   showError,
+  ImportModal,
+  FileImportService,
 } from "../../components/molecules";
 import {
   PlusCircle,
@@ -259,6 +261,7 @@ const InstructionList = () => {
 
   const handleImportClick = () => {
     setShowImportModal(true);
+    setImportResult(null);
   };
 
   const handleExportClick = () => {
@@ -272,214 +275,123 @@ const InstructionList = () => {
     }
   };
 
-  const handleImportSubmit = async () => {
-    if (importFile) {
-      try {
-        setIsImporting(true);
-        setImportResult(null);
+  // 파일 업로드 및 데이터 처리 함수
+  const handleImportData = async (file) => {
+    setIsImporting(true);
 
-        // 파일 형식 확인
-        const fileExtension = importFile.name.split(".").pop().toLowerCase();
-        let data = [];
+    try {
+      // 파일 파싱
+      const data = await FileImportService.parseFile(file);
 
-        if (fileExtension === "xlsx" || fileExtension === "xls") {
-          // 엑셀 파일 처리
-          const excelData = await excelUtils.parseExcelFile(importFile);
-          data = excelUtils.convertToObjectArray(excelData);
-        } else if (fileExtension === "csv") {
-          // CSV 파일 처리
-          const reader = new FileReader();
-          const content = await new Promise((resolve) => {
-            reader.onload = (e) => resolve(e.target.result);
-            reader.readAsText(importFile);
-          });
+      // 데이터 검증 - 필수 필드는 name만 설정
+      const {
+        isValid,
+        validData,
+        errors: validationErrors,
+      } = FileImportService.validateData(data, ["name"]);
 
-          // 간단한 CSV 파싱
-          const lines = content.split("\n");
-          const headers = lines[0].split(",").map((h) => h.trim());
+      if (!isValid) {
+        // 검증 실패 시 에러 표시
+        const result = {
+          success: 0,
+          error: validationErrors.length,
+          total: data.length,
+          errors: validationErrors,
+        };
 
-          for (let i = 1; i < lines.length; i++) {
-            if (lines[i].trim() === "") continue;
+        setImportResult(result);
+        showError(
+          `${validationErrors.length}개 항목이 필수 필드 검증에 실패했습니다.`
+        );
+        setIsImporting(false);
+        return;
+      }
 
-            const values = lines[i].split(",").map((v) => v.trim());
-            const obj = {};
+      // 진행 상황을 표시하기 위한 상태
+      const result = {
+        success: 0,
+        error: 0,
+        total: validData.length,
+        errors: [],
+        processingIndex: 0,
+        isProcessing: true,
+      };
 
-            headers.forEach((header, index) => {
-              obj[header] = values[index];
-            });
+      // 초기 진행 상태 설정
+      setImportResult(result);
 
-            data.push(obj);
-          }
-        } else if (fileExtension === "json") {
-          // JSON 파일 처리
-          const reader = new FileReader();
-          const content = await new Promise((resolve) => {
-            reader.onload = (e) => resolve(e.target.result);
-            reader.readAsText(importFile);
-          });
+      // 배치 크기 설정 (한 번에 처리할 데이터 수)
+      const BATCH_SIZE = 50;
 
-          data = JSON.parse(content);
-        }
+      // 배치 단위로 처리
+      for (let i = 0; i < validData.length; i += BATCH_SIZE) {
+        // 현재 배치의 데이터
+        const batch = validData.slice(i, i + BATCH_SIZE);
 
-        // 스키마 검증 (name만 필수로 변경)
-        const requiredFields = ["name"];
+        // 배치 내의 항목을 병렬 처리하기 위한 Promise 배열
+        const promises = batch.map(async (item, batchIndex) => {
+          try {
+            // 데이터 형식 변환
+            const instructionData =
+              FileImportService.formatInstructionData(item);
 
-        // 데이터 검증 결과 저장
-        const validationErrors = [];
-        const validData = [];
-
-        // 각 행의 데이터 검증
-        data.forEach((item, index) => {
-          const missingFields = [];
-
-          requiredFields.forEach((field) => {
-            // null, undefined, 빈 문자열 확인
-            if (
-              item[field] === undefined ||
-              item[field] === null ||
-              item[field] === ""
-            ) {
-              missingFields.push(field);
-            }
-          });
-
-          if (missingFields.length > 0) {
-            validationErrors.push({
-              row: index + 1,
-              message: `다음 필드가 누락되었습니다: ${missingFields.join(
-                ", "
-              )}`,
+            // API 호출
+            await createInstructionMutation.mutateAsync(instructionData);
+            return { success: true };
+          } catch (error) {
+            console.error("지시 등록 실패:", error, item);
+            return {
+              success: false,
+              error,
               item,
-            });
-          } else {
-            validData.push(item);
+              index: i + batchIndex,
+            };
           }
         });
 
-        // 검증 실패 시 처리
-        if (validationErrors.length > 0) {
-          const result = {
-            success: 0,
-            error: validationErrors.length,
-            total: data.length,
-            errors: validationErrors,
-          };
+        // 현재 배치 처리 결과
+        const batchResults = await Promise.all(promises);
 
-          setImportResult(result);
-          showError(
-            `${validationErrors.length}개 항목이 필수 필드 검증에 실패했습니다.`
-          );
-          setIsImporting(false);
-          return;
-        }
+        // 결과 집계
+        batchResults.forEach((res, idx) => {
+          if (res.success) {
+            result.success++;
+          } else {
+            result.error++;
+            result.errors.push({
+              row: res.index + 1,
+              item: res.item,
+              message: res.error.message || "처리 중 오류가 발생했습니다.",
+            });
+          }
+        });
 
-        // 진행 상황을 표시하기 위한 상태
-        const result = {
-          success: 0,
-          error: 0,
-          total: validData.length,
-          errors: [],
-          processingIndex: 0,
-          isProcessing: true,
-        };
-
-        // 초기 진행 상태 설정
-        setImportResult(result);
-
-        // 배치 크기 설정 (한 번에 처리할 데이터 수)
-        const BATCH_SIZE = 50;
-
-        // 배치 단위로 처리
-        for (let i = 0; i < validData.length; i += BATCH_SIZE) {
-          // 현재 배치의 데이터
-          const batch = validData.slice(i, i + BATCH_SIZE);
-
-          // 배치 내의 항목을 병렬 처리하기 위한 Promise 배열
-          const promises = batch.map(async (item, batchIndex) => {
-            try {
-              // 데이터 형식 변환 (비어있는 값 허용)
-              const instructionData = {
-                orderId: item.orderId !== undefined ? item.orderId : 0,
-                orderNumber: item.orderNumber || "",
-                name: item.name || "",
-                orderDate:
-                  item.orderDate || new Date().toISOString().split("T")[0],
-                manager: item.manager || "",
-                delegator: item.delegator || "",
-                channel: item.channel || "전화",
-                district: item.district || "",
-                dong: item.dong || "",
-                lotNumber: item.lotNumber || "",
-                detailAddress: item.detailAddress || "",
-                structure: item.structure || "",
-                memo: item.memo || "",
-                status: "접수",
-                round: item.round !== undefined ? parseInt(item.round, 10) : 1,
-              };
-
-              // API 호출
-              await createInstructionMutation.mutateAsync(instructionData);
-              return { success: true };
-            } catch (error) {
-              console.error("지시 등록 실패:", error, item);
-              return {
-                success: false,
-                error,
-                item,
-                index: i + batchIndex,
-              };
-            }
-          });
-
-          // 현재 배치 처리 결과
-          const batchResults = await Promise.all(promises);
-
-          // 결과 집계
-          batchResults.forEach((res, idx) => {
-            if (res.success) {
-              result.success++;
-            } else {
-              result.error++;
-              result.errors.push({
-                row: res.index + 1,
-                item: res.item,
-                message: res.error.message || "처리 중 오류가 발생했습니다.",
-              });
-            }
-          });
-
-          // 진행 상황 업데이트
-          result.processingIndex = i + batch.length;
-          setImportResult({ ...result });
-
-          // 진행 상황 로깅
-          console.log(
-            `처리 중: ${result.processingIndex}/${result.total} 항목 (성공: ${result.success}, 실패: ${result.error})`
-          );
-
-          // 서버 부하 방지를 위한 지연
-          await new Promise((resolve) => setTimeout(resolve, 300));
-        }
-
-        // 최종 결과 저장
-        result.isProcessing = false;
+        // 진행 상황 업데이트
+        result.processingIndex = i + batch.length;
         setImportResult({ ...result });
 
-        if (result.success > 0) {
-          showSuccess(
-            `${result.success}개의 지시가 성공적으로 등록되었습니다.`
-          );
-          refetch(); // 목록 새로고침
-        }
+        // 진행 상황 로깅
+        console.log(
+          `처리 중: ${result.processingIndex}/${result.total} 항목 (성공: ${result.success}, 실패: ${result.error})`
+        );
 
-        // 업로드 완료 후 파일 초기화
-        setImportFile(null);
-      } catch (error) {
-        console.error("파일 가져오기 오류:", error);
-        showError("파일 처리 중 오류가 발생했습니다: " + error.message);
-      } finally {
-        setIsImporting(false);
+        // 서버 부하 방지를 위한 지연
+        await new Promise((resolve) => setTimeout(resolve, 300));
       }
+
+      // 최종 결과 저장
+      result.isProcessing = false;
+      setImportResult({ ...result });
+
+      if (result.success > 0) {
+        showSuccess(`${result.success}개의 지시가 성공적으로 등록되었습니다.`);
+        refetch(); // 목록 새로고침
+      }
+    } catch (error) {
+      console.error("파일 처리 오류:", error);
+      showError("파일 처리 중 오류가 발생했습니다: " + error.message);
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -1134,194 +1046,14 @@ const InstructionList = () => {
         {!isLoading && instructions.length > 0 && renderPaginationButtons()}
       </div>
 
-      {/* 가져오기 모달 */}
-      {showImportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="flex items-center text-xl font-semibold">
-                <FileUp className="w-5 h-5 mr-2 text-blue-600" />
-                지시 데이터 일괄등록
-              </h2>
-              <button
-                onClick={() => {
-                  setShowImportModal(false);
-                  setImportFile(null);
-                  setImportResult(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <p className="mb-2 text-sm text-gray-600">
-                지시 데이터가 포함된 Excel, CSV 또는 JSON 파일을 선택하세요.
-              </p>
-
-              {!importResult && (
-                <div className="p-8 text-center border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
-                  <input
-                    type="file"
-                    id="file-upload"
-                    className="hidden"
-                    accept=".xlsx,.xls,.csv,.json"
-                    onChange={handleFileChange}
-                  />
-                  <label htmlFor="file-upload" className="cursor-pointer">
-                    <Upload className="w-12 h-12 mx-auto text-gray-400" />
-                    <p className="mt-2 text-sm text-gray-500">
-                      파일을 끌어다 놓거나 클릭하여 업로드
-                    </p>
-                  </label>
-                </div>
-              )}
-
-              {importFile && !importResult && (
-                <div className="flex items-center p-2 mt-2 rounded bg-blue-50">
-                  <div className="flex items-center justify-center w-8 h-8 mr-2 bg-blue-100 rounded-full">
-                    <FileUp className="w-4 h-4 text-blue-600" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-blue-900 truncate">
-                      {importFile.name}
-                    </p>
-                    <p className="text-xs text-blue-500">
-                      {Math.round(importFile.size / 1024)} KB
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setImportFile(null)}
-                    className="text-blue-700 hover:text-blue-900"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              )}
-
-              {importResult && (
-                <div className="mt-4">
-                  <div className="flex mb-4 space-x-4">
-                    <div className="flex-1 p-2 text-center bg-gray-100 rounded">
-                      <div className="text-lg font-semibold">
-                        {importResult.total}
-                      </div>
-                      <div className="text-xs text-gray-500">총 항목</div>
-                    </div>
-                    <div className="flex-1 p-2 text-center bg-green-100 rounded">
-                      <div className="text-lg font-semibold text-green-700">
-                        {importResult.success}
-                      </div>
-                      <div className="text-xs text-green-700">성공</div>
-                    </div>
-                    <div className="flex-1 p-2 text-center bg-red-100 rounded">
-                      <div className="text-lg font-semibold text-red-700">
-                        {importResult.error}
-                      </div>
-                      <div className="text-xs text-red-700">실패</div>
-                    </div>
-                  </div>
-
-                  {/* 진행 상황 표시 */}
-                  {importResult.isProcessing && (
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="text-sm font-medium text-gray-700">
-                          처리 중... {importResult.processingIndex}/
-                          {importResult.total} 항목
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {Math.round(
-                            (importResult.processingIndex /
-                              importResult.total) *
-                              100
-                          )}
-                          %
-                        </div>
-                      </div>
-                      <div className="w-full h-2 overflow-hidden bg-gray-200 rounded-full">
-                        <div
-                          className="h-full bg-blue-600 rounded-full"
-                          style={{
-                            width: `${
-                              (importResult.processingIndex /
-                                importResult.total) *
-                              100
-                            }%`,
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  )}
-
-                  {importResult.errors.length > 0 && (
-                    <div className="mt-4 overflow-hidden border rounded">
-                      <div className="p-2 font-medium bg-gray-100">
-                        오류 내역
-                      </div>
-                      <div className="p-2 overflow-y-auto max-h-48">
-                        {importResult.errors.map((error, index) => (
-                          <div
-                            key={index}
-                            className="mb-1 text-sm text-red-600"
-                          >
-                            행 {error.row}:{" "}
-                            {error.message || "처리 중 오류가 발생했습니다."}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="p-3 mt-4 border border-blue-200 rounded bg-blue-50">
-                    <p className="text-sm text-blue-800">
-                      {importResult.isProcessing
-                        ? "데이터 처리 중입니다. 완료될 때까지 기다려주세요."
-                        : "파일 업로드를 다시 시도하려면 아래의 다시 시도 버튼을 클릭하세요."}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <FormButton
-                variant="outline"
-                onClick={() => {
-                  setShowImportModal(false);
-                  setImportFile(null);
-                  setImportResult(null);
-                }}
-              >
-                {importResult ? "닫기" : "취소"}
-              </FormButton>
-              {!importResult && (
-                <FormButton
-                  variant="primary"
-                  onClick={handleImportSubmit}
-                  disabled={!importFile || isImporting}
-                  loading={isImporting}
-                >
-                  {isImporting ? "가져오는 중..." : "가져오기"}
-                </FormButton>
-              )}
-              {importResult && (
-                <FormButton
-                  variant="primary"
-                  onClick={() => {
-                    setImportFile(null);
-                    setImportResult(null);
-                  }}
-                  disabled={importResult.isProcessing}
-                >
-                  {importResult.isProcessing ? "처리 중..." : "다시 시도"}
-                </FormButton>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 가져오기 모달 - 컴포넌트로 분리 */}
+      <ImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImport={handleImportData}
+        importResult={importResult}
+        isImporting={isImporting}
+      />
 
       {/* 컬럼 설정 모달 */}
       {showColumnModal && (
