@@ -46,6 +46,9 @@ const InstructionEdit = () => {
     memo: "",
     status: "접수",
     round: 0,
+    contact1: "",
+    contact2: "",
+    contact3: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -68,6 +71,9 @@ const InstructionEdit = () => {
         memo: response.memo || "",
         status: response.status || "접수",
         round: response.round || 0,
+        contact1: response.contact1 || "",
+        contact2: response.contact2 || "",
+        contact3: response.contact3 || "",
       });
     }
   }, [response]);
@@ -124,6 +130,9 @@ const InstructionEdit = () => {
         memo: formData.memo,
         status: formData.status,
         round: formData.round,
+        contact1: formData.contact1,
+        contact2: formData.contact2,
+        contact3: formData.contact3,
       };
 
       await updateInstructionMutation.mutateAsync({
@@ -252,6 +261,39 @@ const InstructionEdit = () => {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
+            <div>
+              <FormInput
+                id="contact1"
+                name="contact1"
+                label="연락처1"
+                placeholder="연락처1을 입력하세요"
+                value={formData.contact1}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <FormInput
+                id="contact2"
+                name="contact2"
+                label="연락처2"
+                placeholder="연락처2를 입력하세요"
+                value={formData.contact2}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <FormInput
+                id="contact3"
+                name="contact3"
+                label="연락처3"
+                placeholder="연락처3을 입력하세요"
+                value={formData.contact3}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
           <div className="mb-6">
             <FormSelect
               id="channel"
@@ -263,61 +305,51 @@ const InstructionEdit = () => {
             />
           </div>
 
-          <h3 className="mb-3 text-lg font-medium">위치 정보</h3>
-          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
-            <div>
-              <FormInput
-                id="district"
-                name="district"
-                label="지역"
-                placeholder="지역을 입력하세요"
-                value={formData.district}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <FormInput
-                id="dong"
-                name="dong"
-                label="동"
-                placeholder="동을 입력하세요"
-                value={formData.dong}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <FormInput
-                id="lotNumber"
-                name="lotNumber"
-                label="지번"
-                placeholder="지번을 입력하세요"
-                value={formData.lotNumber}
-                onChange={handleChange}
-              />
-            </div>
+          <h2 className="text-lg font-semibold mb-4 mt-6">위치 정보</h2>
+          <div className="grid grid-cols-3 gap-6">
+            <FormInput
+              id="district"
+              name="district"
+              label="시/군/구"
+              placeholder="시/군/구를 입력하세요"
+              value={formData.district}
+              onChange={handleChange}
+            />
+            <FormInput
+              id="dong"
+              name="dong"
+              label="동/읍/면"
+              placeholder="동/읍/면을 입력하세요"
+              value={formData.dong}
+              onChange={handleChange}
+            />
+            <FormInput
+              id="lotNumber"
+              name="lotNumber"
+              label="지번"
+              placeholder="지번을 입력하세요"
+              value={formData.lotNumber}
+              onChange={handleChange}
+            />
           </div>
 
-          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
-            <div>
-              <FormInput
-                id="detailAddress"
-                name="detailAddress"
-                label="상세주소"
-                placeholder="상세주소를 입력하세요"
-                value={formData.detailAddress}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <FormInput
-                id="structure"
-                name="structure"
-                label="구조물"
-                placeholder="구조물을 입력하세요"
-                value={formData.structure}
-                onChange={handleChange}
-              />
-            </div>
+          <div className="grid grid-cols-2 gap-6 mt-6">
+            <FormInput
+              id="detailAddress"
+              name="detailAddress"
+              label="상세주소"
+              placeholder="상세주소를 입력하세요"
+              value={formData.detailAddress}
+              onChange={handleChange}
+            />
+            <FormInput
+              id="structure"
+              name="structure"
+              label="건물구조"
+              placeholder="건물구조를 입력하세요"
+              value={formData.structure}
+              onChange={handleChange}
+            />
           </div>
 
           <div className="mb-6">
