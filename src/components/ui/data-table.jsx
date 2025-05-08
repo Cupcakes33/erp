@@ -60,6 +60,9 @@ export const DataTable = ({
   className = "",
   containerClassName = "",
   variant = "outline",
+  horizontalScroll = false,
+  verticalScroll = false,
+  maxHeight = "400px",
   ...props
 }) => {
   const [sorting, setSorting] = useState(state.sorting || []);
@@ -180,16 +183,17 @@ export const DataTable = ({
             )}
 
             {/* 테이블 */}
-            <Table>
-              <TableHeader>
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => {
-                      return (
-                        <TableHead
-                          key={header.id}
-                          className={header.column.columnDef.headerClassName}
-                        >
+            <div className={`${horizontalScroll ? 'overflow-x-auto' : ''} ${verticalScroll ? 'overflow-y-auto' : ''}`} style={{ maxHeight: verticalScroll ? maxHeight : 'none' }}>
+              <Table>
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => {
+                        return (
+                          <TableHead
+                            key={header.id}
+                            className={header.column.columnDef.headerClassName}
+                          >
                           {header.isPlaceholder ? null : (
                             <div
                               className={
@@ -263,7 +267,8 @@ export const DataTable = ({
                   </TableRow>
                 )}
               </TableBody>
-            </Table>
+              </Table>
+            </div>
           </div>
         </div>
       </div>
