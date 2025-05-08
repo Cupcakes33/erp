@@ -48,6 +48,9 @@ const InstructionCreate = () => {
     structure: "",
     memo: "",
     round: 1,
+    contact1: "",
+    contact2: "",
+    contact3: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -104,6 +107,9 @@ const InstructionCreate = () => {
         memo: formData.memo,
         status: "접수", // 기본 상태
         round: formData.round,
+        contact1: formData.contact1,
+        contact2: formData.contact2,
+        contact3: formData.contact3,
       };
 
       await createInstructionMutation.mutateAsync(payload);
@@ -201,6 +207,39 @@ const InstructionCreate = () => {
                 label="위임자"
                 placeholder="위임자 이름을 입력하세요"
                 value={formData.delegator}
+                onChange={handleChange}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
+            <div>
+              <FormInput
+                id="contact1"
+                name="contact1"
+                label="연락처1"
+                placeholder="연락처1을 입력하세요"
+                value={formData.contact1}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <FormInput
+                id="contact2"
+                name="contact2"
+                label="연락처2"
+                placeholder="연락처2를 입력하세요"
+                value={formData.contact2}
+                onChange={handleChange}
+              />
+            </div>
+            <div>
+              <FormInput
+                id="contact3"
+                name="contact3"
+                label="연락처3"
+                placeholder="연락처3을 입력하세요"
+                value={formData.contact3}
                 onChange={handleChange}
               />
             </div>

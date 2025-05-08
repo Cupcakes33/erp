@@ -169,5 +169,79 @@ export const excelUtils = {
     
     // 엑셀 파일 생성 및 다운로드
     XLSX.writeFile(workbook, `${filename}.xlsx`);
+  },
+  
+  /**
+   * 지시 데이터 템플릿 파일 다운로드
+   * @param {String} format 'excel' | 'csv' | 'json'
+   */
+  downloadInstructionTemplate: (format = 'excel') => {
+    // 템플릿 데이터
+    const templateData = [
+      {
+        orderId: 0,
+        orderNumber: "INS-2023-0001",
+        orderDate: new Date().toISOString().split("T")[0],
+        name: "지시 제목 예시",
+        manager: "관리자명",
+        delegator: "위임자명",
+        channel: "전화",
+        district: "서울시 강남구",
+        dong: "삼성동",
+        lotNumber: "123-45",
+        detailAddress: "상세주소",
+        structure: "건물명",
+        memo: "비고 사항",
+        round: 1
+      }
+    ];
+    
+    if (format === 'excel') {
+      // 워크시트 생성
+      const worksheet = XLSX.utils.json_to_sheet(templateData);
+      
+      // 워크북 생성
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Template');
+      
+      // 엑셀 파일 생성 및 다운로드
+      XLSX.writeFile(workbook, '지시_템플릿.xlsx');
+    } else if (format === 'csv') {
+      // CSV 헤더
+      const headers = Object.keys(templateData[0]);
+      let csv = headers.join(',') + '\n';
+      
+      // 데이터 행
+      templateData.forEach(item => {
+        const row = headers.map(header => {
+          const value = String(item[header] || "");
+          return value.includes(',') ? `"${value}"` : value;
+        });
+        csv += row.join(',') + '\n';
+      });
+      
+      // 파일 다운로드
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '지시_템플릿.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else if (format === 'json') {
+      // JSON 파일 다운로드
+      const json = JSON.stringify(templateData, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '지시_템플릿.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   }
 };

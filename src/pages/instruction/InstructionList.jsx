@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { excelUtils } from "../../lib/utils/excelUtils";
 
 // DatePicker 스타일 오버라이드를 위한 CSS 추가
 const customDatePickerStyle = `
@@ -104,6 +105,8 @@ const InstructionList = () => {
   const [showColumnModal, setShowColumnModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [exportFormat, setExportFormat] = useState("excel");
+  const [isImporting, setIsImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   // 로컬 스토리지에서 필터 상태 불러오기
   const loadFiltersFromStorage = () => {
@@ -184,6 +187,7 @@ const InstructionList = () => {
     "manager",
     "orderDate",
     "round",
+    "memo",
     "modifier",
   ]);
 
@@ -268,14 +272,215 @@ const InstructionList = () => {
     }
   };
 
-  const handleImportSubmit = () => {
+  const handleImportSubmit = async () => {
     if (importFile) {
-      console.log("파일 가져오기:", importFile);
-      // 실제 가져오기 로직 구현 (API 호출 등)
-      // navigate("/instructions/import");
+      try {
+        setIsImporting(true);
+        setImportResult(null);
+
+        // 파일 형식 확인
+        const fileExtension = importFile.name.split(".").pop().toLowerCase();
+        let data = [];
+
+        if (fileExtension === "xlsx" || fileExtension === "xls") {
+          // 엑셀 파일 처리
+          const excelData = await excelUtils.parseExcelFile(importFile);
+          data = excelUtils.convertToObjectArray(excelData);
+        } else if (fileExtension === "csv") {
+          // CSV 파일 처리
+          const reader = new FileReader();
+          const content = await new Promise((resolve) => {
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsText(importFile);
+          });
+
+          // 간단한 CSV 파싱
+          const lines = content.split("\n");
+          const headers = lines[0].split(",").map((h) => h.trim());
+
+          for (let i = 1; i < lines.length; i++) {
+            if (lines[i].trim() === "") continue;
+
+            const values = lines[i].split(",").map((v) => v.trim());
+            const obj = {};
+
+            headers.forEach((header, index) => {
+              obj[header] = values[index];
+            });
+
+            data.push(obj);
+          }
+        } else if (fileExtension === "json") {
+          // JSON 파일 처리
+          const reader = new FileReader();
+          const content = await new Promise((resolve) => {
+            reader.onload = (e) => resolve(e.target.result);
+            reader.readAsText(importFile);
+          });
+
+          data = JSON.parse(content);
+        }
+
+        // 스키마 검증 (name만 필수로 변경)
+        const requiredFields = ["name"];
+
+        // 데이터 검증 결과 저장
+        const validationErrors = [];
+        const validData = [];
+
+        // 각 행의 데이터 검증
+        data.forEach((item, index) => {
+          const missingFields = [];
+
+          requiredFields.forEach((field) => {
+            // null, undefined, 빈 문자열 확인
+            if (
+              item[field] === undefined ||
+              item[field] === null ||
+              item[field] === ""
+            ) {
+              missingFields.push(field);
+            }
+          });
+
+          if (missingFields.length > 0) {
+            validationErrors.push({
+              row: index + 1,
+              message: `다음 필드가 누락되었습니다: ${missingFields.join(
+                ", "
+              )}`,
+              item,
+            });
+          } else {
+            validData.push(item);
+          }
+        });
+
+        // 검증 실패 시 처리
+        if (validationErrors.length > 0) {
+          const result = {
+            success: 0,
+            error: validationErrors.length,
+            total: data.length,
+            errors: validationErrors,
+          };
+
+          setImportResult(result);
+          showError(
+            `${validationErrors.length}개 항목이 필수 필드 검증에 실패했습니다.`
+          );
+          setIsImporting(false);
+          return;
+        }
+
+        // 진행 상황을 표시하기 위한 상태
+        const result = {
+          success: 0,
+          error: 0,
+          total: validData.length,
+          errors: [],
+          processingIndex: 0,
+          isProcessing: true,
+        };
+
+        // 초기 진행 상태 설정
+        setImportResult(result);
+
+        // 배치 크기 설정 (한 번에 처리할 데이터 수)
+        const BATCH_SIZE = 50;
+
+        // 배치 단위로 처리
+        for (let i = 0; i < validData.length; i += BATCH_SIZE) {
+          // 현재 배치의 데이터
+          const batch = validData.slice(i, i + BATCH_SIZE);
+
+          // 배치 내의 항목을 병렬 처리하기 위한 Promise 배열
+          const promises = batch.map(async (item, batchIndex) => {
+            try {
+              // 데이터 형식 변환 (비어있는 값 허용)
+              const instructionData = {
+                orderId: item.orderId !== undefined ? item.orderId : 0,
+                orderNumber: item.orderNumber || "",
+                name: item.name || "",
+                orderDate:
+                  item.orderDate || new Date().toISOString().split("T")[0],
+                manager: item.manager || "",
+                delegator: item.delegator || "",
+                channel: item.channel || "전화",
+                district: item.district || "",
+                dong: item.dong || "",
+                lotNumber: item.lotNumber || "",
+                detailAddress: item.detailAddress || "",
+                structure: item.structure || "",
+                memo: item.memo || "",
+                status: "접수",
+                round: item.round !== undefined ? parseInt(item.round, 10) : 1,
+              };
+
+              // API 호출
+              await createInstructionMutation.mutateAsync(instructionData);
+              return { success: true };
+            } catch (error) {
+              console.error("지시 등록 실패:", error, item);
+              return {
+                success: false,
+                error,
+                item,
+                index: i + batchIndex,
+              };
+            }
+          });
+
+          // 현재 배치 처리 결과
+          const batchResults = await Promise.all(promises);
+
+          // 결과 집계
+          batchResults.forEach((res, idx) => {
+            if (res.success) {
+              result.success++;
+            } else {
+              result.error++;
+              result.errors.push({
+                row: res.index + 1,
+                item: res.item,
+                message: res.error.message || "처리 중 오류가 발생했습니다.",
+              });
+            }
+          });
+
+          // 진행 상황 업데이트
+          result.processingIndex = i + batch.length;
+          setImportResult({ ...result });
+
+          // 진행 상황 로깅
+          console.log(
+            `처리 중: ${result.processingIndex}/${result.total} 항목 (성공: ${result.success}, 실패: ${result.error})`
+          );
+
+          // 서버 부하 방지를 위한 지연
+          await new Promise((resolve) => setTimeout(resolve, 300));
+        }
+
+        // 최종 결과 저장
+        result.isProcessing = false;
+        setImportResult({ ...result });
+
+        if (result.success > 0) {
+          showSuccess(
+            `${result.success}개의 지시가 성공적으로 등록되었습니다.`
+          );
+          refetch(); // 목록 새로고침
+        }
+
+        // 업로드 완료 후 파일 초기화
+        setImportFile(null);
+      } catch (error) {
+        console.error("파일 가져오기 오류:", error);
+        showError("파일 처리 중 오류가 발생했습니다: " + error.message);
+      } finally {
+        setIsImporting(false);
+      }
     }
-    setShowImportModal(false);
-    setImportFile(null);
   };
 
   const handleExportSubmit = () => {
@@ -444,6 +649,11 @@ const InstructionList = () => {
       header: "수정자",
       cell: ({ row }) => truncateText(row.getValue("modifier") || "-", 10),
     },
+    {
+      accessorKey: "memo",
+      header: "비고",
+      cell: ({ row }) => truncateText(row.getValue("memo"), 30),
+    },
   ];
 
   // 날짜 포맷팅 유틸리티 함수
@@ -512,14 +722,6 @@ const InstructionList = () => {
     })),
   ];
 
-  const searchTypeOptions = [
-    { value: "all", label: "전체 검색" },
-    { value: "dong", label: "동 검색" },
-    { value: "lotNumber", label: "지번 검색" },
-  ];
-
-  const dateFieldOptions = [{ value: "orderDate", label: "지시일자" }];
-
   const columnOptions = allColumns.map((column) => ({
     value: column.accessorKey,
     label: column.header,
@@ -545,6 +747,7 @@ const InstructionList = () => {
         "name",
         "status",
         "round",
+        "memo",
       ],
     },
     {
@@ -561,12 +764,6 @@ const InstructionList = () => {
   const handleStatusChange = (e) => {
     const { value } = e.target;
     setFilters((prev) => ({ ...prev, status: value }));
-    // 즉시 API 호출하지 않고 필터 상태만 변경
-    // setFilterParams((prev) => ({
-    //   ...prev,
-    //   status: value,
-    //   page: 1, // 필터 변경 시 첫 페이지로 돌아가기
-    // }));
   };
 
   // 커스텀 페이지네이션 컴포넌트
@@ -696,16 +893,6 @@ const InstructionList = () => {
     });
   };
 
-  // 관리자 옵션 - 실제 데이터에서 동적으로 생성한다면 더 좋을 것입니다
-  const managerOptions = [
-    { value: "", label: "모든 관리자" },
-    { value: "강태석", label: "강태석" },
-    { value: "이오수", label: "이오수" },
-    { value: "김인득", label: "김인득" },
-    { value: "서종호", label: "서종호" },
-    { value: "김기영", label: "김기영" },
-  ];
-
   // 날짜 범위 선택 핸들러
   const handleDateRangeChange = (dates) => {
     const [start, end] = dates;
@@ -729,6 +916,14 @@ const InstructionList = () => {
             지시 목록
           </h1>
           <div className="flex space-x-2">
+            <FormButton
+              variant="outline"
+              onClick={handleImportClick}
+              className="flex items-center h-9"
+            >
+              <FileUp className="w-4 h-4 mr-1" />
+              일괄등록
+            </FormButton>
             <FormButton
               variant="primary"
               onClick={handleAddClick}
@@ -942,16 +1137,17 @@ const InstructionList = () => {
       {/* 가져오기 모달 */}
       {showImportModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-xl">
+          <div className="w-full max-w-2xl p-6 bg-white rounded-lg shadow-xl">
             <div className="flex items-center justify-between mb-4">
               <h2 className="flex items-center text-xl font-semibold">
                 <FileUp className="w-5 h-5 mr-2 text-blue-600" />
-                지시 데이터 가져오기
+                지시 데이터 일괄등록
               </h2>
               <button
                 onClick={() => {
                   setShowImportModal(false);
                   setImportFile(null);
+                  setImportResult(null);
                 }}
                 className="text-gray-500 hover:text-gray-700"
               >
@@ -964,23 +1160,25 @@ const InstructionList = () => {
                 지시 데이터가 포함된 Excel, CSV 또는 JSON 파일을 선택하세요.
               </p>
 
-              <div className="p-8 text-center border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
-                <input
-                  type="file"
-                  id="file-upload"
-                  className="hidden"
-                  accept=".xlsx,.xls,.csv,.json"
-                  onChange={handleFileChange}
-                />
-                <label htmlFor="file-upload" className="cursor-pointer">
-                  <Upload className="w-12 h-12 mx-auto text-gray-400" />
-                  <p className="mt-2 text-sm text-gray-500">
-                    파일을 끌어다 놓거나 클릭하여 업로드
-                  </p>
-                </label>
-              </div>
+              {!importResult && (
+                <div className="p-8 text-center border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50">
+                  <input
+                    type="file"
+                    id="file-upload"
+                    className="hidden"
+                    accept=".xlsx,.xls,.csv,.json"
+                    onChange={handleFileChange}
+                  />
+                  <label htmlFor="file-upload" className="cursor-pointer">
+                    <Upload className="w-12 h-12 mx-auto text-gray-400" />
+                    <p className="mt-2 text-sm text-gray-500">
+                      파일을 끌어다 놓거나 클릭하여 업로드
+                    </p>
+                  </label>
+                </div>
+              )}
 
-              {importFile && (
+              {importFile && !importResult && (
                 <div className="flex items-center p-2 mt-2 rounded bg-blue-50">
                   <div className="flex items-center justify-center w-8 h-8 mr-2 bg-blue-100 rounded-full">
                     <FileUp className="w-4 h-4 text-blue-600" />
@@ -1001,6 +1199,90 @@ const InstructionList = () => {
                   </button>
                 </div>
               )}
+
+              {importResult && (
+                <div className="mt-4">
+                  <div className="flex mb-4 space-x-4">
+                    <div className="flex-1 p-2 text-center bg-gray-100 rounded">
+                      <div className="text-lg font-semibold">
+                        {importResult.total}
+                      </div>
+                      <div className="text-xs text-gray-500">총 항목</div>
+                    </div>
+                    <div className="flex-1 p-2 text-center bg-green-100 rounded">
+                      <div className="text-lg font-semibold text-green-700">
+                        {importResult.success}
+                      </div>
+                      <div className="text-xs text-green-700">성공</div>
+                    </div>
+                    <div className="flex-1 p-2 text-center bg-red-100 rounded">
+                      <div className="text-lg font-semibold text-red-700">
+                        {importResult.error}
+                      </div>
+                      <div className="text-xs text-red-700">실패</div>
+                    </div>
+                  </div>
+
+                  {/* 진행 상황 표시 */}
+                  {importResult.isProcessing && (
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm font-medium text-gray-700">
+                          처리 중... {importResult.processingIndex}/
+                          {importResult.total} 항목
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {Math.round(
+                            (importResult.processingIndex /
+                              importResult.total) *
+                              100
+                          )}
+                          %
+                        </div>
+                      </div>
+                      <div className="w-full h-2 overflow-hidden bg-gray-200 rounded-full">
+                        <div
+                          className="h-full bg-blue-600 rounded-full"
+                          style={{
+                            width: `${
+                              (importResult.processingIndex /
+                                importResult.total) *
+                              100
+                            }%`,
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  )}
+
+                  {importResult.errors.length > 0 && (
+                    <div className="mt-4 overflow-hidden border rounded">
+                      <div className="p-2 font-medium bg-gray-100">
+                        오류 내역
+                      </div>
+                      <div className="p-2 overflow-y-auto max-h-48">
+                        {importResult.errors.map((error, index) => (
+                          <div
+                            key={index}
+                            className="mb-1 text-sm text-red-600"
+                          >
+                            행 {error.row}:{" "}
+                            {error.message || "처리 중 오류가 발생했습니다."}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="p-3 mt-4 border border-blue-200 rounded bg-blue-50">
+                    <p className="text-sm text-blue-800">
+                      {importResult.isProcessing
+                        ? "데이터 처리 중입니다. 완료될 때까지 기다려주세요."
+                        : "파일 업로드를 다시 시도하려면 아래의 다시 시도 버튼을 클릭하세요."}
+                    </p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end space-x-2">
@@ -1009,91 +1291,33 @@ const InstructionList = () => {
                 onClick={() => {
                   setShowImportModal(false);
                   setImportFile(null);
+                  setImportResult(null);
                 }}
               >
-                취소
+                {importResult ? "닫기" : "취소"}
               </FormButton>
-              <FormButton
-                variant="primary"
-                onClick={handleImportSubmit}
-                disabled={!importFile}
-              >
-                가져오기
-              </FormButton>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 내보내기 모달 */}
-      {showExportModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-xl">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="flex items-center text-xl font-semibold">
-                <FileDown className="w-5 h-5 mr-2 text-blue-600" />
-                지시 데이터 내보내기
-              </h2>
-              <button
-                onClick={() => setShowExportModal(false)}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="mb-4">
-              <p className="mb-4 text-sm text-gray-600">
-                내보내기 형식을 선택하세요:
-              </p>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div
-                  className={`border rounded-lg p-4 text-center cursor-pointer transition ${
-                    exportFormat === "excel"
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                  onClick={() => setExportFormat("excel")}
+              {!importResult && (
+                <FormButton
+                  variant="primary"
+                  onClick={handleImportSubmit}
+                  disabled={!importFile || isImporting}
+                  loading={isImporting}
                 >
-                  <Download className="w-8 h-8 mx-auto text-blue-500" />
-                  <p className="mt-2 text-sm font-medium">Excel</p>
-                </div>
-                <div
-                  className={`border rounded-lg p-4 text-center cursor-pointer transition ${
-                    exportFormat === "csv"
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                  onClick={() => setExportFormat("csv")}
+                  {isImporting ? "가져오는 중..." : "가져오기"}
+                </FormButton>
+              )}
+              {importResult && (
+                <FormButton
+                  variant="primary"
+                  onClick={() => {
+                    setImportFile(null);
+                    setImportResult(null);
+                  }}
+                  disabled={importResult.isProcessing}
                 >
-                  <Download className="w-8 h-8 mx-auto text-green-500" />
-                  <p className="mt-2 text-sm font-medium">CSV</p>
-                </div>
-                <div
-                  className={`border rounded-lg p-4 text-center cursor-pointer transition ${
-                    exportFormat === "json"
-                      ? "border-blue-500 bg-blue-50"
-                      : "border-gray-200 hover:border-gray-300"
-                  }`}
-                  onClick={() => setExportFormat("json")}
-                >
-                  <Download className="w-8 h-8 mx-auto text-purple-500" />
-                  <p className="mt-2 text-sm font-medium">JSON</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <FormButton
-                variant="outline"
-                onClick={() => setShowExportModal(false)}
-              >
-                취소
-              </FormButton>
-              <FormButton variant="primary" onClick={handleExportSubmit}>
-                내보내기
-              </FormButton>
+                  {importResult.isProcessing ? "처리 중..." : "다시 시도"}
+                </FormButton>
+              )}
             </div>
           </div>
         </div>
