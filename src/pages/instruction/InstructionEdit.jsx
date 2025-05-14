@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   useInstruction,
   useUpdateInstruction,
+  useAllProcesses,
 } from "../../lib/api/instructionQueries";
 import {
   FormButton,
@@ -29,6 +30,9 @@ const InstructionEdit = () => {
   const navigate = useNavigate();
   const { data: response, isLoading, error } = useInstruction(id);
   const updateInstructionMutation = useUpdateInstruction();
+  const { data: processesData, isLoading: processesLoading } = useAllProcesses({
+    size: 100,
+  });
 
   const [formData, setFormData] = useState({
     orderId: 0,
@@ -45,7 +49,7 @@ const InstructionEdit = () => {
     structure: "",
     memo: "",
     status: "접수",
-    round: 0,
+    processId: "",
     contact1: "",
     contact2: "",
     contact3: "",
@@ -54,26 +58,29 @@ const InstructionEdit = () => {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (response) {
+    if (response && response.data) {
+      const instruction = response.data;
       setFormData({
-        orderId: response.orderId || 0,
-        orderNumber: response.orderNumber || "",
-        orderDate: response.orderDate || "",
-        name: response.name || "",
-        manager: response.manager || "",
-        delegator: response.delegator || "",
-        channel: response.channel || "전화",
-        district: response.district || "",
-        dong: response.dong || "",
-        lotNumber: response.lotNumber || "",
-        detailAddress: response.detailAddress || "",
-        structure: response.structure || "",
-        memo: response.memo || "",
-        status: response.status || "접수",
-        round: response.round || 0,
-        contact1: response.contact1 || "",
-        contact2: response.contact2 || "",
-        contact3: response.contact3 || "",
+        orderId: instruction.orderId || 0,
+        orderNumber: instruction.orderNumber || "",
+        orderDate: instruction.orderDate || "",
+        name: instruction.name || "",
+        manager: instruction.manager || "",
+        delegator: instruction.delegator || "",
+        channel: instruction.channel || "전화",
+        district: instruction.district || "",
+        dong: instruction.dong || "",
+        lotNumber: instruction.lotNumber || "",
+        detailAddress: instruction.detailAddress || "",
+        structure: instruction.structure || "",
+        memo: instruction.memo || "",
+        status: instruction.status || "접수",
+        processId: instruction.processId
+          ? instruction.processId.toString()
+          : "",
+        contact1: instruction.contact1 || "",
+        contact2: instruction.contact2 || "",
+        contact3: instruction.contact3 || "",
       });
     }
   }, [response]);
@@ -129,7 +136,7 @@ const InstructionEdit = () => {
         structure: formData.structure,
         memo: formData.memo,
         status: formData.status,
-        round: formData.round,
+        processId: formData.processId ? Number(formData.processId) : null,
         contact1: formData.contact1,
         contact2: formData.contact2,
         contact3: formData.contact3,
@@ -152,6 +159,19 @@ const InstructionEdit = () => {
   const handleCancel = () => {
     navigate(`/instructions/${id}`);
   };
+
+  // 공종 목록 가공
+  const processOptions =
+    processesData?.processes?.map((process) => ({
+      value: process.id.toString(),
+      label: process.name,
+    })) || [];
+
+  // 공종 선택 옵션에 빈 값 추가
+  const processSelectOptions = [
+    { value: "", label: "공종 선택" },
+    ...processOptions,
+  ];
 
   if (isLoading) {
     return <Loading />;
@@ -226,14 +246,14 @@ const InstructionEdit = () => {
               />
             </div>
             <div>
-              <FormInput
-                id="round"
-                name="round"
-                label="회차"
-                type="number"
-                min="1"
-                value={formData.round}
+              <FormSelect
+                id="processId"
+                name="processId"
+                label="공종"
+                value={formData.processId}
                 onChange={handleChange}
+                options={processSelectOptions}
+                isLoading={processesLoading}
               />
             </div>
           </div>

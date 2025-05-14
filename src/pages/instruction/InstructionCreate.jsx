@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCreateInstruction } from "../../lib/api/instructionQueries";
+import {
+  useCreateInstruction,
+  useAllProcesses,
+} from "../../lib/api/instructionQueries";
 import {
   FormButton,
   FormInput,
@@ -29,6 +32,9 @@ const CHANNEL_OPTIONS = [
 const InstructionCreate = () => {
   const navigate = useNavigate();
   const createInstructionMutation = useCreateInstruction();
+  const { data: processesData, isLoading: processesLoading } = useAllProcesses({
+    size: 100,
+  });
 
   // 오늘 날짜 YYYY-MM-DD 형식으로 가져오기
   const today = new Date().toISOString().split("T")[0];
@@ -47,7 +53,7 @@ const InstructionCreate = () => {
     detailAddress: "",
     structure: "",
     memo: "",
-    round: 1,
+    processId: "",
     contact1: "",
     contact2: "",
     contact3: "",
@@ -106,7 +112,7 @@ const InstructionCreate = () => {
         structure: formData.structure,
         memo: formData.memo,
         status: "접수", // 기본 상태
-        round: formData.round,
+        processId: formData.processId ? Number(formData.processId) : null,
         contact1: formData.contact1,
         contact2: formData.contact2,
         contact3: formData.contact3,
@@ -126,6 +132,19 @@ const InstructionCreate = () => {
   const handleCancel = () => {
     navigate("/instructions");
   };
+
+  // 공종 목록 가공
+  const processOptions =
+    processesData?.processes?.map((process) => ({
+      value: process.id.toString(),
+      label: process.name,
+    })) || [];
+
+  // 공종 선택 옵션에 빈 값 추가
+  const processSelectOptions = [
+    { value: "", label: "공종 선택" },
+    ...processOptions,
+  ];
 
   return (
     <div className="mx-auto px-4 py-6">
@@ -177,14 +196,14 @@ const InstructionCreate = () => {
               />
             </div>
             <div>
-              <FormInput
-                id="round"
-                name="round"
-                label="회차"
-                type="number"
-                min="1"
-                value={formData.round}
+              <FormSelect
+                id="processId"
+                name="processId"
+                label="공종"
+                value={formData.processId}
                 onChange={handleChange}
+                options={processSelectOptions}
+                isLoading={processesLoading}
               />
             </div>
           </div>

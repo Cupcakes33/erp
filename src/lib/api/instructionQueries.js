@@ -19,7 +19,8 @@ import {
   updateTask,
   deleteTask,
   fetchUnitPrices,
-  fetchInstructionDetail
+  fetchInstructionDetail,
+  fetchAllProcesses
 } from './instructionAPI'
 import React from 'react'
 
@@ -277,6 +278,35 @@ export const useProcess = (id) => {
     select: (data) => {
       // API 응답 형식에 맞게 데이터 변환
       return data.data;
+    }
+  });
+};
+
+/**
+ * 모든 공종 목록을 조회하는 React Query 훅
+ * @param {Object} params 페이징 파라미터
+ * @returns {UseQueryResult} 쿼리 결과
+ */
+export const useAllProcesses = (params = {}) => {
+  return useQuery({
+    queryKey: ['allProcesses', params],
+    queryFn: () => fetchAllProcesses(params),
+    select: (data) => {
+      // API 응답 형식에 맞게 데이터 변환
+      const content = data?.data?.content || [];
+      
+      // API가 0부터 시작하는 페이지 인덱스를 사용하므로 UI에서는 1부터 시작하도록 변환
+      const currentPage = (data?.data?.currentPage ?? 0) + 1;
+      
+      return {
+        processes: content,
+        totalCount: data?.data?.totalElements || 0,
+        totalPage: data?.data?.totalPages || 0, 
+        currentPage: currentPage,
+        size: data?.data?.size || 20,
+        hasNext: data?.data?.hasNext || false,
+        hasPrevious: data?.data?.hasPrevious || false
+      };
     }
   });
 };
