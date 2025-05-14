@@ -424,7 +424,13 @@ const InstructionDetail = () => {
           />
         );
       case "processes":
-        return <ProcessesTab instructionId={id} />;
+        return (
+          <ProcessesTab
+            instructionId={id}
+            instruction={instruction}
+            canEdit={canEdit}
+          />
+        );
     }
   };
 
@@ -446,7 +452,7 @@ const InstructionDetail = () => {
               <FileText className="w-6 h-6 mr-2 text-blue-600" />
               {instruction?.name}
               {isEnded && (
-                <span className="ml-3 px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                <span className="px-2 py-1 ml-3 text-xs font-medium text-purple-800 bg-purple-100 rounded-full">
                   종료됨
                 </span>
               )}
@@ -627,7 +633,7 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
 
       <div className="space-y-6">
         {isEnded && (
-          <div className="p-4 rounded-lg bg-purple-50 border border-purple-200">
+          <div className="p-4 border border-purple-200 rounded-lg bg-purple-50">
             <h3 className="flex items-center mb-2 font-medium text-purple-800 text-md">
               <CheckCircle className="w-5 h-5 mr-2 text-purple-600" />이 지시는
               종료 처리되었습니다
@@ -766,7 +772,7 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
 };
 
 // 공종 탭 컴포넌트
-const ProcessesTab = ({ instructionId }) => {
+const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
   const navigate = useNavigate();
   const [showProcessModal, setShowProcessModal] = useState(false);
   const [editingProcess, setEditingProcess] = useState(null);
@@ -1316,14 +1322,16 @@ const ProcessesTab = ({ instructionId }) => {
           <Layout className="w-5 h-5 mr-2 text-blue-600" />
           공종 목록
         </h2>
-        <FormButton
-          variant="primary"
-          size="sm"
-          onClick={handleAddProcess}
-          className="flex items-center px-4 py-2"
-        >
-          공종 추가
-        </FormButton>
+        {canEdit && (
+          <FormButton
+            variant="primary"
+            size="sm"
+            onClick={handleAddProcess}
+            className="flex items-center px-4 py-2"
+          >
+            공종 추가
+          </FormButton>
+        )}
       </div>
 
       {/* 공종 필터링 UI 추가 */}
@@ -1363,7 +1371,11 @@ const ProcessesTab = ({ instructionId }) => {
       </div>
 
       <DataTable
-        columns={processColumns}
+        columns={
+          canEdit
+            ? processColumns
+            : processColumns.filter((col) => col.id !== "actions")
+        }
         data={filteredProcesses}
         isLoading={isLoading}
         emptyMessage="등록된 공종이 없습니다. 위의 '공종 추가' 버튼을 클릭하여 새 공종을 추가하세요."
@@ -1378,14 +1390,16 @@ const ProcessesTab = ({ instructionId }) => {
             <Layout className="w-5 h-5 mr-2 text-indigo-600" />
             작업 목록
           </h2>
-          <FormButton
-            variant="primary"
-            size="sm"
-            onClick={handleAddTask}
-            className="flex items-center px-4 py-2"
-          >
-            작업 추가
-          </FormButton>
+          {canEdit && (
+            <FormButton
+              variant="primary"
+              size="sm"
+              onClick={handleAddTask}
+              className="flex items-center px-4 py-2"
+            >
+              작업 추가
+            </FormButton>
+          )}
         </div>
 
         {/* 작업 필터 추가 */}
@@ -1420,7 +1434,11 @@ const ProcessesTab = ({ instructionId }) => {
         ) : hasTasks ? (
           <>
             <DataTable
-              columns={allTasksColumns}
+              columns={
+                canEdit
+                  ? allTasksColumns
+                  : allTasksColumns.filter((col) => col.id !== "actions")
+              }
               data={filteredTasks}
               isLoading={isAllTasksLoading}
               emptyMessage="등록된 작업이 없습니다. '작업 추가' 버튼을 클릭하여 새 작업을 추가하세요."
