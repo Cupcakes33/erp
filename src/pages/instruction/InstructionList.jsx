@@ -12,6 +12,7 @@ import {
   FormSelect,
   showSuccess,
   showError,
+  showWarning,
   ImportModal,
   FileImportService,
 } from "../../components/molecules";
@@ -40,6 +41,15 @@ import {
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { excelUtils } from "../../lib/utils/excelUtils";
+import {
+  fetchInstructions,
+  createInstruction,
+  updateInstruction,
+  deleteInstruction,
+  toggleInstructionFavorite,
+  updateInstructionStatus,
+  uploadCsvBulkInstructions,
+} from "../../lib/api/instructionAPI";
 
 // DatePicker 스타일 오버라이드를 위한 CSS 추가
 const customDatePickerStyle = `
@@ -280,38 +290,19 @@ const InstructionList = () => {
     setIsImporting(true);
 
     try {
-      // 파일 파싱
-      const data = await FileImportService.parseFile(file);
-
-      // 데이터 검증 - 필수 필드는 name만 설정
-      const {
-        isValid,
-        validData,
-        errors: validationErrors,
-      } = FileImportService.validateData(data, ["name"]);
-
-      if (!isValid) {
-        // 검증 실패 시 에러 표시
-        const result = {
-          success: 0,
-          error: validationErrors.length,
-          total: data.length,
-          errors: validationErrors,
-        };
-
-        setImportResult(result);
-        showError(
-          `${validationErrors.length}개 항목이 필수 필드 검증에 실패했습니다.`
-        );
+      // CSV 파일 확인
+      if (!FileImportService.isCsvFile(file)) {
+        // CSV 파일이 아닌 경우 에러 표시
+        showError("파일 형식 오류", "올바른 CSV 파일을 업로드해주세요.");
         setIsImporting(false);
         return;
       }
 
-      // 진행 상황을 표시하기 위한 상태
+      // 진행 상황을 표시하기 위한 상태 (초기화)
       const result = {
         success: 0,
         error: 0,
-        total: validData.length,
+        total: 0,
         errors: [],
         processingIndex: 0,
         isProcessing: true,
@@ -320,72 +311,52 @@ const InstructionList = () => {
       // 초기 진행 상태 설정
       setImportResult(result);
 
-      // 배치 크기 설정 (한 번에 처리할 데이터 수)
-      const BATCH_SIZE = 50;
+      try {
+        // CSV 파일을 직접 백엔드로 전송
+        const response = await uploadCsvBulkInstructions(file);
 
-      // 배치 단위로 처리
-      for (let i = 0; i < validData.length; i += BATCH_SIZE) {
-        // 현재 배치의 데이터
-        const batch = validData.slice(i, i + BATCH_SIZE);
+        // 응답 결과 처리
+        const apiResult = response.data || {};
 
-        // 배치 내의 항목을 병렬 처리하기 위한 Promise 배열
-        const promises = batch.map(async (item, batchIndex) => {
-          try {
-            // 데이터 형식 변환
-            const instructionData =
-              FileImportService.formatInstructionData(item);
+        // 결과 상태 업데이트
+        const updatedResult = {
+          success: apiResult.success || 0,
+          error: apiResult.error || 0,
+          total: apiResult.total || 0,
+          errors: apiResult.errors || [],
+          processingIndex: apiResult.total || 0,
+          isProcessing: false,
+        };
 
-            // API 호출
-            await createInstructionMutation.mutateAsync(instructionData);
-            return { success: true };
-          } catch (error) {
-            console.error("지시 등록 실패:", error, item);
-            return {
-              success: false,
-              error,
-              item,
-              index: i + batchIndex,
-            };
-          }
-        });
+        setImportResult(updatedResult);
 
-        // 현재 배치 처리 결과
-        const batchResults = await Promise.all(promises);
+        if (updatedResult.success > 0) {
+          showSuccess(
+            `${updatedResult.success}개의 지시가 성공적으로 등록되었습니다.`
+          );
+          refetch(); // 목록 새로고침
+        }
 
-        // 결과 집계
-        batchResults.forEach((res, idx) => {
-          if (res.success) {
-            result.success++;
-          } else {
-            result.error++;
-            result.errors.push({
-              row: res.index + 1,
-              item: res.item,
-              message: res.error.message || "처리 중 오류가 발생했습니다.",
-            });
-          }
-        });
+        if (updatedResult.error > 0) {
+          showWarning(`${updatedResult.error}개 항목이 등록에 실패했습니다.`);
+        }
+      } catch (error) {
+        console.error("CSV 일괄 등록 실패:", error);
 
-        // 진행 상황 업데이트
-        result.processingIndex = i + batch.length;
-        setImportResult({ ...result });
+        // 에러 결과 업데이트
+        const errorResult = {
+          success: 0,
+          error: 1,
+          total: 1,
+          errors: [
+            { message: error.message || "서버 처리 중 오류가 발생했습니다." },
+          ],
+          processingIndex: 1,
+          isProcessing: false,
+        };
 
-        // 진행 상황 로깅
-        console.log(
-          `처리 중: ${result.processingIndex}/${result.total} 항목 (성공: ${result.success}, 실패: ${result.error})`
-        );
-
-        // 서버 부하 방지를 위한 지연
-        await new Promise((resolve) => setTimeout(resolve, 300));
-      }
-
-      // 최종 결과 저장
-      result.isProcessing = false;
-      setImportResult({ ...result });
-
-      if (result.success > 0) {
-        showSuccess(`${result.success}개의 지시가 성공적으로 등록되었습니다.`);
-        refetch(); // 목록 새로고침
+        setImportResult(errorResult);
+        showError("CSV 파일 처리 중 오류가 발생했습니다.");
       }
     } catch (error) {
       console.error("파일 처리 오류:", error);

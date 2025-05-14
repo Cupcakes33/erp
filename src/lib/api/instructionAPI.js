@@ -466,3 +466,29 @@ export const fetchUnitPrices = async (params = {}) => {
     throw error;
   }
 }
+
+/**
+ * CSV 파일을 이용한 지시 일괄 등록 API
+ * @param {File} csvFile CSV 파일
+ * @returns {Promise<Object>} 일괄 등록 결과
+ */
+export const uploadCsvBulkInstructions = async (csvFile) => {
+  try {
+    // FormData 객체 생성
+    const formData = new FormData();
+    formData.append('file', csvFile);
+    
+    // 파일 전송 요청 헤더
+    const config = {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    };
+    
+    const response = await api.post(`${API_URL}/instruction/bulk-upload`, formData, config);
+    return response.data;
+  } catch (error) {
+    console.error('CSV 파일 일괄 등록 실패:', error);
+    throw error;
+  }
+}

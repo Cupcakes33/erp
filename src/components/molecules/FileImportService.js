@@ -59,6 +59,18 @@ export class FileImportService {
   }
 
   /**
+   * 파일이 CSV 형식인지 확인
+   * @param {File} file - 확인할 파일
+   * @returns {boolean} - CSV 파일 여부
+   */
+  static isCsvFile(file) {
+    if (!file) return false;
+    
+    const fileExtension = file.name.split(".").pop().toLowerCase();
+    return fileExtension === "csv";
+  }
+
+  /**
    * 파일을 텍스트로 읽는 유틸리티 함수
    * @param {File} file - 읽을 파일
    * @returns {Promise<string>} - 파일 내용

@@ -65,7 +65,7 @@ const ImportModal = ({
 
         <div className="mb-4">
           <p className="mb-2 text-sm text-gray-600">
-            지시 데이터가 포함된 Excel, CSV 또는 JSON 파일을 선택하세요.
+            지시 데이터가 포함된 CSV 파일을 선택하세요.
           </p>
 
           {!importResult && (
@@ -74,13 +74,13 @@ const ImportModal = ({
                 type="file"
                 id="file-upload"
                 className="hidden"
-                accept=".xlsx,.xls,.csv,.json"
+                accept=".csv"
                 onChange={handleFileChange}
               />
               <label htmlFor="file-upload" className="cursor-pointer">
                 <Upload className="w-12 h-12 mx-auto text-gray-400" />
                 <p className="mt-2 text-sm text-gray-500">
-                  파일을 끌어다 놓거나 클릭하여 업로드
+                  CSV 파일을 끌어다 놓거나 클릭하여 업로드
                 </p>
               </label>
             </div>
@@ -175,7 +175,7 @@ const ImportModal = ({
                 </div>
               )}
 
-              <div className="mt-4 p-3 bg-blue-50 rounded border border-blue-200">
+              <div className="p-3 mt-4 border border-blue-200 rounded bg-blue-50">
                 <p className="text-sm text-blue-800">
                   {importResult.isProcessing
                     ? "데이터 처리 중입니다. 완료될 때까지 기다려주세요."
