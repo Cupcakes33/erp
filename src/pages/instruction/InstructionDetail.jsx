@@ -701,6 +701,10 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
             <p className="font-medium">{instruction?.orderNumber}</p>
           </div>
           <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">지시ID</p>
+            <p className="font-medium">{instruction?.orderId || "-"}</p>
+          </div>
+          <div className="space-y-1">
             <p className="text-sm font-medium text-gray-500">지시일자</p>
             <p className="font-medium">{formatDate(instruction?.orderDate)}</p>
           </div>

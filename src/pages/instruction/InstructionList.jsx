@@ -193,6 +193,7 @@ const InstructionList = () => {
   // 테이블에 표시할 컬럼 선택 상태 (새로운 필드 추가)
   const [visibleColumns, setVisibleColumns] = useState([
     "id",
+    "orderId",
     "orderNumber",
     "name",
     "status",
@@ -457,7 +458,7 @@ const InstructionList = () => {
     },
     {
       accessorKey: "orderId",
-      header: "주문 ID",
+      header: "지시ID",
     },
     {
       accessorKey: "orderNumber",

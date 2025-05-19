@@ -237,6 +237,17 @@ const InstructionEdit = () => {
           <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
             <div>
               <FormInput
+                id="orderId"
+                name="orderId"
+                label="지시ID"
+                placeholder="지시ID를 입력하세요"
+                value={formData.orderId}
+                onChange={handleChange}
+                type="number"
+              />
+            </div>
+            <div>
+              <FormInput
                 id="orderDate"
                 name="orderDate"
                 label="지시일자"
@@ -245,6 +256,9 @@ const InstructionEdit = () => {
                 onChange={handleChange}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
             <div>
               <FormSelect
                 id="processId"
