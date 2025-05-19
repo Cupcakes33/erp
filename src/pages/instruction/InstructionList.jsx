@@ -146,6 +146,7 @@ const InstructionList = () => {
       status: "",
       manager: "",
       name: "",
+      branchName: "",
       startDate: null,
       endDate: null,
       searchType: "all",
@@ -163,6 +164,7 @@ const InstructionList = () => {
       // 날짜 객체는 문자열로 변환하여 저장
       const filtersToSave = {
         ...filters,
+        branchName: filters.branchName || "",
         startDate: filters.startDate ? filters.startDate.toISOString() : null,
         endDate: filters.endDate ? filters.endDate.toISOString() : null,
       };
@@ -180,6 +182,7 @@ const InstructionList = () => {
       filters.status ||
       filters.manager ||
       filters.name ||
+      filters.branchName ||
       filters.startDate ||
       filters.endDate
     ) {
@@ -221,6 +224,7 @@ const InstructionList = () => {
       status: filters.status || "",
       name: filters.name || "",
       manager: filters.manager || "",
+      branchName: filters.branchName || "",
     };
 
     // 날짜 범위 필터 처리
@@ -751,6 +755,7 @@ const InstructionList = () => {
       status: "",
       manager: "",
       name: "",
+      branchName: "",
       startDate: null,
       endDate: null,
       searchType: "all",
@@ -772,6 +777,7 @@ const InstructionList = () => {
       manager: "",
       startDate: "",
       endDate: "",
+      branchName: "",
       page: 1,
     });
   };
@@ -821,6 +827,28 @@ const InstructionList = () => {
         {/* 새로운 간소화된 필터 - 한 줄로 배치 */}
         <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
           <div className="flex flex-wrap items-start justify-between w-full gap-4">
+            {/* 지점 필터 */}
+            <div className="flex-1 min-w-[180px]">
+              <label
+                htmlFor="branchName-filter"
+                className="block mb-1 text-xs font-medium text-gray-700"
+              >
+                지점
+              </label>
+              <FormSelect
+                id="branchName-filter"
+                name="branchName"
+                value={filters.branchName}
+                onChange={handleFilterChange}
+                options={[
+                  { value: "1번지점", label: "1번지점" },
+                  { value: "2번지점", label: "2번지점" },
+                ]}
+                className="h-10 py-0 text-sm"
+                fullWidth={true}
+              />
+            </div>
+
             {/* 제목 필터 */}
             <div className="flex-1 min-w-[180px]">
               <label className="block mb-1 text-xs font-medium text-gray-700">

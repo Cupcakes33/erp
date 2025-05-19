@@ -15,7 +15,7 @@ const FormSelect = ({
   options = [],
   value,
   onChange,
-  placeholder = "선택하세요",
+  placeholder = "전체",
   error,
   disabled = false,
   required = false,
@@ -24,11 +24,11 @@ const FormSelect = ({
   ...props
 }) => {
   return (
-    <div className={`mb-4 ${fullWidth ? "w-full" : ""}`}>
+    <div className={`${fullWidth ? "w-full" : ""}`}>
       {label && (
-        <Label htmlFor={id} className="mb-1 block">
+        <Label htmlFor={id} className="block mb-1">
           {label}
-          {required && <span className="text-red-500 ml-1">*</span>}
+          {required && <span className="ml-1 text-red-500">*</span>}
         </Label>
       )}
 
@@ -65,7 +65,7 @@ const FormSelect = ({
         </select>
 
         <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
-          <ChevronDown className="h-4 w-4 text-gray-400" />
+          <ChevronDown className="w-4 h-4 text-gray-400" />
         </div>
       </div>
 

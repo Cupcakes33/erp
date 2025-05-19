@@ -1,8 +1,5 @@
 import axios from 'axios'
-import api from './index'
-
-// API 기본 URL 설정 (실제 환경에서는 .env 파일에서 가져와야 함)
-const API_URL = import.meta.env.VITE_API_URL || '/api'
+import api from '.'
 
 /**
  * 지시 목록 조회 API
@@ -31,7 +28,7 @@ export const fetchInstructions = async (params = {}) => {
       }
     });
     
-    const response = await api.get(`${API_URL}/instruction`, { params: apiParams });
+    const response = await api.get(`/instruction`, { params: apiParams });
     return response.data;
   } catch (error) {
     console.error('지시 목록 조회 실패:', error);
@@ -46,7 +43,7 @@ export const fetchInstructions = async (params = {}) => {
  */
 export const fetchInstructionById = async (id) => {
   try {
-    const response = await api.get(`${API_URL}/instruction/${id}`);
+    const response = await api.get(`/instruction/${id}`);
     // API 응답이 { data: { 지시객체 }, message: "조회 성공" } 형태로 변경됨
     return response.data;
   } catch (error) {
@@ -75,7 +72,7 @@ export const fetchInstructionDetail = async (id) => {
     const requestId = 2; // id 대신 고정값 사용
     
     // 실제 API 호출
-    const response = await api.get(`${API_URL}/instruction/${requestId}/detail`, { signal });
+    const response = await api.get(`/instruction/${requestId}/detail`, { signal });
     
     // AbortController 반환하여 컴포넌트에서 요청 취소 가능하도록 함
     return {
@@ -113,7 +110,7 @@ export const fetchInstructionDetail = async (id) => {
  */
 export const createInstruction = async (instructionData) => {
   try {
-    const response = await api.post(`${API_URL}/instruction`, instructionData);
+    const response = await api.post(`/instruction`, instructionData);
     return response.data;
   } catch (error) {
     console.error('지시 생성 실패:', error);
@@ -129,7 +126,7 @@ export const createInstruction = async (instructionData) => {
  */
 export const updateInstruction = async (id, instructionData) => {
   try {
-    const response = await api.put(`${API_URL}/instruction/${id}`, instructionData);
+    const response = await api.put(`/instruction/${id}`, instructionData);
     return response.data;
   } catch (error) {
     console.error(`지시 ID ${id} 수정 실패:`, error);
@@ -156,7 +153,7 @@ export const updateInstructionStatus = async (id, statusData) => {
     };
     
     // 업데이트된 데이터로 PUT 요청을 보냅니다
-    const response = await api.put(`${API_URL}/instruction/${id}`, updatedData);
+    const response = await api.put(`/instruction/${id}`, updatedData);
     return response.data;
   } catch (error) {
     console.error(`지시 ID ${id} 상태 변경 실패:`, error);
@@ -171,7 +168,7 @@ export const updateInstructionStatus = async (id, statusData) => {
  */
 export const toggleInstructionFavorite = async (id) => {
   try {
-    const response = await api.post(`${API_URL}/instruction/${id}/favorite`);
+    const response = await api.post(`/instruction/${id}/favorite`);
     return response.data;
   } catch (error) {
     console.error(`지시 ID ${id} 즐겨찾기 토글 실패:`, error);
@@ -186,7 +183,7 @@ export const toggleInstructionFavorite = async (id) => {
  */
 export const deleteInstruction = async (id) => {
   try {
-    const response = await api.delete(`${API_URL}/instruction/${id}`);
+    const response = await api.delete(`/instruction/${id}`);
     return response.data;
   } catch (error) {
     console.error(`지시 ID ${id} 삭제 실패:`, error);
@@ -201,7 +198,7 @@ export const deleteInstruction = async (id) => {
  */
 export const confirmInstruction = async (id) => {
   try {
-    const response = await api.post(`${API_URL}/instruction/${id}/confirm`);
+    const response = await api.post(`/instruction/${id}/confirm`);
     return response.data;
   } catch (error) {
     console.error(`지시 ID ${id} 확정 실패:`, error);
@@ -232,7 +229,7 @@ export const fetchProcessesByInstruction = async (instructionId, params = {}) =>
       }
     });
     
-    const response = await api.get(`${API_URL}/process?instruction=${instructionId}`, { params: apiParams });
+    const response = await api.get(`/process?instruction=${instructionId}`, { params: apiParams });
     return response.data;
   } catch (error) {
     console.error(`지시 ID ${instructionId}의 공종 목록 조회 실패:`, error);
@@ -247,7 +244,7 @@ export const fetchProcessesByInstruction = async (instructionId, params = {}) =>
  */
 export const fetchProcessById = async (id) => {
   try {
-    const response = await api.get(`${API_URL}/process/${id}`);
+    const response = await api.get(`/process/${id}`);
     return response.data;
   } catch (error) {
     console.error(`공종 ID ${id} 조회 실패:`, error);
@@ -263,7 +260,7 @@ export const fetchProcessById = async (id) => {
  */
 export const createProcess = async (instructionId, processData) => {
   try {
-    const response = await api.post(`${API_URL}/process?instruction=${instructionId}`, processData);
+    const response = await api.post(`/process?instruction=${instructionId}`, processData);
     return response.data;
   } catch (error) {
     console.error('공종 생성 실패:', error);
@@ -279,7 +276,7 @@ export const createProcess = async (instructionId, processData) => {
  */
 export const updateProcess = async (id, processData) => {
   try {
-    const response = await api.put(`${API_URL}/process/${id}`, processData);
+    const response = await api.put(`/process/${id}`, processData);
     return response.data;
   } catch (error) {
     console.error(`공종 ID ${id} 수정 실패:`, error);
@@ -294,7 +291,7 @@ export const updateProcess = async (id, processData) => {
  */
 export const deleteProcess = async (id) => {
   try {
-    const response = await api.delete(`${API_URL}/process/${id}`);
+    const response = await api.delete(`/process/${id}`);
     return response.data;
   } catch (error) {
     console.error(`공종 ID ${id} 삭제 실패:`, error);
@@ -324,7 +321,7 @@ export const fetchAllProcesses = async (params = {}) => {
       }
     });
     
-    const response = await api.get(`${API_URL}/process/all`, { params: apiParams });
+    const response = await api.get(`/process/all`, { params: apiParams });
     return response.data;
   } catch (error) {
     console.error('모든 공종 목록 조회 실패:', error);
@@ -339,7 +336,7 @@ export const fetchAllProcesses = async (params = {}) => {
  */
 export const fetchTaskById = async (id) => {
   try {
-    const response = await api.get(`${API_URL}/task/${id}`);
+    const response = await api.get(`/task/${id}`);
     return response.data;
   } catch (error) {
     console.error(`작업 ID ${id} 조회 실패:`, error);
@@ -366,7 +363,7 @@ export const fetchTasksByProcess = async (processId, params = {}) => {
     // 공종 ID 추가
     apiParams.process = processId;
     
-    const response = await api.get(`${API_URL}/task`, { params: apiParams });
+    const response = await api.get(`/task`, { params: apiParams });
     return response.data;
   } catch (error) {
     console.error(`공종 ID ${processId}의 작업 목록 조회 실패:`, error);
@@ -376,7 +373,7 @@ export const fetchTasksByProcess = async (processId, params = {}) => {
 
 export const tempFetchTasksByProcess = async (processId) => {
   try {
-    const response = await api.get(`${API_URL}/instruction/${processId}/tasks`)
+    const response = await api.get(`/instruction/${processId}/tasks`)
     return response.data
   } catch (error) {
     console.error(`공종 ID ${processId}의 작업 목록 조회 실패:`, error);
@@ -395,7 +392,7 @@ export const tempFetchTasksByProcess = async (processId) => {
  */
 export const createTask = async (processId, taskData) => {
   try {
-    const response = await api.post(`${API_URL}/task?process=${processId}`, taskData);
+    const response = await api.post(`/task?process=${processId}`, taskData);
     return response.data;
   } catch (error) {
     console.error('작업 생성 실패:', error);
@@ -413,7 +410,7 @@ export const createTask = async (processId, taskData) => {
  */
 export const updateTask = async (id, taskData) => {
   try {
-    const response = await api.put(`${API_URL}/task/${id}`, taskData);
+    const response = await api.put(`/task/${id}`, taskData);
     return response.data;
   } catch (error) {
     console.error(`작업 ID ${id} 수정 실패:`, error);
@@ -428,7 +425,7 @@ export const updateTask = async (id, taskData) => {
  */
 export const deleteTask = async (id) => {
   try {
-    const response = await api.delete(`${API_URL}/task/${id}`);
+    const response = await api.delete(`/task/${id}`);
     return response.data;
   } catch (error) {
     console.error(`작업 ID ${id} 삭제 실패:`, error);
@@ -459,7 +456,7 @@ export const fetchUnitPrices = async (params = {}) => {
       }
     });
     
-    const response = await api.get(`${API_URL}/unit-price`, { params: apiParams });
+    const response = await api.get(`/unit-price`, { params: apiParams });
     return response.data;
   } catch (error) {
     console.error('일위대가 목록 조회 실패:', error);
@@ -485,7 +482,7 @@ export const uploadCsvBulkInstructions = async (csvFile) => {
       }
     };
     
-    const response = await api.post(`${API_URL}/instruction/bulk-upload`, formData, config);
+    const response = await api.post(`/instruction/bulk-upload`, formData, config);
     return response.data;
   } catch (error) {
     console.error('CSV 파일 일괄 등록 실패:', error);
