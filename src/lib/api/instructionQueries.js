@@ -284,13 +284,15 @@ export const useProcess = (id) => {
 
 /**
  * 모든 공종 목록을 조회하는 React Query 훅
+ * @param {number} instructionId 지시 ID (필수)
  * @param {Object} params 페이징 파라미터
  * @returns {UseQueryResult} 쿼리 결과
  */
-export const useAllProcesses = (params = {}) => {
+export const useAllProcesses = (instructionId, params = {}) => {
   return useQuery({
-    queryKey: ['allProcesses', params],
-    queryFn: () => fetchAllProcesses(params),
+    queryKey: ['allProcesses', instructionId, params],
+    queryFn: () => fetchAllProcesses(instructionId, params),
+    enabled: !!instructionId, // 지시 ID가 있을 때만 쿼리 실행
     select: (data) => {
       // API 응답 형식에 맞게 데이터 변환
       const content = data?.data?.content || [];

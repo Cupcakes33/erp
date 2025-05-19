@@ -32,9 +32,10 @@ const CHANNEL_OPTIONS = [
 const InstructionCreate = () => {
   const navigate = useNavigate();
   const createInstructionMutation = useCreateInstruction();
-  const { data: processesData, isLoading: processesLoading } = useAllProcesses({
-    size: 100,
-  });
+  // 지시 생성 화면에서는 공종 목록을 불러오지 않음 (특정 지시 ID가 필요하기 때문)
+  // 실제 화면에서는 공종 목록이 필요할 수 있으므로, 임시로 빈 배열 할당
+  const [processOptions, setProcessOptions] = useState([]);
+  const [isProcessesLoading, setIsProcessesLoading] = useState(false);
 
   // 오늘 날짜 YYYY-MM-DD 형식으로 가져오기
   const today = new Date().toISOString().split("T")[0];
@@ -133,13 +134,6 @@ const InstructionCreate = () => {
     navigate("/instructions");
   };
 
-  // 공종 목록 가공
-  const processOptions =
-    processesData?.processes?.map((process) => ({
-      value: process.id.toString(),
-      label: process.name,
-    })) || [];
-
   // 공종 선택 옵션에 빈 값 추가
   const processSelectOptions = [
     { value: "", label: "공종 선택" },
@@ -147,7 +141,7 @@ const InstructionCreate = () => {
   ];
 
   return (
-    <div className="mx-auto px-4 py-6">
+    <div className="px-4 py-6 mx-auto">
       <h1 className="mb-6 text-2xl font-bold">새 지시 등록</h1>
 
       <FormCard>
@@ -217,7 +211,7 @@ const InstructionCreate = () => {
                 value={formData.processId}
                 onChange={handleChange}
                 options={processSelectOptions}
-                isLoading={processesLoading}
+                isLoading={isProcessesLoading}
               />
             </div>
           </div>
@@ -289,7 +283,7 @@ const InstructionCreate = () => {
             />
           </div>
 
-          <h2 className="text-lg font-semibold mb-4 mt-6">위치 정보</h2>
+          <h2 className="mt-6 mb-4 text-lg font-semibold">위치 정보</h2>
           <div className="grid grid-cols-3 gap-6">
             <FormInput
               id="district"
@@ -347,7 +341,7 @@ const InstructionCreate = () => {
             />
           </div>
 
-          <div className="flex justify-end space-x-4 mt-8">
+          <div className="flex justify-end mt-8 space-x-4">
             <FormButton
               type="button"
               className="w-32"

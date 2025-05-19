@@ -301,12 +301,13 @@ export const deleteProcess = async (id) => {
 
 /**
  * 모든 공종 목록 조회 API
+ * @param {number} instructionId 지시 ID (필수)
  * @param {Object} params 페이징 파라미터
  * @param {number} params.page 페이지 번호
  * @param {number} params.size 페이지 크기
  * @returns {Promise<Object>} 공종 목록
  */
-export const fetchAllProcesses = async (params = {}) => {
+export const fetchAllProcesses = async (instructionId, params = {}) => {
   try {
     // 페이지 번호가 1부터 시작하는 경우 0부터 시작하도록 변환
     const apiParams = { ...params };
@@ -321,10 +322,15 @@ export const fetchAllProcesses = async (params = {}) => {
       }
     });
     
-    const response = await api.get(`/process/all`, { params: apiParams });
+    const response = await api.get(`/process`, { 
+      params: { 
+        instruction: instructionId,
+        ...apiParams 
+      } 
+    });
     return response.data;
   } catch (error) {
-    console.error('모든 공종 목록 조회 실패:', error);
+    console.error(`지시 ID ${instructionId}의 공종 목록 조회 실패:`, error);
     throw error;
   }
 }

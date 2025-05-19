@@ -30,9 +30,10 @@ const InstructionEdit = () => {
   const navigate = useNavigate();
   const { data: response, isLoading, error } = useInstruction(id);
   const updateInstructionMutation = useUpdateInstruction();
-  const { data: processesData, isLoading: processesLoading } = useAllProcesses({
-    size: 100,
-  });
+  const { data: processesData, isLoading: processesLoading } = useAllProcesses(
+    id,
+    { size: 100 }
+  );
 
   const [formData, setFormData] = useState({
     orderId: 0,
