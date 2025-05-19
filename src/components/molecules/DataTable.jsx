@@ -110,6 +110,7 @@ const DataTable = ({
       onPageChange={onPageChange}
       onPageSizeChange={onPageSizeChange}
       onSortingChange={onSortingChange}
+      onSelectionChange={onSelectionChange}
       state={state}
       selectionColumn={selectionColumn}
       className={className}

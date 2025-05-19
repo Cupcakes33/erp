@@ -27,10 +27,14 @@ export { Input } from '../ui/input';
 export { DetailItem, DetailSection } from '../ui/detail';
 export { Loading } from '../ui/loading';
 export { ConfirmDialog } from '../ui/dialog';
+
+// PDF 컴포넌트 내보내기
 export { default as RepairConfirmationPDF } from './RepairConfirmationPDF';
 export { default as RepairDocumentSetPDF } from './RepairDocumentSetPDF';
 export { default as QuantityCalculationPDF } from './QuantityCalculationPDF';
 export { default as DetailStatementPDF } from './DetailStatementPDF';
+export { default as BosuConfirmationDocument } from './BosuConfirmationPDF';
+export { generateBosuConfirmationPDF } from './BosuConfirmationPDF';
 
 // Utility functions
 export { showSuccess, showError, showConfirm, showDeleteConfirm } from './SweetAlert';

@@ -55,6 +55,7 @@ export const DataTable = ({
   onPageChange,
   onPageSizeChange,
   onSortingChange,
+  onSelectionChange,
   state = {},
   selectionColumn,
   className = "",
@@ -118,7 +119,15 @@ export const DataTable = ({
         }
       : setSorting,
     onColumnFiltersChange: setColumnFilters,
-    onRowSelectionChange: setRowSelection,
+    onRowSelectionChange: (updater) => {
+      const newRowSelection = typeof updater === 'function' ? updater(rowSelection) : updater;
+      setRowSelection(newRowSelection);
+      
+      // 부모 컴포넌트에 변경 사항 전달
+      if (onSelectionChange) {
+        onSelectionChange(newRowSelection);
+      }
+    },
     onGlobalFilterChange: setGlobalFilter || setGlobalFilterValue,
     onPaginationChange: manualPagination
       ? (updater) => {

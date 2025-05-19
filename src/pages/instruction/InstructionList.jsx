@@ -15,6 +15,7 @@ import {
   showWarning,
   ImportModal,
   FileImportService,
+  generateBosuConfirmationPDF,
 } from "../../components/molecules";
 import {
   PlusCircle,
@@ -37,6 +38,7 @@ import {
   ChevronRight,
   ChevronsRight,
   User,
+  FileText,
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
@@ -49,6 +51,7 @@ import {
   toggleInstructionFavorite,
   updateInstructionStatus,
   uploadCsvBulkInstructions,
+  fetchBosuConfirmationData,
 } from "../../lib/api/instructionAPI";
 
 // DatePicker 스타일 오버라이드를 위한 CSS 추가
@@ -120,6 +123,11 @@ const InstructionList = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
 
+  // 선택된 지시 목록을 관리하는 상태 추가
+  const [selectedInstructions, setSelectedInstructions] = useState([]);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
+  const [rowSelection, setRowSelection] = useState({});
+
   // 로컬 스토리지에서 필터 상태 불러오기
   const loadFiltersFromStorage = () => {
     try {
@@ -189,6 +197,124 @@ const InstructionList = () => {
       handleApplyFilter();
     }
   }, []);
+
+  // 선택 상태 변경 감지를 위한 useEffect 추가
+  useEffect(() => {
+    // 체크박스 선택에 따른 선택 상태 변경 감지
+    console.log("rowSelection 변경 감지:", rowSelection);
+
+    // 선택된 행이 있는지 확인
+    if (Object.keys(rowSelection).length === 0) {
+      console.log("선택된 행이 없습니다. selectedInstructions 초기화");
+      setSelectedInstructions([]);
+      return;
+    }
+
+    // 디버깅을 위해 rowSelection 객체 상세 로그
+    console.log("rowSelection 객체 구조:", JSON.stringify(rowSelection));
+
+    // 첫 번째 데이터 구조 확인 (디버깅용)
+    if (instructions.length > 0) {
+      console.log("첫 번째 데이터 구조:", instructions[0]);
+      console.log(
+        "사용 가능한 ID 필드:",
+        instructions[0]?.id !== undefined
+          ? "id: " + instructions[0].id
+          : "id 필드 없음",
+        instructions[0]?.orderId !== undefined
+          ? "orderId: " + instructions[0].orderId
+          : "orderId 필드 없음"
+      );
+    }
+
+    // 직접적인 방식으로 선택된 ID 추출 시도
+    const selectedIds = [];
+
+    // 방법 1: rowSelection 키에서 직접 ID 추출 시도
+    Object.keys(rowSelection).forEach((rowId) => {
+      if (rowSelection[rowId]) {
+        console.log("처리 중인 선택된 행 ID:", rowId);
+
+        try {
+          // TanStack v8+ 에서는 'row_${table.id}_${row.id}' 형식일 수 있음
+          // 모든 _ 문자로 분할하고 마지막 부분을 가져옴
+          const parts = rowId.split("_");
+          const lastPart = parts[parts.length - 1];
+          console.log("분할 후 마지막 부분:", lastPart);
+
+          // 숫자로 변환 가능한 경우 인덱스로 간주
+          const index = parseInt(lastPart);
+
+          if (!isNaN(index) && index >= 0 && index < instructions.length) {
+            // 유효한 인덱스인 경우 해당 행 데이터 접근
+            const row = instructions[index];
+            console.log(`인덱스 ${index}의 행 데이터:`, row);
+
+            if (row && row.id !== undefined) {
+              selectedIds.push(row.id);
+              console.log(`행 ${index}에서 ID ${row.id} 추출 성공`);
+            } else if (row && row.orderId !== undefined) {
+              selectedIds.push(row.orderId);
+              console.log(
+                `행 ${index}에서 대체 ID(orderId) ${row.orderId} 추출`
+              );
+            }
+          } else {
+            console.warn(
+              `유효하지 않은 인덱스: ${index}, 배열 길이: ${instructions.length}`
+            );
+          }
+        } catch (error) {
+          console.error("행 ID 처리 중 오류:", error);
+        }
+      }
+    });
+
+    // 방법 2: 모든 ID를 확인하고 rowSelection에 있는지 확인
+    console.log("방법 2: 모든 행 ID 확인");
+    for (let i = 0; i < instructions.length; i++) {
+      // row_0, row_1 등의 형식과 row_table_0 형식 모두 확인
+      const simpleRowId = `row_${i}`;
+      const alternateRowId1 = `row_table_${i}`;
+      const alternateRowId2 = `${i}`;
+
+      if (
+        rowSelection[simpleRowId] ||
+        rowSelection[alternateRowId1] ||
+        rowSelection[alternateRowId2]
+      ) {
+        console.log(
+          `행 ${i} 선택됨. 사용된 ID:`,
+          rowSelection[simpleRowId]
+            ? simpleRowId
+            : rowSelection[alternateRowId1]
+            ? alternateRowId1
+            : alternateRowId2
+        );
+
+        const row = instructions[i];
+        if (row && row.id !== undefined) {
+          if (!selectedIds.includes(row.id)) {
+            selectedIds.push(row.id);
+            console.log(`방법 2로 ID ${row.id} 추출 성공`);
+          }
+        } else if (row && row.orderId !== undefined) {
+          if (!selectedIds.includes(row.orderId)) {
+            selectedIds.push(row.orderId);
+            console.log(`방법 2로 대체 ID(orderId) ${row.orderId} 추출`);
+          }
+        }
+      }
+    }
+
+    console.log("useEffect 내부 - 최종 추출된 ID 목록:", selectedIds);
+
+    // 이전 상태와 다를 경우에만 업데이트
+    if (JSON.stringify(selectedIds) !== JSON.stringify(selectedInstructions)) {
+      setSelectedInstructions(selectedIds);
+      console.log("새로운 selectedInstructions 설정:", selectedIds);
+    }
+  }, [rowSelection, instructions]);
 
   // 테이블에 표시할 컬럼 선택 상태 (새로운 필드 추가)
   const [visibleColumns, setVisibleColumns] = useState([
@@ -383,71 +509,78 @@ const InstructionList = () => {
     return text.length > length ? `${text.substring(0, length)}...` : text;
   };
 
-  // 필터링된 지시 목록 (검색어, 날짜에 대한 클라이언트 측 필터링)
-  const filteredInstructions = instructions.filter((instruction) => {
-    // 검색어 필터 - 검색 타입에 따라 다른 필드 검색
-    let matchesSearch = true;
-    if (filters.search) {
-      const searchLower = filters.search.toLowerCase();
-
-      if (filters.searchType === "dong") {
-        // 동으로 검색
-        matchesSearch = instruction.dong?.toLowerCase().includes(searchLower);
-      } else if (filters.searchType === "lotNumber") {
-        // 지번으로 검색
-        matchesSearch = instruction.lotNumber
-          ?.toLowerCase()
-          .includes(searchLower);
-      } else {
-        // 모든 필드 검색 (기존 방식)
-        matchesSearch =
-          instruction.name?.toLowerCase().includes(searchLower) ||
-          String(instruction.id)?.toLowerCase().includes(searchLower) ||
-          String(instruction.orderId)?.toLowerCase().includes(searchLower) ||
-          instruction.orderNumber?.toLowerCase().includes(searchLower) ||
-          instruction.district?.toLowerCase().includes(searchLower) ||
-          instruction.dong?.toLowerCase().includes(searchLower) ||
-          instruction.lotNumber?.toLowerCase().includes(searchLower) ||
-          instruction.detailAddress?.toLowerCase().includes(searchLower) ||
-          instruction.manager?.toLowerCase().includes(searchLower) ||
-          instruction.delegator?.toLowerCase().includes(searchLower) ||
-          instruction.channel?.toLowerCase().includes(searchLower) ||
-          instruction.structure?.toLowerCase().includes(searchLower);
-      }
-    }
-
-    // 날짜 필터
-    let matchesDate = true;
-    if (filters.startDate && filters.endDate) {
-      const fieldDate = new Date(instruction[filters.dateField]);
-      const startDate = new Date(filters.startDate);
-      const endDate = new Date(filters.endDate);
-      endDate.setHours(23, 59, 59); // 종료일 하루 끝으로 설정
-
-      matchesDate = fieldDate >= startDate && fieldDate <= endDate;
-    }
-
-    return matchesSearch && matchesDate;
-  });
-
   // 상태에 따른 배경색 클래스 반환
   const getStatusClass = (status) => {
     const statusInfo = STATUS_MAP[status] || { color: "gray" };
     return `bg-${statusInfo.color}-100 text-${statusInfo.color}-800`;
   };
 
-  // 우선순위에 따른 배경색 클래스 반환
-  const getPriorityClass = (priority) => {
-    const priorityInfo = PRIORITY_MAP[priority] || { color: "gray" };
-    return `bg-${priorityInfo.color}-100 text-${priorityInfo.color}-800`;
+  // 선택된 행 변경 핸들러 - 단순화
+  const handleSelectionChange = (newRowSelection) => {
+    console.log("Row Selection Changed:", newRowSelection);
+    console.log("이전 rowSelection:", rowSelection);
+
+    // TanStack Table의 행 선택 상태 구조 예시:
+    // { "row_0": true, "row_2": true } -> 0번과 2번 행이 선택됨
+
+    // 선택 상태 업데이트 (setRowSelection이 비동기적으로 작동할 수 있음)
+    setRowSelection(newRowSelection);
+
+    // 선택된 ID 추출은 useEffect 훅으로 이동됨
   };
 
-  // 즐겨찾기 표시 함수
-  const renderFavorite = (value) => {
-    return value ? "⭐" : "";
+  // PDF 생성 핸들러
+  const handleCreatePDF = async () => {
+    // 현재 선택된 항목 확인 (디버깅용)
+    console.log("PDF 생성 전 선택된 ID 목록:", selectedInstructions);
+
+    if (selectedInstructions.length === 0) {
+      showWarning("선택된 지시가 없습니다.");
+      return;
+    }
+
+    // 디버깅용 로그 추가
+    console.log("PDF 생성 시작. 선택된 ID 목록:", selectedInstructions);
+
+    setIsGeneratingPDF(true);
+
+    try {
+      // 선택된 ID 목록으로 API 호출하여 보수확인서 데이터 가져오기
+      const response = await fetchBosuConfirmationData(selectedInstructions);
+      console.log("API 응답:", response);
+
+      const confirmationData = response.data;
+      console.log("응답 데이터:", confirmationData);
+
+      // 각 데이터별로 PDF 생성
+      for (let i = 0; i < confirmationData.length; i++) {
+        const data = confirmationData[i];
+        console.log(`PDF 생성 #${i + 1}:`, data);
+
+        const fileName = `보수확인서_${data.orderNumber || data.id}.pdf`;
+
+        // PDF 생성 및 다운로드
+        await generateBosuConfirmationPDF(data, fileName);
+
+        // 여러 PDF 생성 시 약간의 딜레이 추가
+        if (i < confirmationData.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      }
+
+      showSuccess(
+        `${confirmationData.length}개의 보수확인서가 생성되었습니다.`
+      );
+    } catch (error) {
+      console.error("PDF 생성 중 오류 발생:", error);
+      console.error("에러 상세 정보:", error.response?.data || error.message);
+      showError("PDF 생성 중 오류가 발생했습니다.");
+    } finally {
+      setIsGeneratingPDF(false);
+    }
   };
 
-  // 모든 가능한 컬럼 정의 (새로운 필드 추가)
+  // 모든 가능한 컬럼 정의 (체크박스 컬럼은 제거하고 DataTable이 자체적으로 추가하도록 함)
   const allColumns = [
     {
       accessorKey: "id",
@@ -563,9 +696,10 @@ const InstructionList = () => {
   // DataTable에 전달할 페이지네이션 상태
   const tableState = {
     pagination: {
-      pageIndex: filterParams.page - 1, // 0-기반 인덱스로 변환
+      pageIndex: filterParams.page - 1,
       pageSize: filterParams.size,
     },
+    rowSelection: rowSelection,
   };
 
   // 페이지 변경을 처리하는 함수
@@ -806,6 +940,20 @@ const InstructionList = () => {
             지시 목록
           </h1>
           <div className="flex space-x-2">
+            {/* PDF 생성 버튼 추가 */}
+            <FormButton
+              variant="outline"
+              onClick={handleCreatePDF}
+              disabled={selectedInstructions.length === 0 || isGeneratingPDF}
+              className={`flex items-center h-9 ${
+                selectedInstructions.length > 0
+                  ? "text-green-600 border-green-300 hover:bg-green-50"
+                  : "text-gray-400 border-gray-200"
+              }`}
+            >
+              <FileText className="w-4 h-4 mr-1" />
+              보수확인서 PDF ({selectedInstructions.length})
+            </FormButton>
             <FormButton
               variant="outline"
               onClick={handleImportClick}
@@ -967,6 +1115,11 @@ const InstructionList = () => {
             <div className="flex items-center space-x-3">
               <div className="mr-3 text-sm text-gray-500">
                 총 {instructionData.totalCount || 0}개 항목
+                {selectedInstructions.length > 0 && (
+                  <span className="ml-2 text-blue-600">
+                    (선택됨: {selectedInstructions.length}개)
+                  </span>
+                )}
               </div>
 
               {/* 글로벌 검색 필드 - 크기 확대 */}
@@ -1037,9 +1190,13 @@ const InstructionList = () => {
           enableGlobalFilter={true}
           globalFilter={globalFilter}
           setGlobalFilter={handleGlobalFilterChange}
+          // 상태 및 선택 관련 props
           state={tableState}
           emptyMessage="지시 데이터가 없습니다."
           errorMessage="지시 목록을 불러오는 데 실패했습니다."
+          // 체크박스 선택 활성화 - selectionColumn은 전달하지 않고 enableSelection만 true로 설정
+          enableSelection={true}
+          onSelectionChange={handleSelectionChange}
         />
 
         {/* 커스텀 페이지네이션 렌더링 */}
