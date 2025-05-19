@@ -51,7 +51,7 @@ import {
 } from "../../lib/api/instructionQueries";
 import {
   fetchTasksByProcess,
-  tempFetchTasksByProcess,
+  fetchAllProcesses,
 } from "../../lib/api/instructionAPI";
 import { Input } from "../../components/ui/input";
 import { formatDateTime } from "../../lib/utils/dateUtils";
@@ -267,100 +267,6 @@ const InstructionDetail = () => {
     };
   }, []);
 
-  // PDF 출력 함수
-  const handlePrint = (type) => {
-    console.log(`${type} 출력 요청`, instruction);
-    setShowPrintDropdown(false);
-
-    if (!instruction) {
-      showError("출력할 지시 데이터가 없습니다.");
-      return;
-    }
-
-    // 지시 관련 데이터 준비
-    // 공종 및 작업 정보는 API 호출을 통해 얻는 것이 가장 정확하나,
-    // 현재 구현에서는 단순화를 위해 instruction 객체만 사용
-    const { processes = [], tasks = [] } = instruction;
-
-    // 필요한 일반 정보 및 PDF 데이터 수집
-    const pdfData = {
-      orderNumber: instruction.orderNumber,
-      orderDate: instruction.orderDate,
-      id: instruction.id,
-      name: instruction.name,
-      district: instruction.district,
-      address: instruction.dong
-        ? `${instruction.dong} ${instruction.detailAddress || ""}`
-        : instruction.detailAddress,
-      manager: instruction.manager,
-      items: tasks.map((task) => ({
-        code: task.process?.code || "",
-        name: task.process?.name || "",
-        work: task.name || "",
-        spec: task.spec || "",
-        unit: task.unit || "",
-        quantity: task.count || 1,
-        materialCost: task.materialCost || 0,
-        materialAmount: (task.materialCost || 0) * (task.count || 1),
-        laborCost: task.laborCost || 0,
-        laborAmount: (task.laborCost || 0) * (task.count || 1),
-        expenseCost: task.expense || 0,
-        expenseAmount: (task.expense || 0) * (task.count || 1),
-        totalAmount: task.totalCost || 0,
-        note: task.marker || "",
-      })),
-      summary: {
-        materialAmount: tasks.reduce(
-          (sum, task) => sum + (task.materialCost || 0) * (task.count || 1),
-          0
-        ),
-        laborAmount: tasks.reduce(
-          (sum, task) => sum + (task.laborCost || 0) * (task.count || 1),
-          0
-        ),
-        expenseAmount: tasks.reduce(
-          (sum, task) => sum + (task.expense || 0) * (task.count || 1),
-          0
-        ),
-        totalAmount: tasks.reduce(
-          (sum, task) => sum + (task.totalCost || 0),
-          0
-        ),
-      },
-    };
-
-    // 모달 방식으로 표시 - popup 대신 현재 페이지에 모달로 표시
-    const modalContainer = document.createElement("div");
-    modalContainer.id = "pdf-modal-container";
-    document.body.appendChild(modalContainer);
-
-    let pdfContent;
-    const onClose = () => {
-      const pdfElement = document.getElementById("pdf-modal-container");
-      if (pdfElement) {
-        document.body.removeChild(pdfElement);
-      }
-    };
-
-    if (type === "전체") {
-      // 모든 PDF를 탭으로 보여주는 컴포넌트
-      pdfContent = <RepairDocumentSetPDF data={pdfData} onClose={onClose} />;
-    } else if (type === "보수확인서") {
-      pdfContent = <RepairConfirmationPDF data={pdfData} onClose={onClose} />;
-    } else if (type === "물량산출근거") {
-      pdfContent = <QuantityCalculationPDF data={pdfData} onClose={onClose} />;
-    } else if (type === "내역서") {
-      pdfContent = <DetailStatementPDF data={pdfData} onClose={onClose} />;
-    } else {
-      // 지원하지 않는 유형
-      alert(`${type} 출력 기능이 구현될 예정입니다.`);
-      return;
-    }
-
-    // React 컴포넌트 렌더링
-    ReactDOM.render(pdfContent, modalContainer);
-  };
-
   if (isLoading) {
     return <Loading />;
   }
@@ -485,42 +391,6 @@ const InstructionDetail = () => {
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </FormButton>
-
-              {/* 드롭다운 메뉴 */}
-              {showPrintDropdown && (
-                <div className="absolute right-0 z-10 w-48 mt-2 bg-white border rounded-md shadow-lg">
-                  <div className="py-1">
-                    {/* <button
-                      className="flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                      onClick={() => handlePrint("전체")}
-                    >
-                      <Printer className="w-4 h-4 mr-2 text-gray-500" />
-                      전체 출력
-                    </button> */}
-                    <button
-                      className="flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                      onClick={() => handlePrint("보수확인서")}
-                    >
-                      <FileText className="w-4 h-4 mr-2 text-blue-500" />
-                      보수확인서 출력
-                    </button>
-                    <button
-                      className="flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                      onClick={() => handlePrint("물량산출근거")}
-                    >
-                      <Calculator className="w-4 h-4 mr-2 text-green-500" />
-                      물량산출근거 출력
-                    </button>
-                    <button
-                      className="flex items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                      onClick={() => handlePrint("내역서")}
-                    >
-                      <ClipboardList className="w-4 h-4 mr-2 text-orange-500" />
-                      내역서 출력
-                    </button>
-                  </div>
-                </div>
-              )}
             </div>
 
             {canComplete && (
@@ -843,58 +713,81 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
   // 모든 공종의 작업 목록 로드
   useEffect(() => {
     const loadAllTasks = async () => {
-      if (
-        !processesData ||
-        !processesData.processes ||
-        processesData.processes.length === 0
-      ) {
-        setAllTasks([]);
-        return;
-      }
-
       setIsAllTasksLoading(true);
       try {
-        const taskPromises = processesData.processes.map((process) =>
-          fetchTasksByProcess(process.id, { size: 100 })
+        if (!processesData?.processes || processesData.processes.length === 0) {
+          setAllTasks([]);
+          setIsAllTasksLoading(false);
+          return;
+        }
+
+        const taskPromises = processesData.processes.map((process_item) =>
+          fetchTasksByProcess(process_item.id, { size: 500 })
         );
+        const taskResults = await Promise.allSettled(taskPromises);
 
-        const taskResults = await Promise.all(taskPromises);
-
-        const combinedTasks = taskResults.flatMap((result, index) => {
-          const process = processesData.processes[index];
-          const tasks = result.data?.content || [];
-
-          // 각 작업에 공종 정보 추가
-          return tasks.map((task) => {
-            // unitCount와 price를 count와 totalCost로 변환
-            const count = task.count || task.unitCount || 0;
-            const totalCost =
-              task.totalCost || task.price || task.unitPrice?.price || 0;
-            const totalPrice = task.totalPrice || totalCost * count;
-
-            return {
-              ...task,
-              count,
-              totalCost,
-              totalPrice,
-              process: {
-                id: process.id,
-                name: process.name,
-              },
-            };
-          });
-        });
-
+        const combinedTasks = taskResults.reduce((acc, result, index) => {
+          if (
+            result.status === "fulfilled" &&
+            result.value?.data &&
+            Array.isArray(result.value.data)
+          ) {
+            const process = processesData.processes[index];
+            const tasksFromApi = result.value.data.map((task) => {
+              const count =
+                task.count !== undefined ? task.count : task.unitCount || 0;
+              let finalTotalCost = 0;
+              if (task.totalCost !== undefined) {
+                finalTotalCost = task.totalCost;
+              } else if (task.price !== undefined) {
+                finalTotalCost = task.price;
+              } else if (task.unitPrice && task.unitPrice.price !== undefined) {
+                finalTotalCost = task.unitPrice.price;
+              }
+              const finalTotalPrice =
+                task.totalPrice !== undefined
+                  ? task.totalPrice
+                  : finalTotalCost * count;
+              return {
+                ...task,
+                id: task.id,
+                process: { id: process.id, name: process.name },
+                count,
+                totalCost: finalTotalCost,
+                totalPrice: finalTotalPrice,
+              };
+            });
+            return acc.concat(tasksFromApi);
+          }
+          return acc;
+        }, []);
         setAllTasks(combinedTasks);
       } catch (error) {
-        console.error("작업 목록 로드 실패:", error);
+        console.error(
+          "전체 작업 목록 로드 중 예외 발생 (handleSaveTask):",
+          error
+        );
+        setAllTasks([]);
       } finally {
         setIsAllTasksLoading(false);
       }
     };
 
-    loadAllTasks();
-  }, [processesData]);
+    if (isLoading) {
+      setIsAllTasksLoading(true);
+    } else {
+      if (
+        processesData &&
+        processesData.processes &&
+        processesData.processes.length > 0
+      ) {
+        loadAllTasks();
+      } else {
+        setAllTasks([]);
+        setIsAllTasksLoading(false);
+      }
+    }
+  }, [processesData, isLoading, instructionId]);
 
   // 필터링된 공종 목록
   const filteredProcesses = useMemo(() => {
@@ -1087,44 +980,70 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
       setShowTaskModal(false);
       setEditingTask(null);
 
-      // 전체 작업 목록 다시 로드 (시간이 좀 걸리므로 낙관적 업데이트를 추가해도 좋음)
+      // 전체 작업 목록 다시 로드
       const loadAllTasks = async () => {
         setIsAllTasksLoading(true);
         try {
-          const taskPromises = processesData.processes.map((process) =>
-            fetchTasksByProcess(process.id, { size: 100 })
+          if (
+            !processesData?.processes ||
+            processesData.processes.length === 0
+          ) {
+            setAllTasks([]);
+            setIsAllTasksLoading(false);
+            return;
+          }
+
+          const taskPromises = processesData.processes.map((process_item) =>
+            fetchTasksByProcess(process_item.id, { size: 500 })
           );
+          const taskResults = await Promise.allSettled(taskPromises);
 
-          const taskResults = await Promise.all(taskPromises);
-
-          const combinedTasks = taskResults.flatMap((result, index) => {
-            const process = processesData.processes[index];
-            const tasks = result.data?.content || [];
-
-            // 각 작업에 공종 정보 추가 및 데이터 형식 변환
-            return tasks.map((task) => {
-              // unitCount와 price를 count와 totalCost로 변환
-              const count = task.count || task.unitCount || 0;
-              const totalCost =
-                task.totalCost || task.price || task.unitPrice?.price || 0;
-              const totalPrice = task.totalPrice || totalCost * count;
-
-              return {
-                ...task,
-                count,
-                totalCost,
-                totalPrice,
-                process: {
-                  id: process.id,
-                  name: process.name,
-                },
-              };
-            });
-          });
+          const combinedTasks = taskResults.reduce((acc, result, index) => {
+            if (
+              result.status === "fulfilled" &&
+              result.value?.data &&
+              Array.isArray(result.value.data)
+            ) {
+              const process = processesData.processes[index];
+              const tasksFromApi = result.value.data.map((task) => {
+                const count =
+                  task.count !== undefined ? task.count : task.unitCount || 0;
+                let finalTotalCost = 0;
+                if (task.totalCost !== undefined) {
+                  finalTotalCost = task.totalCost;
+                } else if (task.price !== undefined) {
+                  finalTotalCost = task.price;
+                } else if (
+                  task.unitPrice &&
+                  task.unitPrice.price !== undefined
+                ) {
+                  finalTotalCost = task.unitPrice.price;
+                }
+                const finalTotalPrice =
+                  task.totalPrice !== undefined
+                    ? task.totalPrice
+                    : finalTotalCost * count;
+                return {
+                  ...task,
+                  id: task.id,
+                  process: { id: process.id, name: process.name },
+                  count,
+                  totalCost: finalTotalCost,
+                  totalPrice: finalTotalPrice,
+                };
+              });
+              return acc.concat(tasksFromApi);
+            }
+            return acc;
+          }, []);
 
           setAllTasks(combinedTasks);
         } catch (error) {
-          console.error("작업 목록 로드 실패:", error);
+          console.error(
+            "전체 작업 목록 로드 중 예외 발생 (handleSaveTask):",
+            error
+          );
+          setAllTasks([]);
         } finally {
           setIsAllTasksLoading(false);
         }
@@ -1678,33 +1597,6 @@ const TaskFormModal = ({
     calculationDetails: task?.calculationDetails || "",
   });
 
-  console.log("task????", task);
-  console.log("processes????", processes);
-  console.log("formData????", formData);
-
-  // TODO: 공종 별 작업 목록 불러오는 api를 tempFetchTasksByProcess로 바꿔야함
-  // TODO: tempFetchTasksByProcess에서 공종 id, 공종명 값 추가되어야 함
-  // TODO: tempFetchTasksByProcess 데이터를 formData에 저장해야 함
-  // TODO: 위 작업 모두 수행 시 삭제 필요
-  const params = useParams();
-  const instructionIdFromUrl = params.id;
-  useEffect(() => {
-    const fetchAllTask = async () => {
-      try {
-        const result = await tempFetchTasksByProcess(instructionIdFromUrl);
-        setFormData((prev) => ({
-          ...prev,
-          unitPriceId: result?.data.find((task) => task.name === prev.name)
-            .unitPriceId,
-          name: result?.data.find((task) => task.name === prev.name).name,
-        }));
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    fetchAllTask();
-  }, []);
-
   // 일위대가 검색을 위한 상태
   const [searchKeyword, setSearchKeyword] = useState("");
   const [showUnitPriceSearch, setShowUnitPriceSearch] = useState(false);
@@ -1717,7 +1609,6 @@ const TaskFormModal = ({
     });
 
   const unitPrices = unitPricesData?.unitPrices || [];
-  console.log("unitPrices????????", unitPrices);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -1769,9 +1660,6 @@ const TaskFormModal = ({
     (up) => up.id === formData.unitPriceId
   );
 
-  // 금액 계산
-  const amount = formData.totalCost * formData.count;
-
   return (
     <div
       className={`fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center ${
@@ -1784,40 +1672,41 @@ const TaskFormModal = ({
         </h2>
         <form onSubmit={handleSubmit}>
           <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="processId"
-                className="block mb-1 text-sm font-medium text-gray-700"
-              >
-                공종 <span className="text-red-500">*</span>
-              </label>
-              <select
-                id="processId"
-                name="processId"
-                value={formData.processId}
-                onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                required
-                disabled={task ? true : false}
-              >
-                <option value="">공종 선택</option>
-                {processes.map((process) => (
-                  <option key={process.id} value={process.id}>
-                    {process.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {!task && ( // 작업 추가 모드일 때만 공종 선택 UI 표시
+              <div>
+                <label
+                  htmlFor="processId"
+                  className="block mb-1 text-sm font-medium text-gray-700"
+                >
+                  공종 <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="processId"
+                  name="processId"
+                  value={formData.processId}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                >
+                  <option value="">공종 선택</option>
+                  {processes.map((process) => (
+                    <option key={process.id} value={process.id}>
+                      {process.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
-            <div>
-              <label
-                htmlFor="unitPriceId"
-                className="block mb-1 text-sm font-medium text-gray-700"
-              >
-                일위대가 <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                {!task && (
+            {!task && ( // 작업 추가 모드일 때만 일위대가 선택 UI 표시
+              <div>
+                <label
+                  htmlFor="unitPriceId"
+                  className="block mb-1 text-sm font-medium text-gray-700"
+                >
+                  일위대가 <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
                   <div className="flex items-center mb-2">
                     <div className="relative w-full">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -1840,100 +1729,94 @@ const TaskFormModal = ({
                       )}
                     </div>
                   </div>
-                )}
 
-                {showUnitPriceSearch && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
-                    <div className="overflow-y-auto max-h-64">
-                      {isUnitPricesLoading ? (
-                        <div className="p-4 text-center">
-                          <Loading />
-                        </div>
-                      ) : unitPrices.length > 0 ? (
-                        <ul className="py-1">
-                          {unitPrices.map((unitPrice) => (
-                            <li
-                              key={unitPrice.id}
-                              className="px-3 py-2 cursor-pointer hover:bg-gray-100"
-                              onClick={() => handleSelectUnitPrice(unitPrice)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <div className="font-medium">
-                                    {unitPrice.name}
+                  {showUnitPriceSearch && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                      <div className="overflow-y-auto max-h-64">
+                        {isUnitPricesLoading ? (
+                          <div className="p-4 text-center">
+                            <Loading />
+                          </div>
+                        ) : unitPrices.length > 0 ? (
+                          <ul className="py-1">
+                            {unitPrices.map((unitPrice) => (
+                              <li
+                                key={unitPrice.id}
+                                className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                                onClick={() => handleSelectUnitPrice(unitPrice)}
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="font-medium">
+                                      {unitPrice.name}
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      {unitPrice.spec} | {unitPrice.unit} |{" "}
+                                      {unitPrice.code}
+                                    </div>
                                   </div>
-                                  <div className="text-xs text-gray-500">
-                                    {unitPrice.spec} | {unitPrice.unit} |{" "}
-                                    {unitPrice.code}
+                                  <div className="text-right">
+                                    <div className="font-medium">
+                                      {unitPrice.totalCost.toLocaleString()}원
+                                    </div>
+                                    <div className="text-xs text-gray-500">
+                                      재료:{" "}
+                                      {unitPrice.materialCost.toLocaleString()}{" "}
+                                      | 노무:{" "}
+                                      {unitPrice.laborCost.toLocaleString()}
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="text-right">
-                                  <div className="font-medium">
-                                    {unitPrice.totalCost.toLocaleString()}원
-                                  </div>
-                                  <div className="text-xs text-gray-500">
-                                    재료:{" "}
-                                    {unitPrice.materialCost.toLocaleString()} |
-                                    노무: {unitPrice.laborCost.toLocaleString()}
-                                  </div>
-                                </div>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <div className="p-4 text-center text-gray-500">
-                          검색 결과가 없습니다.
-                        </div>
-                      )}
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div className="p-4 text-center text-gray-500">
+                            검색 결과가 없습니다.
+                          </div>
+                        )}
+                      </div>
+                      <div className="p-2 text-right border-t">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowUnitPriceSearch(false)}
+                        >
+                          <X className="w-4 h-4 mr-1" />
+                          닫기
+                        </Button>
+                      </div>
                     </div>
-                    <div className="p-2 text-right border-t">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowUnitPriceSearch(false)}
-                      >
-                        <X className="w-4 h-4 mr-1" />
-                        닫기
-                      </Button>
+                  )}
+                </div>
+
+                {selectedUnitPrice && (
+                  <div className="p-2 mt-2 text-sm text-blue-800 rounded-md bg-blue-50">
+                    <div className="flex items-center font-medium">
+                      <Check className="w-4 h-4 mr-1 text-blue-600" />
+                      {selectedUnitPrice.name} 선택됨
+                    </div>
+                    <div className="mt-1 text-xs">
+                      <span className="font-medium">규격:</span>{" "}
+                      {selectedUnitPrice.spec} |{" "}
+                      <span className="font-medium">단위:</span>{" "}
+                      {selectedUnitPrice.unit} |{" "}
+                      <span className="font-medium">단가:</span>{" "}
+                      {selectedUnitPrice.totalCost.toLocaleString()}원
+                    </div>
+                    <div className="mt-1 text-xs">
+                      <span className="font-medium">재료비:</span>{" "}
+                      {selectedUnitPrice.materialCost.toLocaleString()}원 |{" "}
+                      <span className="font-medium">노무비:</span>{" "}
+                      {selectedUnitPrice.laborCost.toLocaleString()}원 |{" "}
+                      <span className="font-medium">경비:</span>{" "}
+                      {selectedUnitPrice.expense.toLocaleString()}원
                     </div>
                   </div>
                 )}
               </div>
-
-              {selectedUnitPrice && (
-                <div className="p-2 mt-2 text-sm text-blue-800 rounded-md bg-blue-50">
-                  <div className="flex items-center font-medium">
-                    <Check className="w-4 h-4 mr-1 text-blue-600" />
-                    {selectedUnitPrice.name} 선택됨
-                  </div>
-                  <div className="mt-1 text-xs">
-                    <span className="font-medium">규격:</span>{" "}
-                    {selectedUnitPrice.spec} |{" "}
-                    <span className="font-medium">단위:</span>{" "}
-                    {selectedUnitPrice.unit} |{" "}
-                    <span className="font-medium">단가:</span>{" "}
-                    {selectedUnitPrice.totalCost.toLocaleString()}원
-                  </div>
-                  <div className="mt-1 text-xs">
-                    <span className="font-medium">재료비:</span>{" "}
-                    {selectedUnitPrice.materialCost.toLocaleString()}원 |{" "}
-                    <span className="font-medium">노무비:</span>{" "}
-                    {selectedUnitPrice.laborCost.toLocaleString()}원 |{" "}
-                    <span className="font-medium">경비:</span>{" "}
-                    {selectedUnitPrice.expense.toLocaleString()}원
-                  </div>
-                </div>
-              )}
-
-              <input
-                type="hidden"
-                id="unitPriceId"
-                name="unitPriceId"
-                value={formData.unitPriceId}
-              />
-            </div>
+            )}
 
             <div className="grid grid-cols-2 gap-4">
               <div>

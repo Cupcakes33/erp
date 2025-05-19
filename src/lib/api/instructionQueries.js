@@ -428,8 +428,8 @@ export const useCreateTask = () => {
   return useMutation({
     mutationFn: ({ processId, ...taskData }) => createTask(processId, taskData),
     onSuccess: (data, variables) => {
-      // 작업 목록 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, variables.processId] });
+      // 작업 목록 쿼리 무효화 (handleSaveTask에서 전체 목록을 로드하므로 주석 처리)
+      // queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, variables.processId] });
     }
   });
 };
@@ -444,8 +444,8 @@ export const useUpdateTask = () => {
   return useMutation({
     mutationFn: ({ id, processId, ...taskData }) => updateTask(id, taskData),
     onSuccess: (data, variables) => {
-      // 작업 목록 및 상세 정보 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, variables.processId] });
+      // 작업 목록 및 상세 정보 쿼리 무효화 (handleSaveTask에서 전체 목록을 로드하므로 주석 처리)
+      // queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, variables.processId] });
       queryClient.invalidateQueries({ queryKey: [TASK_DETAIL_QUERY_KEY, variables.id] });
     }
   });

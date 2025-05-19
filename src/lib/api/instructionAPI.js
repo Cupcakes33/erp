@@ -369,7 +369,8 @@ export const fetchTasksByProcess = async (processId, params = {}) => {
     // 공종 ID 추가
     apiParams.process = processId;
     
-    const response = await api.get(`/task`, { params: apiParams });
+    const response = await api.get(`/instruction/${processId}/tasks`, { params: apiParams });
+    
     return response.data;
   } catch (error) {
     console.error(`공종 ID ${processId}의 작업 목록 조회 실패:`, error);
