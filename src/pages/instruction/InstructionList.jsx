@@ -1,9 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  useInstructions,
-  useCreateInstruction,
-} from "../../lib/api/instructionQueries";
+import { useInstructions } from "../../lib/api/instructionQueries";
 import {
   DataTable,
   FormButton,
@@ -20,19 +17,13 @@ import {
 import {
   PlusCircle,
   Search,
-  FileDown,
   FileUp,
   Calendar,
   Filter,
-  Settings,
   X,
-  Upload,
-  Download,
   ListFilter,
   Table,
   File,
-  Bookmark,
-  Database,
   ChevronsLeft,
   ChevronLeft,
   ChevronRight,
@@ -42,14 +33,7 @@ import {
 } from "lucide-react";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { excelUtils } from "../../lib/utils/excelUtils";
 import {
-  fetchInstructions,
-  createInstruction,
-  updateInstruction,
-  deleteInstruction,
-  toggleInstructionFavorite,
-  updateInstructionStatus,
   uploadCsvBulkInstructions,
   fetchBosuConfirmationData,
 } from "../../lib/api/instructionAPI";
@@ -109,17 +93,12 @@ const InstructionList = () => {
     refetch,
   } = useInstructions(filterParams);
 
-  const createInstructionMutation = useCreateInstruction();
-
   // 실제 지시 배열 추출
   const instructions = instructionData.instruction || [];
 
   // 모달 상태 관리
   const [showImportModal, setShowImportModal] = useState(false);
-  const [showExportModal, setShowExportModal] = useState(false);
   const [showColumnModal, setShowColumnModal] = useState(false);
-  const [importFile, setImportFile] = useState(null);
-  const [exportFormat, setExportFormat] = useState("excel");
   const [isImporting, setIsImporting] = useState(false);
   const [importResult, setImportResult] = useState(null);
 
@@ -200,31 +179,10 @@ const InstructionList = () => {
 
   // 선택 상태 변경 감지를 위한 useEffect 추가
   useEffect(() => {
-    // 체크박스 선택에 따른 선택 상태 변경 감지
-    console.log("rowSelection 변경 감지:", rowSelection);
-
     // 선택된 행이 있는지 확인
     if (Object.keys(rowSelection).length === 0) {
-      console.log("선택된 행이 없습니다. selectedInstructions 초기화");
       setSelectedInstructions([]);
       return;
-    }
-
-    // 디버깅을 위해 rowSelection 객체 상세 로그
-    console.log("rowSelection 객체 구조:", JSON.stringify(rowSelection));
-
-    // 첫 번째 데이터 구조 확인 (디버깅용)
-    if (instructions.length > 0) {
-      console.log("첫 번째 데이터 구조:", instructions[0]);
-      console.log(
-        "사용 가능한 ID 필드:",
-        instructions[0]?.id !== undefined
-          ? "id: " + instructions[0].id
-          : "id 필드 없음",
-        instructions[0]?.orderId !== undefined
-          ? "orderId: " + instructions[0].orderId
-          : "orderId 필드 없음"
-      );
     }
 
     // 직접적인 방식으로 선택된 ID 추출 시도
@@ -233,14 +191,11 @@ const InstructionList = () => {
     // 방법 1: rowSelection 키에서 직접 ID 추출 시도
     Object.keys(rowSelection).forEach((rowId) => {
       if (rowSelection[rowId]) {
-        console.log("처리 중인 선택된 행 ID:", rowId);
-
         try {
           // TanStack v8+ 에서는 'row_${table.id}_${row.id}' 형식일 수 있음
           // 모든 _ 문자로 분할하고 마지막 부분을 가져옴
           const parts = rowId.split("_");
           const lastPart = parts[parts.length - 1];
-          console.log("분할 후 마지막 부분:", lastPart);
 
           // 숫자로 변환 가능한 경우 인덱스로 간주
           const index = parseInt(lastPart);
@@ -248,21 +203,12 @@ const InstructionList = () => {
           if (!isNaN(index) && index >= 0 && index < instructions.length) {
             // 유효한 인덱스인 경우 해당 행 데이터 접근
             const row = instructions[index];
-            console.log(`인덱스 ${index}의 행 데이터:`, row);
 
             if (row && row.id !== undefined) {
               selectedIds.push(row.id);
-              console.log(`행 ${index}에서 ID ${row.id} 추출 성공`);
             } else if (row && row.orderId !== undefined) {
               selectedIds.push(row.orderId);
-              console.log(
-                `행 ${index}에서 대체 ID(orderId) ${row.orderId} 추출`
-              );
             }
-          } else {
-            console.warn(
-              `유효하지 않은 인덱스: ${index}, 배열 길이: ${instructions.length}`
-            );
           }
         } catch (error) {
           console.error("행 ID 처리 중 오류:", error);
@@ -271,7 +217,6 @@ const InstructionList = () => {
     });
 
     // 방법 2: 모든 ID를 확인하고 rowSelection에 있는지 확인
-    console.log("방법 2: 모든 행 ID 확인");
     for (let i = 0; i < instructions.length; i++) {
       // row_0, row_1 등의 형식과 row_table_0 형식 모두 확인
       const simpleRowId = `row_${i}`;
@@ -283,36 +228,22 @@ const InstructionList = () => {
         rowSelection[alternateRowId1] ||
         rowSelection[alternateRowId2]
       ) {
-        console.log(
-          `행 ${i} 선택됨. 사용된 ID:`,
-          rowSelection[simpleRowId]
-            ? simpleRowId
-            : rowSelection[alternateRowId1]
-            ? alternateRowId1
-            : alternateRowId2
-        );
-
         const row = instructions[i];
         if (row && row.id !== undefined) {
           if (!selectedIds.includes(row.id)) {
             selectedIds.push(row.id);
-            console.log(`방법 2로 ID ${row.id} 추출 성공`);
           }
         } else if (row && row.orderId !== undefined) {
           if (!selectedIds.includes(row.orderId)) {
             selectedIds.push(row.orderId);
-            console.log(`방법 2로 대체 ID(orderId) ${row.orderId} 추출`);
           }
         }
       }
     }
 
-    console.log("useEffect 내부 - 최종 추출된 ID 목록:", selectedIds);
-
     // 이전 상태와 다를 경우에만 업데이트
     if (JSON.stringify(selectedIds) !== JSON.stringify(selectedInstructions)) {
       setSelectedInstructions(selectedIds);
-      console.log("새로운 selectedInstructions 설정:", selectedIds);
     }
   }, [rowSelection, instructions]);
 
@@ -387,11 +318,6 @@ const InstructionList = () => {
     setFilterParams(newFilterParams);
   };
 
-  // 날짜 필터 적용
-  const handleApplyDateFilter = () => {
-    handleApplyFilter();
-  };
-
   const handleRowClick = (instruction) => {
     navigate(`/instructions/${instruction.id}`);
   };
@@ -403,17 +329,6 @@ const InstructionList = () => {
   const handleImportClick = () => {
     setShowImportModal(true);
     setImportResult(null);
-  };
-
-  const handleExportClick = () => {
-    setShowExportModal(true);
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setImportFile(file);
-    }
   };
 
   // 파일 업로드 및 데이터 처리 함수
@@ -497,12 +412,6 @@ const InstructionList = () => {
     }
   };
 
-  const handleExportSubmit = () => {
-    console.log("데이터 내보내기 형식:", exportFormat);
-    // 실제 내보내기 로직 구현 (API 호출 등)
-    setShowExportModal(false);
-  };
-
   // 긴 텍스트 자르기 유틸리티 함수
   const truncateText = (text, length = 20) => {
     if (!text) return "";
@@ -517,9 +426,6 @@ const InstructionList = () => {
 
   // 선택된 행 변경 핸들러 - 단순화
   const handleSelectionChange = (newRowSelection) => {
-    console.log("Row Selection Changed:", newRowSelection);
-    console.log("이전 rowSelection:", rowSelection);
-
     // TanStack Table의 행 선택 상태 구조 예시:
     // { "row_0": true, "row_2": true } -> 0번과 2번 행이 선택됨
 
@@ -531,32 +437,21 @@ const InstructionList = () => {
 
   // PDF 생성 핸들러
   const handleCreatePDF = async () => {
-    // 현재 선택된 항목 확인 (디버깅용)
-    console.log("PDF 생성 전 선택된 ID 목록:", selectedInstructions);
-
     if (selectedInstructions.length === 0) {
       showWarning("선택된 지시가 없습니다.");
       return;
     }
-
-    // 디버깅용 로그 추가
-    console.log("PDF 생성 시작. 선택된 ID 목록:", selectedInstructions);
 
     setIsGeneratingPDF(true);
 
     try {
       // 선택된 ID 목록으로 API 호출하여 보수확인서 데이터 가져오기
       const response = await fetchBosuConfirmationData(selectedInstructions);
-      console.log("API 응답:", response);
-
       const confirmationData = response.data;
-      console.log("응답 데이터:", confirmationData);
 
       // 각 데이터별로 PDF 생성
       for (let i = 0; i < confirmationData.length; i++) {
         const data = confirmationData[i];
-        console.log(`PDF 생성 #${i + 1}:`, data);
-
         const fileName = `보수확인서_${data.orderNumber || data.id}.pdf`;
 
         // PDF 생성 및 다운로드
