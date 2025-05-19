@@ -497,8 +497,126 @@ export const uploadCsvBulkInstructions = async (csvFile) => {
  */
 export const fetchBosuConfirmationData = async (ids) => {
   try {
-    const response = await api.post(`/instruction/bosu-confirmation`, { ids });
-    return response.data;
+    // API 요청 대신 더미 데이터 반환
+    console.log('선택된 지시 ID 목록:', ids);
+    
+    // 더미 데이터 생성 - BosuConfirmationPDF 컴포넌트에 맞게 조정
+    const dummyData = {
+      data: ids.map((id, index) => ({
+        id: id.toString(),
+        orderNumber: `경북2025-단가-${1000 + index}`,
+        orderDate: "2025.02.11",
+        name: `우이동 21-${16 + index} ${500 + index}호 방 창가 단열불량 보수`,
+        structure: "철근콘크리트조",
+        processes: [
+          {
+            processName: "건축-수장공사",
+            endDate: "2025.02.24",
+            tasks: [
+              {
+                code: `3101${50 + index}`,
+                name: "실크벽지 도배바탕(합판,석고보드면)",
+                spec: "벽면",
+                unit: "M2",
+                unitCount: 1.5 + index,
+                calculationDetails: "보수부위 면적산출",
+                unitPriceId: "AB12C",
+                materialCost: 15000 + index * 1000,
+                materialPrice: 18000 + index * 1200,
+                laborCost: 25000 + index * 800,
+                laborPrice: 30000 + index * 1000,
+                expense: 5000 + index * 300,
+                expensePrice: 6000 + index * 400,
+                totalCost: 45000 + index * 2100,
+                totalPrice: 54000 + index * 2600
+              },
+              {
+                code: `3101${60 + index}`,
+                name: "열반사단열재",
+                spec: "20mm",
+                unit: "M2",
+                unitCount: 2.0 + index * 0.5,
+                calculationDetails: "단열보강 부위",
+                unitPriceId: "CD34E",
+                materialCost: 22000 + index * 1500,
+                materialPrice: 26400 + index * 1800,
+                laborCost: 18000 + index * 1200,
+                laborPrice: 21600 + index * 1440,
+                expense: 4000 + index * 300,
+                expensePrice: 4800 + index * 360, 
+                totalCost: 44000 + index * 3000,
+                totalPrice: 52800 + index * 3600
+              }
+            ]
+          },
+          {
+            processName: "마감보수공사",
+            endDate: "2025.02.26",
+            tasks: [
+              {
+                code: `3102${70 + index}`,
+                name: "걸레받이 설치",
+                spec: "목재 12mm",
+                unit: "M",
+                unitCount: 3.0 + index * 0.3,
+                calculationDetails: "벽체 하단부",
+                unitPriceId: "EF56G",
+                materialCost: 12000 + index * 800,
+                materialPrice: 14400 + index * 960,
+                laborCost: 15000 + index * 1000,
+                laborPrice: 18000 + index * 1200,
+                expense: 3000 + index * 200,
+                expensePrice: 3600 + index * 240,
+                totalCost: 30000 + index * 2000,
+                totalPrice: 36000 + index * 2400
+              }
+            ]
+          }
+        ],
+        // RepairConfirmationPDF용 데이터도 유지
+        title: "시설물 보수확인서 제출",
+        receiver: "서울주택도시공사 성북주거안심센터장",
+        sender: "주식회사 종합종합안전기술연구원",
+        repairItems: [
+          {
+            code: `3101${50 + index}`,
+            category: "건축-수장-단열층",
+            facility: `다가구매입임대(강북구) 01${20 + index} - 0${500 + index}`,
+            repairDate: "2025.02.24",
+          },
+          {
+            code: `3101${60 + index}`,
+            category: "건축-수장-도배",
+            facility: `다가구매입임대(강북구) 01${20 + index} - 0${500 + index}`,
+            repairDate: "2025.02.24",
+          },
+        ],
+        quantityItems: [
+          {
+            title: `우이동 21-${16 + index} ${500 + index}호 방 창가 단열불량 보수`,
+            workName: "실크벽지 도배바탕(합판,석고보드면)-불가포함,초배지미실",
+            specification: "벽면",
+            unit: "M2",
+            quantity: 1 + index,
+            marker: "건축No.9",
+          },
+          {
+            title: "",
+            workName: "열반사단열재",
+            specification: "20mm",
+            unit: "M2",
+            quantity: 1 + index,
+            marker: "노원도봉1신7",
+          },
+        ],
+        printDate: "2025.03.21 09:19",
+      })),
+      message: "보수확인서 데이터 조회 성공"
+    };
+    
+    console.log('더미 데이터 생성됨:', dummyData);
+    
+    return dummyData;
   } catch (error) {
     console.error('보수확인서 데이터 조회 실패:', error);
     throw error;
