@@ -1,9 +1,13 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   useCreateInstruction,
-  useAllProcesses,
+  // useAllProcesses, // 기존 공종 관련 훅 제거
 } from "../../lib/api/instructionQueries";
+import {
+  fetchContractsByCenter, // 추가
+  fetchPaymentsByContract, // 추가
+} from "../../lib/api/instructionAPI"; // 추가
 import {
   FormButton,
   FormInput,
@@ -22,6 +26,13 @@ const STATUS_OPTIONS = [
   { value: "완료", label: "완료" },
 ];
 
+// 센터 선택 옵션 상수 추가
+const CENTER_OPTIONS = [
+  { value: "강동", label: "강동" },
+  { value: "성북", label: "성북" },
+  // 필요에 따라 다른 센터 추가
+];
+
 // const CHANNEL_OPTIONS = [
 //   { value: "전화", label: "전화" },
 //   { value: "이메일", label: "이메일" },
@@ -32,10 +43,6 @@ const STATUS_OPTIONS = [
 const InstructionCreate = () => {
   const navigate = useNavigate();
   const createInstructionMutation = useCreateInstruction();
-  // 지시 생성 화면에서는 공종 목록을 불러오지 않음 (특정 지시 ID가 필요하기 때문)
-  // 실제 화면에서는 공종 목록이 필요할 수 있으므로, 임시로 빈 배열 할당
-  const [processOptions, setProcessOptions] = useState([]);
-  const [isProcessesLoading, setIsProcessesLoading] = useState(false);
 
   // 오늘 날짜 YYYY-MM-DD 형식으로 가져오기
   const today = new Date().toISOString().split("T")[0];
@@ -54,23 +61,133 @@ const InstructionCreate = () => {
     detailAddress: "",
     structure: "",
     memo: "",
-    processId: "",
+    // processId: "", // 기존 공종 ID 제거
     contact1: "",
     contact2: "",
     contact3: "",
   });
 
+  // 새로운 상태 추가
+  const [selectedCenter, setSelectedCenter] = useState("");
+  const [contracts, setContracts] = useState([]);
+  const [selectedContractId, setSelectedContractId] = useState("");
+  const [payments, setPayments] = useState([]);
+  const [selectedPaymentId, setSelectedPaymentId] = useState(""); // 생성 시 사용 안함
+
+  const [isContractsLoading, setIsContractsLoading] = useState(false);
+  const [isPaymentsLoading, setIsPaymentsLoading] = useState(false);
+
   const [errors, setErrors] = useState({});
+
+  // 센터 변경 시 계약 목록 조회
+  useEffect(() => {
+    if (selectedCenter) {
+      const fetchContracts = async () => {
+        setIsContractsLoading(true);
+        setContracts([]); // 이전 계약 목록 초기화
+        setSelectedContractId(""); // 이전 선택된 계약 ID 초기화
+        setPayments([]); // 이전 회차 목록 초기화
+        setSelectedPaymentId(""); // 이전 선택된 회차 ID 초기화
+        try {
+          const data = await fetchContractsByCenter(selectedCenter);
+          // API 응답 형식이 { data: [{id: 1, name: '계약1'}, ...] } 와 같다고 가정
+          // 실제 API 응답에 맞게 key (id, name) 수정 필요
+          setContracts(
+            data.data
+              ? data.data.map((c) => ({
+                  value: c.id,
+                  label: c.name || `계약 ID: ${c.id}`,
+                }))
+              : []
+          );
+        } catch (error) {
+          console.error("계약 목록 조회 실패:", error);
+          setErrors((prev) => ({
+            ...prev,
+            contracts: "계약 목록을 불러오는 중 오류가 발생했습니다.",
+          }));
+        } finally {
+          setIsContractsLoading(false);
+        }
+      };
+      fetchContracts();
+    } else {
+      setContracts([]);
+      setSelectedContractId("");
+      setPayments([]);
+      setSelectedPaymentId("");
+    }
+  }, [selectedCenter]);
+
+  // 계약 변경 시 회차 목록 조회
+  useEffect(() => {
+    if (selectedContractId) {
+      const fetchPayments = async () => {
+        setIsPaymentsLoading(true);
+        setPayments([]); // 이전 회차 목록 초기화
+        setSelectedPaymentId(""); // 이전 선택된 회차 ID 초기화
+        try {
+          const data = await fetchPaymentsByContract(selectedContractId);
+          // API 응답 형식이 { data: [{id: 1, round: 1, name: '1회차'}, ...] } 와 같다고 가정
+          // 실제 API 응답에 맞게 key (id, round, name) 수정 필요
+          setPayments(
+            data.data
+              ? data.data.map((p) => ({
+                  value: p.id,
+                  label: p.name || `회차 ID: ${p.id} (Round: ${p.round})`,
+                }))
+              : []
+          );
+        } catch (error) {
+          console.error("회차 목록 조회 실패:", error);
+          setErrors((prev) => ({
+            ...prev,
+            payments: "회차 목록을 불러오는 중 오류가 발생했습니다.",
+          }));
+        } finally {
+          setIsPaymentsLoading(false);
+        }
+      };
+      fetchPayments();
+    } else {
+      setPayments([]);
+      setSelectedPaymentId("");
+    }
+  }, [selectedContractId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+
+    // 센터, 계약, 회차 선택 핸들링
+    if (name === "center") {
+      setSelectedCenter(value);
+      // 센터 변경 시 하위 선택 초기화
+      setSelectedContractId("");
+      setContracts([]);
+      setSelectedPaymentId("");
+      setPayments([]);
+      if (errors.center) {
+        setErrors((prev) => ({ ...prev, center: "" }));
+      }
+    } else if (name === "contractId") {
+      setSelectedContractId(value);
+      // 계약 변경 시 하위 선택 초기화
+      setSelectedPaymentId("");
+      setPayments([]);
+      if (errors.contractId) {
+        setErrors((prev) => ({ ...prev, contractId: "" }));
+      }
+    } else if (name === "paymentId") {
+      setSelectedPaymentId(value);
+    } else {
+      setFormData({
+        ...formData,
+        [name]: value,
+      });
+    }
 
     // 입력 시 해당 필드의 오류 메시지 삭제
-    if (errors[name]) {
+    if (errors[name] && name !== "center" && name !== "contractId") {
       setErrors({
         ...errors,
         [name]: "",
@@ -84,6 +201,11 @@ const InstructionCreate = () => {
     if (!formData.name.trim()) {
       newErrors.name = "제목을 입력해주세요";
     }
+    if (!selectedCenter) {
+      // 센터 선택 유효성 검사 추가
+      newErrors.center = "센터를 선택해주세요.";
+    }
+    // 생성 시에는 계약/회차 선택이 필수는 아닐 수 있으므로, 필요에 따라 유효성 검사 추가
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -99,33 +221,46 @@ const InstructionCreate = () => {
     try {
       // 새 스키마에 맞게 데이터 형식 변환
       const payload = {
-        orderId: formData.orderId,
-        orderNumber: formData.orderNumber,
-        name: formData.name,
-        orderDate: formData.orderDate,
-        manager: formData.manager,
-        delegator: formData.delegator,
-        channel: formData.channel,
-        district: formData.district,
-        dong: formData.dong,
-        lotNumber: formData.lotNumber,
-        detailAddress: formData.detailAddress,
-        structure: formData.structure,
-        memo: formData.memo,
+        ...formData, // 기본 formData 복사
+        center: selectedCenter, // 선택된 센터 추가
         status: "접수", // 기본 상태
-        processId: formData.processId ? Number(formData.processId) : null,
-        contact1: formData.contact1,
-        contact2: formData.contact2,
-        contact3: formData.contact3,
+        // processId는 제거되었으므로 payload에서 제외
+        // paymentId는 생성 시에는 보내지 않음
       };
+      // orderId가 문자열로 전달될 수 있으므로 숫자로 변환 (혹은 초기값을 null, 빈문자열로 하고 조건부로 넣기)
+      if (
+        payload.orderId !== "" &&
+        payload.orderId !== null &&
+        payload.orderId !== undefined
+      ) {
+        payload.orderId = Number(payload.orderId);
+      } else {
+        delete payload.orderId; // 혹은 0 또는 null로 서버 요구사항에 맞게 설정
+      }
+
+      // 기존 processId 관련 부분 제거
+      // if (formData.processId) {
+      //   payload.processId = Number(formData.processId);
+      // } else {
+      //   delete payload.processId; // processId가 없으면 필드 자체를 보내지 않음
+      // }
 
       await createInstructionMutation.mutateAsync(payload);
       showSuccess("지시가 성공적으로 생성되었습니다.");
       navigate("/instructions");
     } catch (error) {
       console.error("지시 생성 실패:", error);
+      // API 에러 메시지 처리 개선 (필요시)
+      let submitError = "지시를 생성하는 중 오류가 발생했습니다.";
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        submitError = error.response.data.message;
+      }
       setErrors({
-        submit: "지시를 생성하는 중 오류가 발생했습니다.",
+        submit: submitError,
       });
     }
   };
@@ -134,11 +269,11 @@ const InstructionCreate = () => {
     navigate("/instructions");
   };
 
-  // 공종 선택 옵션에 빈 값 추가
-  const processSelectOptions = [
-    { value: "", label: "공종 선택" },
-    ...processOptions,
-  ];
+  // 계약 선택 옵션
+  const contractSelectOptions = [...contracts];
+
+  // 회차 선택 옵션
+  const paymentSelectOptions = [...payments];
 
   return (
     <div className="px-4 py-6 mx-auto">
@@ -151,6 +286,48 @@ const InstructionCreate = () => {
               {errors.submit}
             </div>
           )}
+
+          {/* 센터, 계약, 회차 선택 UI를 최상단으로 이동 */}
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
+            <div>
+              <FormSelect
+                id="center"
+                name="center"
+                label="센터"
+                value={selectedCenter}
+                onChange={handleChange}
+                options={CENTER_OPTIONS}
+                error={errors.center} // 에러 메시지 표시
+                required // 센터 선택 필수
+              />
+            </div>
+            <div>
+              <FormSelect
+                id="contractId"
+                name="contractId"
+                label="계약"
+                value={selectedContractId}
+                onChange={handleChange}
+                options={contractSelectOptions} // contractSelectOptions 사용
+                isLoading={isContractsLoading}
+                disabled={!selectedCenter || isContractsLoading} // 센터가 선택되지 않았거나 로딩 중일 때 비활성화
+                // error={errors.contractId} // 필요시 에러 메시지 표시
+              />
+            </div>
+            <div>
+              <FormSelect
+                id="paymentId"
+                name="paymentId"
+                label="회차 (생성 시 선택 안 함)" // 생성 시에는 선택 안 함을 명시
+                value={selectedPaymentId}
+                onChange={handleChange}
+                options={paymentSelectOptions} // paymentSelectOptions 사용
+                isLoading={isPaymentsLoading}
+                disabled // 생성 시에는 항상 비활성화
+                // error={errors.paymentId} // 필요시 에러 메시지 표시
+              />
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
             <div>
@@ -183,11 +360,11 @@ const InstructionCreate = () => {
               <FormInput
                 id="orderId"
                 name="orderId"
-                label="지시ID"
-                placeholder="지시ID를 입력하세요"
-                value={formData.orderId}
+                label="지시ID (선택)" // 사용자에게 선택 사항임을 명시
+                placeholder="지시ID를 입력하세요 (숫자)"
+                value={formData.orderId === 0 ? "" : formData.orderId} // 0일 경우 빈 문자열로 표시
                 onChange={handleChange}
-                type="number"
+                type="number" // type을 number로 유지하되, 입력 처리는 유연하게
               />
             </div>
             <div>
@@ -198,20 +375,6 @@ const InstructionCreate = () => {
                 type="date"
                 value={formData.orderDate}
                 onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
-            <div>
-              <FormSelect
-                id="processId"
-                name="processId"
-                label="공종"
-                value={formData.processId}
-                onChange={handleChange}
-                options={processSelectOptions}
-                isLoading={isProcessesLoading}
               />
             </div>
           </div>

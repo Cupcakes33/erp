@@ -3,8 +3,11 @@ import { useParams, useNavigate } from "react-router-dom";
 import {
   useInstruction,
   useUpdateInstruction,
-  useAllProcesses,
 } from "../../lib/api/instructionQueries";
+import {
+  fetchContractsByCenter,
+  fetchPaymentsByContract,
+} from "../../lib/api/instructionAPI";
 import {
   FormButton,
   FormInput,
@@ -17,23 +20,22 @@ import {
 } from "../../components/molecules";
 import { ArrowLeft, Save } from "lucide-react";
 
-// 채널 상수
-// const CHANNEL_OPTIONS = [
-//   { value: "전화", label: "전화" },
-//   { value: "이메일", label: "이메일" },
-//   { value: "직접방문", label: "직접방문" },
-//   { value: "기타", label: "기타" },
-// ];
+// 센터 선택 옵션 상수 추가 (InstructionCreate.jsx와 동일하게 사용 가능)
+const CENTER_OPTIONS = [
+  { value: "강동", label: "강동" },
+  { value: "성북", label: "성북" },
+  // 필요에 따라 다른 센터 추가
+];
 
 const InstructionEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { data: response, isLoading, error } = useInstruction(id);
+  const {
+    data: instructionData,
+    isLoading: isInstructionLoading,
+    error: instructionError,
+  } = useInstruction(id);
   const updateInstructionMutation = useUpdateInstruction();
-  const { data: processesData, isLoading: processesLoading } = useAllProcesses(
-    id,
-    { size: 100 }
-  );
 
   const [formData, setFormData] = useState({
     orderId: 0,
@@ -50,17 +52,29 @@ const InstructionEdit = () => {
     structure: "",
     memo: "",
     status: "접수",
-    processId: "",
     contact1: "",
     contact2: "",
     contact3: "",
   });
 
+  const [selectedCenter, setSelectedCenter] = useState("");
+  const [contracts, setContracts] = useState([]);
+  const [selectedContractId, setSelectedContractId] = useState("");
+  const [payments, setPayments] = useState([]);
+  const [selectedPaymentId, setSelectedPaymentId] = useState("");
+
+  const [initialCenter, setInitialCenter] = useState("");
+  const [initialContractId, setInitialContractId] = useState("");
+  const [initialPaymentId, setInitialPaymentId] = useState("");
+
+  const [isContractsLoading, setIsContractsLoading] = useState(false);
+  const [isPaymentsLoading, setIsPaymentsLoading] = useState(false);
+
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (response) {
-      const instruction = response;
+    if (instructionData && instructionData.data) {
+      const instruction = instructionData.data;
       setFormData({
         orderId: instruction.orderId || 0,
         orderNumber: instruction.orderNumber || "",
@@ -76,38 +90,131 @@ const InstructionEdit = () => {
         structure: instruction.structure || "",
         memo: instruction.memo || "",
         status: instruction.status || "접수",
-        processId: instruction.processId
-          ? instruction.processId.toString()
-          : "",
         contact1: instruction.contact1 || "",
         contact2: instruction.contact2 || "",
         contact3: instruction.contact3 || "",
       });
+
+      const centerFromServer = instruction.center;
+      const paymentIdFromServer = instruction.paymentId;
+
+      if (centerFromServer) {
+        setInitialCenter(centerFromServer);
+        setSelectedCenter(centerFromServer);
+      }
+      if (paymentIdFromServer) {
+        setInitialPaymentId(paymentIdFromServer.toString());
+      }
     }
-  }, [response]);
+  }, [instructionData]);
+
+  useEffect(() => {
+    if (selectedCenter) {
+      const fetchAndSetContracts = async () => {
+        setIsContractsLoading(true);
+        setContracts([]);
+        setSelectedContractId("");
+        setPayments([]);
+        setSelectedPaymentId("");
+        try {
+          const contractsResponse = await fetchContractsByCenter(
+            selectedCenter
+          );
+          const fetchedContracts = contractsResponse.data
+            ? contractsResponse.data.map((c) => ({
+                value: c.id.toString(),
+                label: c.name || `계약 ID: ${c.id}`,
+              }))
+            : [];
+          setContracts(fetchedContracts);
+        } catch (error) {
+          console.error("계약 목록 조회 실패:", error);
+          setErrors((prev) => ({ ...prev, contracts: "계약 목록 조회 실패" }));
+        } finally {
+          setIsContractsLoading(false);
+        }
+      };
+      fetchAndSetContracts();
+    } else {
+      setContracts([]);
+      setSelectedContractId("");
+      setPayments([]);
+      setSelectedPaymentId("");
+    }
+  }, [selectedCenter]);
+
+  useEffect(() => {
+    if (selectedContractId) {
+      const fetchAndSetPayments = async () => {
+        setIsPaymentsLoading(true);
+        setPayments([]);
+        setSelectedPaymentId("");
+        try {
+          const paymentsResponse = await fetchPaymentsByContract(
+            selectedContractId
+          );
+          const fetchedPayments = paymentsResponse.data
+            ? paymentsResponse.data.map((p) => ({
+                value: p.id.toString(),
+                label: p.name || `회차 ID: ${p.id} (Round: ${p.round})`,
+              }))
+            : [];
+          setPayments(fetchedPayments);
+
+          if (
+            initialPaymentId &&
+            fetchedPayments.some((p) => p.value === initialPaymentId)
+          ) {
+            setSelectedPaymentId(initialPaymentId);
+            setInitialPaymentId("");
+          }
+        } catch (error) {
+          console.error("회차 목록 조회 실패:", error);
+          setErrors((prev) => ({ ...prev, payments: "회차 목록 조회 실패" }));
+        } finally {
+          setIsPaymentsLoading(false);
+        }
+      };
+      fetchAndSetPayments();
+    } else {
+      setPayments([]);
+      setSelectedPaymentId("");
+    }
+  }, [selectedContractId]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
 
-    // 입력 시 해당 필드의 오류 메시지 삭제
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: "",
-      });
+    if (name === "center") {
+      setSelectedCenter(value);
+      setSelectedContractId("");
+      setContracts([]);
+      setSelectedPaymentId("");
+      setPayments([]);
+      if (errors.center) setErrors((prev) => ({ ...prev, center: "" }));
+    } else if (name === "contractId") {
+      setSelectedContractId(value);
+      setSelectedPaymentId("");
+      setPayments([]);
+      if (errors.contractId) setErrors((prev) => ({ ...prev, contractId: "" }));
+    } else if (name === "paymentId") {
+      setSelectedPaymentId(value);
+      if (errors.paymentId) setErrors((prev) => ({ ...prev, paymentId: "" }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
+
+    if (errors[name] && !["center", "contractId", "paymentId"].includes(name)) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "제목을 입력해주세요";
-    }
+    if (!formData.name.trim()) newErrors.name = "제목을 입력해주세요";
+    if (!selectedCenter) newErrors.center = "센터를 선택해주세요.";
+    if (!selectedContractId) newErrors.contractId = "계약을 선택해주세요.";
+    if (!selectedPaymentId) newErrors.paymentId = "회차를 선택해주세요.";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -115,45 +222,32 @@ const InstructionEdit = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!validateForm()) {
-      return;
-    }
+    if (!validateForm()) return;
 
     try {
-      // 새 스키마에 맞게 데이터 형식 변환
       const payload = {
-        orderId: formData.orderId,
-        orderNumber: formData.orderNumber,
-        name: formData.name,
-        orderDate: formData.orderDate,
-        manager: formData.manager,
-        delegator: formData.delegator,
-        channel: formData.channel,
-        district: formData.district,
-        dong: formData.dong,
-        lotNumber: formData.lotNumber,
-        detailAddress: formData.detailAddress,
-        structure: formData.structure,
-        memo: formData.memo,
-        status: formData.status,
-        processId: formData.processId ? Number(formData.processId) : null,
-        contact1: formData.contact1,
-        contact2: formData.contact2,
-        contact3: formData.contact3,
+        ...formData,
+        center: selectedCenter,
+        paymentId: selectedPaymentId ? Number(selectedPaymentId) : null,
       };
+
+      if (payload.orderId && typeof payload.orderId !== "number") {
+        payload.orderId = Number(payload.orderId);
+      }
 
       await updateInstructionMutation.mutateAsync({
         id,
-        ...payload,
+        instructionData: payload,
       });
       showSuccess("지시가 성공적으로 수정되었습니다.");
       navigate(`/instructions/${id}`);
     } catch (error) {
       console.error("지시 수정 실패:", error);
-      setErrors({
-        submit: "지시 수정 중 오류가 발생했습니다.",
-      });
+      let submitError = "지시 수정 중 오류가 발생했습니다.";
+      if (error.response?.data?.message) {
+        submitError = error.response.data.message;
+      }
+      setErrors({ submit: submitError });
     }
   };
 
@@ -161,28 +255,18 @@ const InstructionEdit = () => {
     navigate(`/instructions/${id}`);
   };
 
-  // 공종 목록 가공
-  const processOptions =
-    processesData?.processes?.map((process) => ({
-      value: process.id.toString(),
-      label: process.name,
-    })) || [];
+  const contractSelectOptions = [...contracts];
+  const paymentSelectOptions = [...payments];
 
-  // 공종 선택 옵션에 빈 값 추가
-  const processSelectOptions = [
-    { value: "", label: "공종 선택" },
-    ...processOptions,
-  ];
-
-  if (isLoading) {
-    return <Loading />;
-  }
-
-  if (error) {
+  if (isInstructionLoading) return <Loading />;
+  if (instructionError) {
     return (
       <div className="px-4 py-6 mx-auto bg-gray-50">
         <div className="px-6 py-4 text-red-700 bg-red-100 border border-red-400 rounded-lg shadow">
-          <p className="mb-2">지시 정보를 불러오는 중 오류가 발생했습니다.</p>
+          <p className="mb-2">
+            지시 정보를 불러오는 중 오류가 발생했습니다:{" "}
+            {instructionError.message}
+          </p>
           <FormButton
             onClick={() => navigate("/instructions")}
             variant="outline"
@@ -197,9 +281,8 @@ const InstructionEdit = () => {
   }
 
   return (
-    <div className="mx-auto px-4 py-6">
+    <div className="px-4 py-6 mx-auto">
       <h1 className="mb-6 text-2xl font-bold">지시 수정</h1>
-
       <FormCard>
         <form onSubmit={handleSubmit}>
           {errors.submit && (
@@ -207,6 +290,49 @@ const InstructionEdit = () => {
               {errors.submit}
             </div>
           )}
+
+          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
+            <div>
+              <FormSelect
+                id="center"
+                name="center"
+                label="센터"
+                value={selectedCenter}
+                onChange={handleChange}
+                options={CENTER_OPTIONS}
+                error={errors.center}
+                required
+              />
+            </div>
+            <div>
+              <FormSelect
+                id="contractId"
+                name="contractId"
+                label="계약"
+                value={selectedContractId}
+                onChange={handleChange}
+                options={contractSelectOptions}
+                isLoading={isContractsLoading}
+                disabled={!selectedCenter || isContractsLoading}
+                error={errors.contractId}
+                required
+              />
+            </div>
+            <div>
+              <FormSelect
+                id="paymentId"
+                name="paymentId"
+                label="회차"
+                value={selectedPaymentId}
+                onChange={handleChange}
+                options={paymentSelectOptions}
+                isLoading={isPaymentsLoading}
+                disabled={!selectedContractId || isPaymentsLoading}
+                error={errors.paymentId}
+                required
+              />
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
             <div>
@@ -221,7 +347,6 @@ const InstructionEdit = () => {
                 required
               />
             </div>
-
             <div>
               <FormInput
                 id="orderNumber"
@@ -230,7 +355,6 @@ const InstructionEdit = () => {
                 placeholder="지시번호를 입력하세요"
                 value={formData.orderNumber}
                 onChange={handleChange}
-                required
               />
             </div>
           </div>
@@ -240,9 +364,9 @@ const InstructionEdit = () => {
               <FormInput
                 id="orderId"
                 name="orderId"
-                label="지시ID"
-                placeholder="지시ID를 입력하세요"
-                value={formData.orderId}
+                label="지시ID (선택)"
+                placeholder="지시ID (숫자)"
+                value={formData.orderId === 0 ? "" : formData.orderId}
                 onChange={handleChange}
                 type="number"
               />
@@ -255,20 +379,6 @@ const InstructionEdit = () => {
                 type="date"
                 value={formData.orderDate}
                 onChange={handleChange}
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2">
-            <div>
-              <FormSelect
-                id="processId"
-                name="processId"
-                label="공종"
-                value={formData.processId}
-                onChange={handleChange}
-                options={processSelectOptions}
-                isLoading={processesLoading}
               />
             </div>
           </div>
@@ -330,14 +440,6 @@ const InstructionEdit = () => {
           </div>
 
           <div className="mb-6">
-            {/* <FormSelect
-              id="channel"
-              name="channel"
-              label="채널"
-              value={formData.channel}
-              onChange={handleChange}
-              options={CHANNEL_OPTIONS}
-            /> */}
             <FormInput
               id="channel"
               name="channel"
@@ -348,8 +450,25 @@ const InstructionEdit = () => {
             />
           </div>
 
-          <h2 className="text-lg font-semibold mb-4 mt-6">위치 정보</h2>
-          <div className="grid grid-cols-3 gap-6">
+          <div className="mb-6">
+            <FormSelect
+              id="status"
+              name="status"
+              label="상태"
+              value={formData.status}
+              onChange={handleChange}
+              options={[
+                { value: "접수", label: "접수" },
+                { value: "작업중", label: "작업중" },
+                { value: "작업완료", label: "작업완료" },
+                { value: "결재중", label: "결재중" },
+                { value: "완료", label: "완료" },
+              ]}
+            />
+          </div>
+
+          <h2 className="mt-6 mb-4 text-lg font-semibold">위치 정보</h2>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             <FormInput
               id="district"
               name="district"
@@ -375,8 +494,7 @@ const InstructionEdit = () => {
               onChange={handleChange}
             />
           </div>
-
-          <div className="grid grid-cols-2 gap-6 mt-6">
+          <div className="grid grid-cols-1 gap-6 mt-6 md:grid-cols-2">
             <FormInput
               id="detailAddress"
               name="detailAddress"
@@ -395,33 +513,40 @@ const InstructionEdit = () => {
             />
           </div>
 
-          <div className="mb-6">
+          <div className="mt-6">
             <FormTextArea
               id="memo"
               name="memo"
               label="비고"
-              placeholder="비고 사항을 입력하세요"
+              placeholder="추가 정보를 입력하세요"
               value={formData.memo}
               onChange={handleChange}
-              rows={3}
+              rows={4}
             />
           </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
+          <div className="flex items-center justify-end mt-8 space-x-3">
             <FormButton
-              variant="outline"
               type="button"
               onClick={handleCancel}
-              className="w-24"
+              variant="outline"
+              className="flex items-center"
             >
+              <ArrowLeft className="w-4 h-4 mr-2" />
               취소
             </FormButton>
             <FormButton
-              variant="primary"
               type="submit"
-              className="w-24"
-              isLoading={updateInstructionMutation.isLoading}
+              disabled={
+                updateInstructionMutation.isPending ||
+                isInstructionLoading ||
+                isContractsLoading ||
+                isPaymentsLoading
+              }
+              loading={updateInstructionMutation.isPending}
+              className="flex items-center"
             >
+              <Save className="w-4 h-4 mr-2" />
               저장
             </FormButton>
           </div>

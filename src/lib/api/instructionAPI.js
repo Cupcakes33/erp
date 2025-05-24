@@ -103,7 +103,7 @@ export const fetchInstructionDetail = async (id) => {
 
 /**
  * 새 지시를 생성하는 API
- * @param {Object} instructionData 지시 데이터. `channel` 필드가 있다면 문자열 타입이어야 합니다.
+ * @param {Object} instructionData 지시 데이터. `channel` 필드가 있다면 문자열 타입이어야 합니다. `center` 필드 (센터명, 문자열 타입)를 포함할 수 있습니다.
  * @returns {Promise<Object>} 생성된 지시 정보
  */
 export const createInstruction = async (instructionData) => {
@@ -119,7 +119,7 @@ export const createInstruction = async (instructionData) => {
 /**
  * 지시 정보를 수정하는 API
  * @param {number} id 지시 ID
- * @param {Object} instructionData 업데이트할 지시 데이터. `channel` 필드가 있다면 문자열 타입이어야 합니다.
+ * @param {Object} instructionData 업데이트할 지시 데이터. `channel` 필드가 있다면 문자열 타입이어야 합니다. `paymentId` 필드 (회차 ID, 숫자 타입)를 포함할 수 있습니다.
  * @returns {Promise<Object>} 수정된 지시 정보
  */
 export const updateInstruction = async (id, instructionData) => {
@@ -473,7 +473,7 @@ export const uploadCsvBulkInstructions = async (csvFile) => {
     const formData = new FormData();
     formData.append('file', csvFile);
 
-    const response = await api.post(`/api/instruction/file`, formData);
+    const response = await api.post(`/instruction/file`, formData);
     return response.data;
   } catch (error) {
     console.error('CSV 파일 일괄 등록 실패:', error);
@@ -610,6 +610,36 @@ export const fetchBosuConfirmationData = async (ids) => {
     return dummyData;
   } catch (error) {
     console.error('보수확인서 데이터 조회 실패:', error);
+    throw error;
+  }
+}
+
+/**
+ * 센터명을 기준으로 계약 목록을 조회하는 API
+ * @param {string} center - 센터명 (예: "강동", "성북")
+ * @returns {Promise<Object>} 계약 목록
+ */
+export const fetchContractsByCenter = async (center) => {
+  try {
+    const response = await api.get('/contract', { params: { center } });
+    return response.data;
+  } catch (error) {
+    console.error(`센터 [${center}] 계약 목록 조회 실패:`, error);
+    throw error;
+  }
+}
+
+/**
+ * 계약 ID를 기준으로 회차 목록을 조회하는 API
+ * @param {number} contractId - 계약 ID
+ * @returns {Promise<Object>} 회차 목록
+ */
+export const fetchPaymentsByContract = async (contractId) => {
+  try {
+    const response = await api.get(`/payment/${contractId}`);
+    return response.data;
+  } catch (error) {
+    console.error(`계약 ID [${contractId}] 회차 목록 조회 실패:`, error);
     throw error;
   }
 }
