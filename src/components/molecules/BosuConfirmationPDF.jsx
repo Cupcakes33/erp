@@ -117,6 +117,80 @@ const BosuConfirmationDocument = ({ data }) => {
   // 통화 형식(숫자 콤마) 포맷터
   const formatNumber = (num) => num.toLocaleString("en-US");
 
+  // 새로운 보수확인서 데이터 구조로 변환
+  const workItems = [];
+  const quantityItems = [];
+  const detailItems = [];
+  let totalMaterialAmount = 0;
+  let totalLaborAmount = 0;
+  let totalExpenseAmount = 0;
+  let grandTotalAmount = 0;
+
+  processes.forEach((proc) => {
+    proc.tasks.forEach((task) => {
+      workItems.push({
+        code: task.code || "미정",
+        type: task.name || "미정",
+        facility: `${name} - ${task.spec || ""}`,
+        designatedDate: proc.endDate || orderDate,
+      });
+
+      // 물량산출근거용 데이터 변환
+      quantityItems.push({
+        code: task.code || "미정",
+        typeName: `${task.name || "미정"} (${task.code || "미정"})`,
+        facility: task.facility || `${name} - ${task.spec || ""}`,
+        workName: task.workDetails || task.name || "미정",
+        spec: task.spec || "미정",
+        unit: task.unit || "미정",
+        quantity: task.unitCount || "1",
+        calculation: task.calculationDetails || "",
+        effect: task.effect || "",
+      });
+
+      // 내역서용 데이터 변환
+      const materialAmount = task.materialCost || 0;
+      const laborAmount = task.laborCost || 0;
+      const expenseAmount = task.expense || 0;
+      const totalAmount = materialAmount + laborAmount + expenseAmount;
+
+      detailItems.push({
+        code: task.code || "미정",
+        typeName: `${task.name || "미정"} (${task.code || "미정"})`,
+        facility: task.facility || "",
+        workName: task.workDetails || task.name || "미정",
+        spec: task.spec || "미정",
+        unit: task.unit || "미정",
+        quantity: task.unitCount || "1",
+        materialUnitPrice: formatNumber(materialAmount),
+        materialAmount: formatNumber(materialAmount),
+        laborUnitPrice: formatNumber(laborAmount),
+        laborAmount: formatNumber(laborAmount),
+        expenseUnitPrice: formatNumber(expenseAmount),
+        expenseAmount: formatNumber(expenseAmount),
+        totalUnitPrice: formatNumber(totalAmount),
+        totalAmount: formatNumber(totalAmount),
+        note: task.note || "",
+      });
+
+      totalMaterialAmount += materialAmount;
+      totalLaborAmount += laborAmount;
+      totalExpenseAmount += expenseAmount;
+      grandTotalAmount += totalAmount;
+    });
+  });
+
+  // 현재 날짜/시간 생성
+  const now = new Date();
+  const currentDate = now
+    .toLocaleDateString("ko-KR")
+    .replace(/\./g, ".")
+    .replace(/ /g, "");
+  const currentTime = now
+    .toLocaleTimeString("ko-KR", { hour12: false })
+    .substring(0, 5);
+  const printDateTime = `${currentDate} ${currentTime}`;
+
   // 표 항목 데이터 구성 (프로세스별로 그룹화된 tasks를 하나의 배열로 펼치면서 구분 헤더 추가)
   let tableRows = [];
   processes.forEach((proc) => {
@@ -173,38 +247,20 @@ const BosuConfirmationDocument = ({ data }) => {
     }
   }
 
-  // 총합계 계산 (모든 프로세스의 모든 task 대상)
-  let sumMaterialCost = 0,
-    sumMaterialPrice = 0;
-  let sumLaborCost = 0,
-    sumLaborPrice = 0;
-  let sumExpense = 0,
-    sumExpensePrice = 0;
-  let sumTotalCost = 0,
-    sumTotalPrice = 0;
-  processes.forEach((proc) => {
-    proc.tasks.forEach((task) => {
-      sumMaterialCost += task.materialCost || 0;
-      sumMaterialPrice += task.materialPrice || 0;
-      sumLaborCost += task.laborCost || 0;
-      sumLaborPrice += task.laborPrice || 0;
-      sumExpense += task.expense || 0;
-      sumExpensePrice += task.expensePrice || 0;
-      sumTotalCost += task.totalCost || 0;
-      sumTotalPrice += task.totalPrice || 0;
-    });
-  });
-
   return (
     <Document>
       <Pdf1
         styles={styles}
-        name={name}
-        structure={structure}
-        orderNumber={orderNumber}
-        orderDate={orderDate}
-        page1Rows={page1Rows}
-        formatNumber={formatNumber}
+        recipient="서울주택도시공사 성북주거안정통합센터"
+        sender="주식회사 중앙종합학안전기술연구원"
+        subject="시설물 보수확인서 제출"
+        instructionDate={orderDate}
+        instructionId={orderNumber}
+        additionalInfo={`${structure} 보수작업`}
+        prtId={`HMFM${orderNumber.replace(/-/g, "")}`}
+        pageInfo="1/1"
+        printDate={printDateTime}
+        workItems={workItems}
       />
       {(page2Rows.length > 0 ||
         (page2Rows.length === 0 &&
@@ -212,21 +268,26 @@ const BosuConfirmationDocument = ({ data }) => {
             0)) /* edge case for exactly MAX_ROWS_PER_PAGE on page 1 */ && (
         <Pdf2
           styles={styles}
-          page2Rows={page2Rows}
-          formatNumber={formatNumber}
+          instructionNumber={`${structure} 보수`}
+          instructionName={`${name} ${structure} 보수`}
+          prtId={`HMFM${orderNumber.replace(/-/g, "")}R04`}
+          pageInfo="1/1"
+          printDate={printDateTime}
+          quantityItems={quantityItems}
         />
       )}
       <Pdf3
         styles={styles}
-        sumMaterialCost={sumMaterialCost}
-        sumMaterialPrice={sumMaterialPrice}
-        sumLaborCost={sumLaborCost}
-        sumLaborPrice={sumLaborPrice}
-        sumExpense={sumExpense}
-        sumExpensePrice={sumExpensePrice}
-        sumTotalCost={sumTotalCost}
-        sumTotalPrice={sumTotalPrice}
-        formatNumber={formatNumber}
+        instructionNumber={structure}
+        instructionName={`${name} ${structure} 보수`}
+        prtId={`HMFM${orderNumber.replace(/-/g, "")}R05`}
+        pageInfo="1/1"
+        printDate={printDateTime}
+        detailItems={detailItems}
+        totalMaterialAmount={formatNumber(totalMaterialAmount)}
+        totalLaborAmount={formatNumber(totalLaborAmount)}
+        totalExpenseAmount={formatNumber(totalExpenseAmount)}
+        grandTotalAmount={formatNumber(grandTotalAmount)}
       />
     </Document>
   );
