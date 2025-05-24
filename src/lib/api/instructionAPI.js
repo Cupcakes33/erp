@@ -4,20 +4,18 @@ import api from '.'
 /**
  * 지시 목록 조회 API
  * @param {Object} params - 검색 및 페이징 파라미터
- * @param {string} params.status - 상태 필터
- * @param {number} params.page - 페이지 번호
- * @param {number} params.size - 페이지 크기
- * @param {string} params.keyword - 검색 키워드
- * @param {string} params.searchType - 검색 타입 (all, dong, lotNumber)
- * @param {string} params.startDate - 시작 날짜
- * @param {string} params.endDate - 종료 날짜
+ * @param {string} [params.center] - 센터 필터 (예: '강동', '성북')
+ * @param {string} [params.status] - 상태 필터
+ * @param {number} [params.page] - 페이지 번호 (0-based)
+ * @param {number} [params.size] - 페이지 크기
+ * @param {string} [params.keyword] - 검색 키워드 (지시 ID 등으로 검색 시 사용)
  * @returns {Promise<Object>} 지시 목록
  */
 export const fetchInstructions = async (params = {}) => {
   try {
     // 페이지 번호가 1부터 시작하는 경우 0부터 시작하도록 변환
     const apiParams = { ...params };
-    if (apiParams.page) {
+    if (apiParams.page && apiParams.page > 0) { // API는 0-based page index를 기대
       apiParams.page = apiParams.page - 1;
     }
     
@@ -105,7 +103,7 @@ export const fetchInstructionDetail = async (id) => {
 
 /**
  * 새 지시를 생성하는 API
- * @param {Object} instructionData 지시 데이터
+ * @param {Object} instructionData 지시 데이터. `channel` 필드가 있다면 문자열 타입이어야 합니다.
  * @returns {Promise<Object>} 생성된 지시 정보
  */
 export const createInstruction = async (instructionData) => {
@@ -121,7 +119,7 @@ export const createInstruction = async (instructionData) => {
 /**
  * 지시 정보를 수정하는 API
  * @param {number} id 지시 ID
- * @param {Object} instructionData 업데이트할 지시 데이터
+ * @param {Object} instructionData 업데이트할 지시 데이터. `channel` 필드가 있다면 문자열 타입이어야 합니다.
  * @returns {Promise<Object>} 수정된 지시 정보
  */
 export const updateInstruction = async (id, instructionData) => {
@@ -351,39 +349,33 @@ export const fetchTaskById = async (id) => {
 }
 
 /**
- * 공종별 작업 목록 조회 API
- * @param {number} processId 공종 ID
+ * 지시 ID별 작업 목록 조회 API
+ * @param {number} instructionId 지시 ID
  * @param {Object} params 페이징 파라미터
- * @param {number} params.page 페이지 번호
- * @param {number} params.size 페이지 크기
- * @returns {Promise<Object>} 작업 목록
+ * @param {number} [params.page] - 페이지 번호 (0-based index)
+ * @param {number} [params.size] - 페이지 크기
+ * @returns {Promise<Object>} 작업 목록 응답. 응답 객체 내 작업 배열의 각 작업 객체는 processId를 포함합니다. (예: { content: [{id: 1, name: '작업1', processId: 10, ...}, ...], ... })
  */
-export const fetchTasksByProcess = async (processId, params = {}) => {
+export const fetchTasksByInstructionId = async (instructionId, params = {}) => {
   try {
     // 페이지 번호가 1부터 시작하는 경우 0부터 시작하도록 변환
     const apiParams = { ...params };
-    if (apiParams.page) {
+    if (apiParams.page && apiParams.page > 0) { // API는 0-based page index를 기대
       apiParams.page = apiParams.page - 1;
     }
-    
-    // 공종 ID 추가
-    apiParams.process = processId;
-    
-    const response = await api.get(`/instruction/${processId}/tasks`, { params: apiParams });
-    
+    delete apiParams.size; // size 파라미터 제거
+
+    // 불필요한 빈 파라미터 제거
+    Object.keys(apiParams).forEach(key => {
+      if (apiParams[key] === '' || apiParams[key] === null || apiParams[key] === undefined) {
+        delete apiParams[key];
+      }
+    });
+
+    const response = await api.get(`/instruction/${instructionId}/tasks`, { params: apiParams });
     return response.data;
   } catch (error) {
-    console.error(`공종 ID ${processId}의 작업 목록 조회 실패:`, error);
-    throw error;
-  }
-}
-
-export const tempFetchTasksByProcess = async (processId) => {
-  try {
-    const response = await api.get(`/instruction/${processId}/tasks`)
-    return response.data
-  } catch (error) {
-    console.error(`공종 ID ${processId}의 작업 목록 조회 실패:`, error);
+    console.error(`지시 ID ${instructionId}의 작업 목록 조회 실패:`, error);
     throw error;
   }
 }
@@ -472,24 +464,16 @@ export const fetchUnitPrices = async (params = {}) => {
 }
 
 /**
- * CSV 파일을 이용한 지시 일괄 등록 API
+ * CSV 파일을 이용한 지시 일괄 등록 API (multipart/form-data 사용)
  * @param {File} csvFile CSV 파일
  * @returns {Promise<Object>} 일괄 등록 결과
  */
 export const uploadCsvBulkInstructions = async (csvFile) => {
   try {
-    // FormData 객체 생성
     const formData = new FormData();
     formData.append('file', csvFile);
-    
-    // 파일 전송 요청 헤더
-    const config = {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    };
-    
-    const response = await api.post(`/instruction/bulk-upload`, formData, config);
+
+    const response = await api.post(`/api/instruction/file`, formData);
     return response.data;
   } catch (error) {
     console.error('CSV 파일 일괄 등록 실패:', error);

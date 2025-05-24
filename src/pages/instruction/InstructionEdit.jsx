@@ -18,12 +18,12 @@ import {
 import { ArrowLeft, Save } from "lucide-react";
 
 // 채널 상수
-const CHANNEL_OPTIONS = [
-  { value: "전화", label: "전화" },
-  { value: "이메일", label: "이메일" },
-  { value: "직접방문", label: "직접방문" },
-  { value: "기타", label: "기타" },
-];
+// const CHANNEL_OPTIONS = [
+//   { value: "전화", label: "전화" },
+//   { value: "이메일", label: "이메일" },
+//   { value: "직접방문", label: "직접방문" },
+//   { value: "기타", label: "기타" },
+// ];
 
 const InstructionEdit = () => {
   const { id } = useParams();
@@ -42,7 +42,7 @@ const InstructionEdit = () => {
     name: "",
     manager: "",
     delegator: "",
-    channel: "전화",
+    channel: "",
     district: "",
     dong: "",
     lotNumber: "",
@@ -59,8 +59,8 @@ const InstructionEdit = () => {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
-    if (response && response.data) {
-      const instruction = response.data;
+    if (response) {
+      const instruction = response;
       setFormData({
         orderId: instruction.orderId || 0,
         orderNumber: instruction.orderNumber || "",
@@ -68,7 +68,7 @@ const InstructionEdit = () => {
         name: instruction.name || "",
         manager: instruction.manager || "",
         delegator: instruction.delegator || "",
-        channel: instruction.channel || "전화",
+        channel: instruction.channel || "",
         district: instruction.district || "",
         dong: instruction.dong || "",
         lotNumber: instruction.lotNumber || "",
@@ -330,13 +330,21 @@ const InstructionEdit = () => {
           </div>
 
           <div className="mb-6">
-            <FormSelect
+            {/* <FormSelect
               id="channel"
               name="channel"
               label="채널"
               value={formData.channel}
               onChange={handleChange}
               options={CHANNEL_OPTIONS}
+            /> */}
+            <FormInput
+              id="channel"
+              name="channel"
+              label="채널"
+              placeholder="채널을 입력하세요"
+              value={formData.channel}
+              onChange={handleChange}
             />
           </div>
 

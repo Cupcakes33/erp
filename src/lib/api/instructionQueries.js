@@ -14,7 +14,7 @@ import {
   updateProcess,
   deleteProcess,
   fetchTaskById,
-  fetchTasksByProcess,
+  fetchTasksByInstructionId,
   createTask,
   updateTask,
   deleteTask,
@@ -371,31 +371,31 @@ const TASKS_QUERY_KEY = 'tasks';
 const TASK_DETAIL_QUERY_KEY = 'task';
 
 /**
- * 특정 공종에 속한 작업 목록을 조회하는 React Query 훅
- * @param {number} processId 공종 ID
+ * 특정 지시에 속한 작업 목록을 조회하는 React Query 훅
+ * @param {number} instructionId 지시 ID
  * @param {Object} params 페이징 파라미터
  * @returns {UseQueryResult} 쿼리 결과
  */
-export const useTasksByProcess = (processId, params = {}) => {
+export const useTasksByInstructionId = (instructionId, params = {}) => {
   return useQuery({
-    queryKey: [TASKS_QUERY_KEY, processId, params],
-    queryFn: () => fetchTasksByProcess(processId, params),
-    enabled: !!processId, // 공종 ID가 있을 때만 쿼리 실행
-    select: (data) => {
-      // API 응답 형식에 맞게 데이터 변환
-      const content = data?.data?.content || [];
+    queryKey: [TASKS_QUERY_KEY, instructionId, params],
+    queryFn: () => fetchTasksByInstructionId(instructionId, params),
+    enabled: !!instructionId, // 지시 ID가 있을 때만 쿼리 실행
+    select: (responseData) => {
+      // API 응답에서 실제 작업 목록은 responseData.data 에 배열로 존재
+      const tasks = responseData?.data || [];
       
-      // API가 0부터 시작하는 페이지 인덱스를 사용하므로 UI에서는 1부터 시작하도록 변환
-      const currentPage = (data?.data?.currentPage ?? 0) + 1;
-      
+      // 페이지네이션 정보가 현재 API 응답에 없으므로 기본값 또는 단순 계산으로 처리
+      // (예: totalCount는 배열 길이, totalPage는 1로 가정 등)
+      // 혹은 이 정보를 사용하지 않는다면 반환 객체에서 제외할 수도 있음
       return {
-        tasks: content,
-        totalCount: data?.data?.totalElements || 0,
-        totalPage: data?.data?.totalPages || 0, 
-        currentPage: currentPage,
-        size: data?.data?.size || 10,
-        hasNext: data?.data?.hasNext || false,
-        hasPrevious: data?.data?.hasPrevious || false
+        tasks: tasks,
+        totalCount: tasks.length, // API에 페이지네이션 정보가 없으므로 배열 길이로 대체
+        totalPage: 1, // 페이지네이션 정보가 없으므로 1페이지로 가정
+        currentPage: 1, // 페이지네이션 정보가 없으므로 1페이지로 가정
+        size: tasks.length, // 페이지네이션 정보가 없으므로 배열 길이로 대체
+        hasNext: false, // 페이지네이션 정보가 없으므로 false로 가정
+        hasPrevious: false // 페이지네이션 정보가 없으므로 false로 가정
       };
     }
   });
@@ -459,10 +459,13 @@ export const useDeleteTask = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, processId }) => deleteTask(id),
+    mutationFn: ({ id, instructionId }) => deleteTask(id),
     onSuccess: (data, variables) => {
-      // 작업 목록 쿼리 무효화
-      queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, variables.processId] });
+      // 작업 목록 쿼리 무효화 (instructionId 기준)
+      // variables 객체에는 mutationFn에 전달된 객체가 그대로 들어옴
+      if (variables.instructionId) {
+        queryClient.invalidateQueries({ queryKey: [TASKS_QUERY_KEY, variables.instructionId] });
+      }
     }
   });
 };

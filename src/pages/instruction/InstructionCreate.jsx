@@ -22,12 +22,12 @@ const STATUS_OPTIONS = [
   { value: "완료", label: "완료" },
 ];
 
-const CHANNEL_OPTIONS = [
-  { value: "전화", label: "전화" },
-  { value: "이메일", label: "이메일" },
-  { value: "직접방문", label: "직접방문" },
-  { value: "기타", label: "기타" },
-];
+// const CHANNEL_OPTIONS = [
+//   { value: "전화", label: "전화" },
+//   { value: "이메일", label: "이메일" },
+//   { value: "직접방문", label: "직접방문" },
+//   { value: "기타", label: "기타" },
+// ];
 
 const InstructionCreate = () => {
   const navigate = useNavigate();
@@ -47,7 +47,7 @@ const InstructionCreate = () => {
     name: "",
     manager: "",
     delegator: "",
-    channel: "전화",
+    channel: "",
     district: "",
     dong: "",
     lotNumber: "",
@@ -273,13 +273,13 @@ const InstructionCreate = () => {
           </div>
 
           <div className="mb-6">
-            <FormSelect
+            <FormInput
               id="channel"
               name="channel"
               label="채널"
+              placeholder="채널을 입력하세요"
               value={formData.channel}
               onChange={handleChange}
-              options={CHANNEL_OPTIONS}
             />
           </div>
 

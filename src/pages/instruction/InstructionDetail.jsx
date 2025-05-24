@@ -48,11 +48,9 @@ import {
   useUpdateTask,
   useDeleteTask,
   useUnitPrices,
+  useTasksByInstructionId,
 } from "../../lib/api/instructionQueries";
-import {
-  fetchTasksByProcess,
-  fetchAllProcesses,
-} from "../../lib/api/instructionAPI";
+import { fetchAllProcesses } from "../../lib/api/instructionAPI";
 import { Input } from "../../components/ui/input";
 import { formatDateTime } from "../../lib/utils/dateUtils";
 
@@ -583,6 +581,10 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
             <p className="font-medium">{instruction?.structure || "-"}</p>
           </div>
           <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">채널</p>
+            <p className="font-medium">{instruction?.channel || "-"}</p>
+          </div>
+          <div className="space-y-1">
             <p className="text-sm font-medium text-gray-500">관리자</p>
             <p className="font-medium">{instruction?.manager || "-"}</p>
           </div>
@@ -708,86 +710,26 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
 
   // 모든 공종의 작업 목록을 관리하기 위한 상태
   const [allTasks, setAllTasks] = useState([]);
-  const [isAllTasksLoading, setIsAllTasksLoading] = useState(false);
+  const [isTasksLoading, setIsTasksLoading] = useState(false);
 
-  // 모든 공종의 작업 목록 로드
+  // useTasksByInstructionId 훅 사용
+  const {
+    data: tasksData,
+    isLoading: tasksLoadingHook,
+    error: tasksError,
+  } = useTasksByInstructionId(
+    instructionId,
+    {
+      /* size: 9999 */
+    }, // size 파라미터 제거 또는 주석 처리
+    { enabled: !!instructionId }
+  );
+
   useEffect(() => {
-    const loadAllTasks = async () => {
-      setIsAllTasksLoading(true);
-      try {
-        if (!processesData?.processes || processesData.processes.length === 0) {
-          setAllTasks([]);
-          setIsAllTasksLoading(false);
-          return;
-        }
-
-        const taskPromises = processesData.processes.map((process_item) =>
-          fetchTasksByProcess(process_item.id, { size: 500 })
-        );
-        const taskResults = await Promise.allSettled(taskPromises);
-
-        const combinedTasks = taskResults.reduce((acc, result, index) => {
-          if (
-            result.status === "fulfilled" &&
-            result.value?.data &&
-            Array.isArray(result.value.data)
-          ) {
-            const process = processesData.processes[index];
-            const tasksFromApi = result.value.data.map((task) => {
-              const count =
-                task.count !== undefined ? task.count : task.unitCount || 0;
-              let finalTotalCost = 0;
-              if (task.totalCost !== undefined) {
-                finalTotalCost = task.totalCost;
-              } else if (task.price !== undefined) {
-                finalTotalCost = task.price;
-              } else if (task.unitPrice && task.unitPrice.price !== undefined) {
-                finalTotalCost = task.unitPrice.price;
-              }
-              const finalTotalPrice =
-                task.totalPrice !== undefined
-                  ? task.totalPrice
-                  : finalTotalCost * count;
-              return {
-                ...task,
-                id: task.id,
-                process: { id: process.id, name: process.name },
-                count,
-                totalCost: finalTotalCost,
-                totalPrice: finalTotalPrice,
-              };
-            });
-            return acc.concat(tasksFromApi);
-          }
-          return acc;
-        }, []);
-        setAllTasks(combinedTasks);
-      } catch (error) {
-        console.error(
-          "전체 작업 목록 로드 중 예외 발생 (handleSaveTask):",
-          error
-        );
-        setAllTasks([]);
-      } finally {
-        setIsAllTasksLoading(false);
-      }
-    };
-
-    if (isLoading) {
-      setIsAllTasksLoading(true);
-    } else {
-      if (
-        processesData &&
-        processesData.processes &&
-        processesData.processes.length > 0
-      ) {
-        loadAllTasks();
-      } else {
-        setAllTasks([]);
-        setIsAllTasksLoading(false);
-      }
+    if (tasksData?.tasks) {
+      setAllTasks(tasksData.tasks);
     }
-  }, [processesData, isLoading, instructionId]);
+  }, [tasksData]);
 
   // 필터링된 공종 목록
   const filteredProcesses = useMemo(() => {
@@ -930,12 +872,18 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
 
   // 작업 삭제 실행
   const handleDeleteTask = async () => {
-    if (!taskToDelete || !selectedProcess) return;
+    if (!taskToDelete) {
+      // taskToDelete 객체의 존재 여부만 확인
+      console.error("삭제할 작업 정보가 없습니다.", taskToDelete);
+      showError("작업 정보를 찾을 수 없어 삭제할 수 없습니다.");
+      return;
+    }
 
     try {
+      // instructionId는 ProcessesTab의 props로 전달받은 것을 사용
       await deleteTaskMutation.mutateAsync({
         id: taskToDelete.id,
-        processId: selectedProcess.id,
+        instructionId: instructionId, // 쿼리 무효화를 위해 instructionId 전달
       });
       showSuccess("작업이 삭제되었습니다.");
       setShowTaskDeleteDialog(false);
@@ -979,77 +927,6 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
       }
       setShowTaskModal(false);
       setEditingTask(null);
-
-      // 전체 작업 목록 다시 로드
-      const loadAllTasks = async () => {
-        setIsAllTasksLoading(true);
-        try {
-          if (
-            !processesData?.processes ||
-            processesData.processes.length === 0
-          ) {
-            setAllTasks([]);
-            setIsAllTasksLoading(false);
-            return;
-          }
-
-          const taskPromises = processesData.processes.map((process_item) =>
-            fetchTasksByProcess(process_item.id, { size: 500 })
-          );
-          const taskResults = await Promise.allSettled(taskPromises);
-
-          const combinedTasks = taskResults.reduce((acc, result, index) => {
-            if (
-              result.status === "fulfilled" &&
-              result.value?.data &&
-              Array.isArray(result.value.data)
-            ) {
-              const process = processesData.processes[index];
-              const tasksFromApi = result.value.data.map((task) => {
-                const count =
-                  task.count !== undefined ? task.count : task.unitCount || 0;
-                let finalTotalCost = 0;
-                if (task.totalCost !== undefined) {
-                  finalTotalCost = task.totalCost;
-                } else if (task.price !== undefined) {
-                  finalTotalCost = task.price;
-                } else if (
-                  task.unitPrice &&
-                  task.unitPrice.price !== undefined
-                ) {
-                  finalTotalCost = task.unitPrice.price;
-                }
-                const finalTotalPrice =
-                  task.totalPrice !== undefined
-                    ? task.totalPrice
-                    : finalTotalCost * count;
-                return {
-                  ...task,
-                  id: task.id,
-                  process: { id: process.id, name: process.name },
-                  count,
-                  totalCost: finalTotalCost,
-                  totalPrice: finalTotalPrice,
-                };
-              });
-              return acc.concat(tasksFromApi);
-            }
-            return acc;
-          }, []);
-
-          setAllTasks(combinedTasks);
-        } catch (error) {
-          console.error(
-            "전체 작업 목록 로드 중 예외 발생 (handleSaveTask):",
-            error
-          );
-          setAllTasks([]);
-        } finally {
-          setIsAllTasksLoading(false);
-        }
-      };
-
-      loadAllTasks();
     } catch (error) {
       console.error("작업 저장 실패:", error);
     }
@@ -1172,9 +1049,15 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
       ),
     },
     {
-      accessorKey: "process.name",
+      accessorKey: "processId",
       header: "공종",
-      cell: ({ row }) => row.original.process?.name || "-",
+      cell: ({ row }) => {
+        const processList = processesData?.processes || [];
+        const process = processList.find(
+          (p) => p.id === row.original.processId
+        );
+        return process ? process.name : "-";
+      },
     },
     {
       accessorKey: "name",
@@ -1352,53 +1235,19 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
           </div>
         </div>
 
-        {isAllTasksLoading ? (
-          <Loading />
-        ) : hasTasks ? (
-          <>
-            <DataTable
-              columns={
-                canEdit
-                  ? allTasksColumns
-                  : allTasksColumns.filter((col) => col.id !== "actions")
-              }
-              data={filteredTasks}
-              isLoading={isAllTasksLoading}
-              emptyMessage="등록된 작업이 없습니다. '작업 추가' 버튼을 클릭하여 새 작업을 추가하세요."
-              className="w-full"
-              densePadding={true}
-            />
-            <div className="flex justify-end p-4 mt-4 border rounded-lg bg-gray-50">
-              <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-gray-500">
-                  총 작업수:
-                </span>
-                <span className="font-bold">{filteredTasks.length}개</span>
-                <span className="ml-4 text-sm font-medium text-gray-500">
-                  총 금액:
-                </span>
-                <span className="text-lg font-bold text-blue-700">
-                  {filteredTasks
-                    .reduce((sum, task) => {
-                      const total =
-                        task.totalPrice ||
-                        (task.totalCost ||
-                          task.price ||
-                          task.unitPrice?.price ||
-                          0) * (task.count || task.unitCount || 0);
-                      return sum + total;
-                    }, 0)
-                    .toLocaleString()}
-                  원
-                </span>
-              </div>
-            </div>
-          </>
-        ) : (
-          <div className="p-4 text-center text-gray-500 rounded-md bg-gray-50">
-            등록된 작업이 없습니다. '작업 추가' 버튼을 클릭하여 새 작업을
-            추가하세요.
-          </div>
+        {/* 작업 목록 테이블 */}
+        {filteredTasks.length > 0 && (
+          <DataTable
+            columns={allTasksColumns}
+            data={filteredTasks}
+            pageSize={10}
+            isLoading={tasksLoadingHook}
+          />
+        )}
+        {filteredTasks.length === 0 && !tasksLoadingHook && (
+          <p className="py-4 text-center text-gray-500">
+            표시할 작업이 없습니다.
+          </p>
         )}
       </div>
 
@@ -1420,7 +1269,7 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
         confirmLabel="삭제"
         cancelLabel="취소"
         onConfirm={handleDeleteProcess}
-        onCancel={() => {
+        onClose={() => {
           setShowDeleteDialog(false);
           setProcessToDelete(null);
         }}
@@ -1446,7 +1295,7 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
         confirmLabel="삭제"
         cancelLabel="취소"
         onConfirm={handleDeleteTask}
-        onCancel={() => {
+        onClose={() => {
           setShowTaskDeleteDialog(false);
           setTaskToDelete(null);
         }}

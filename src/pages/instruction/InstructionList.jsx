@@ -18,7 +18,6 @@ import {
   PlusCircle,
   Search,
   FileUp,
-  Calendar,
   Filter,
   X,
   ListFilter,
@@ -28,27 +27,12 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronsRight,
-  User,
   FileText,
 } from "lucide-react";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import {
   uploadCsvBulkInstructions,
   fetchBosuConfirmationData,
 } from "../../lib/api/instructionAPI";
-
-// DatePicker 스타일 오버라이드를 위한 CSS 추가
-const customDatePickerStyle = `
-  .react-datepicker-wrapper {
-    width: 100%;
-    display: block;
-  }
-  .react-datepicker__input-container {
-    width: 100%;
-    display: block;
-  }
-`;
 
 // 상태와 우선순위 매핑 객체 (5단계 상태로 업데이트)
 const STATUS_MAP = {
@@ -58,12 +42,6 @@ const STATUS_MAP = {
   결재중: { label: "결재중", color: "orange" },
   완료: { label: "완료", color: "purple" },
   취소: { label: "취소", color: "red" }, // 선택적 상태로 유지
-};
-
-const PRIORITY_MAP = {
-  HIGH: { label: "높음", color: "red" },
-  MEDIUM: { label: "중간", color: "yellow" },
-  LOW: { label: "낮음", color: "green" },
 };
 
 // 로컬 스토리지 키 정의
@@ -76,9 +54,7 @@ const InstructionList = () => {
     page: 1,
     size: 10,
     keyword: "",
-    searchType: "all",
-    startDate: "",
-    endDate: "",
+    center: "",
   });
 
   const {
@@ -113,33 +89,18 @@ const InstructionList = () => {
       const savedFilters = localStorage.getItem(FILTER_STORAGE_KEY);
       if (savedFilters) {
         const parsedFilters = JSON.parse(savedFilters);
-
-        // 날짜 문자열을 Date 객체로 변환
-        if (parsedFilters.startDate) {
-          parsedFilters.startDate = new Date(parsedFilters.startDate);
-        }
-        if (parsedFilters.endDate) {
-          parsedFilters.endDate = new Date(parsedFilters.endDate);
-        }
-
         return parsedFilters;
       }
     } catch (e) {
       console.error("필터 상태 로드 오류:", e);
     }
 
-    // 기본 필터 상태 반환
-    return {
+    const defaultInitialFilters = {
       status: "",
-      manager: "",
-      name: "",
-      branchName: "",
-      startDate: null,
-      endDate: null,
-      searchType: "all",
-      search: "",
-      dateField: "orderDate",
+      center: "",
+      orderIdKeyword: "",
     };
+    return defaultInitialFilters;
   };
 
   // 필터 상태 초기화
@@ -148,62 +109,45 @@ const InstructionList = () => {
   // 필터 상태가 변경될 때 로컬 스토리지에 저장
   useEffect(() => {
     try {
-      // 날짜 객체는 문자열로 변환하여 저장
       const filtersToSave = {
         ...filters,
-        branchName: filters.branchName || "",
-        startDate: filters.startDate ? filters.startDate.toISOString() : null,
-        endDate: filters.endDate ? filters.endDate.toISOString() : null,
+        center: filters.center || "",
+        orderIdKeyword: filters.orderIdKeyword || "",
       };
-
       localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filtersToSave));
     } catch (e) {
       console.error("필터 상태 저장 오류:", e);
     }
   }, [filters]);
 
-  // 컴포넌트 마운트 시 저장된 필터가 있으면 API 호출
+  // 컴포넌트 마운트 시 저장된 필터가 있거나, 필터가 없어도 초기 API 호출 실행
   useEffect(() => {
-    // 저장된 필터가 있고 기본값이 아닌 경우에만 API 호출
-    if (
-      filters.status ||
-      filters.manager ||
-      filters.name ||
-      filters.branchName ||
-      filters.startDate ||
-      filters.endDate
-    ) {
-      handleApplyFilter();
-    }
-  }, []);
+    handleApplyFilter();
+  }, []); // 마운트 시 1회 실행
 
   // 선택 상태 변경 감지를 위한 useEffect 추가
   useEffect(() => {
-    // 선택된 행이 있는지 확인
+    // 선택된 행이 없는 경우
     if (Object.keys(rowSelection).length === 0) {
-      setSelectedInstructions([]);
+      // 이미 빈 배열이면 상태 업데이트 방지
+      if (selectedInstructions.length > 0) {
+        setSelectedInstructions([]);
+      }
       return;
     }
 
-    // 직접적인 방식으로 선택된 ID 추출 시도
     const selectedIds = [];
 
-    // 방법 1: rowSelection 키에서 직접 ID 추출 시도
+    // 방법 1: rowSelection 키에서 직접 ID 추출 시도 (기존 로직 유지)
     Object.keys(rowSelection).forEach((rowId) => {
       if (rowSelection[rowId]) {
         try {
-          // TanStack v8+ 에서는 'row_${table.id}_${row.id}' 형식일 수 있음
-          // 모든 _ 문자로 분할하고 마지막 부분을 가져옴
           const parts = rowId.split("_");
           const lastPart = parts[parts.length - 1];
-
-          // 숫자로 변환 가능한 경우 인덱스로 간주
           const index = parseInt(lastPart);
 
           if (!isNaN(index) && index >= 0 && index < instructions.length) {
-            // 유효한 인덱스인 경우 해당 행 데이터 접근
             const row = instructions[index];
-
             if (row && row.id !== undefined) {
               selectedIds.push(row.id);
             } else if (row && row.orderId !== undefined) {
@@ -216,11 +160,13 @@ const InstructionList = () => {
       }
     });
 
-    // 방법 2: 모든 ID를 확인하고 rowSelection에 있는지 확인
+    // 방법 2: 모든 ID를 확인하고 rowSelection에 있는지 확인 (기존 로직 유지)
+    // 이 부분은 rowSelection의 ID 형식이 일관적이라면 방법 1로 충분할 수 있습니다.
+    // 중복 ID가 들어가지 않도록 주의해야 합니다.
+    const currentSelectedIdsSet = new Set(selectedIds);
     for (let i = 0; i < instructions.length; i++) {
-      // row_0, row_1 등의 형식과 row_table_0 형식 모두 확인
       const simpleRowId = `row_${i}`;
-      const alternateRowId1 = `row_table_${i}`;
+      const alternateRowId1 = `row_table_${i}`; // 테이블 구현에 따라 다를 수 있음
       const alternateRowId2 = `${i}`;
 
       if (
@@ -229,23 +175,32 @@ const InstructionList = () => {
         rowSelection[alternateRowId2]
       ) {
         const row = instructions[i];
+        let idToAdd = null;
         if (row && row.id !== undefined) {
-          if (!selectedIds.includes(row.id)) {
-            selectedIds.push(row.id);
-          }
+          idToAdd = row.id;
         } else if (row && row.orderId !== undefined) {
-          if (!selectedIds.includes(row.orderId)) {
-            selectedIds.push(row.orderId);
-          }
+          idToAdd = row.orderId;
+        }
+
+        if (idToAdd !== null && !currentSelectedIdsSet.has(idToAdd)) {
+          selectedIds.push(idToAdd);
+          currentSelectedIdsSet.add(idToAdd); // Set에도 추가하여 중복 방지
         }
       }
     }
 
+    // selectedIds 배열을 정렬하여 stringify 결과의 일관성 확보 (선택 사항)
+    const sortedSelectedIds = [...selectedIds].sort();
+    const sortedCurrentSelectedInstructions = [...selectedInstructions].sort();
+
     // 이전 상태와 다를 경우에만 업데이트
-    if (JSON.stringify(selectedIds) !== JSON.stringify(selectedInstructions)) {
-      setSelectedInstructions(selectedIds);
+    if (
+      JSON.stringify(sortedSelectedIds) !==
+      JSON.stringify(sortedCurrentSelectedInstructions)
+    ) {
+      setSelectedInstructions(sortedSelectedIds);
     }
-  }, [rowSelection, instructions]);
+  }, [rowSelection, instructions]); // 의존성 배열에서 selectedInstructions 제거 확인
 
   // 테이블에 표시할 컬럼 선택 상태 (새로운 필드 추가)
   const [visibleColumns, setVisibleColumns] = useState([
@@ -277,43 +232,12 @@ const InstructionList = () => {
   const handleApplyFilter = () => {
     // API 필터링을 위한 상태 업데이트
     const newFilterParams = {
-      ...filterParams,
-      page: 1, // 필터 변경 시 첫 페이지로 돌아가기
+      page: 1, // 필터 적용 시 항상 첫 페이지로
+      size: filterParams.size, // 현재 페이지 크기는 유지 (또는 기본값 filterParams.size)
       status: filters.status || "",
-      name: filters.name || "",
-      manager: filters.manager || "",
-      branchName: filters.branchName || "",
+      center: filters.center || "",
+      keyword: filters.orderIdKeyword || "",
     };
-
-    // 날짜 범위 필터 처리
-    if (filters.startDate) {
-      newFilterParams.startDate = filters.startDate.toISOString().split("T")[0];
-    } else {
-      newFilterParams.startDate = "";
-    }
-
-    if (filters.endDate) {
-      newFilterParams.endDate = filters.endDate.toISOString().split("T")[0];
-    } else {
-      newFilterParams.endDate = "";
-    }
-
-    // 검색어 처리
-    if (filters.search) {
-      newFilterParams.keyword = filters.search;
-
-      if (filters.searchType === "dong") {
-        newFilterParams.searchType = "dong";
-      } else if (filters.searchType === "lotNumber") {
-        newFilterParams.searchType = "lotNumber";
-      } else {
-        newFilterParams.searchType = "all";
-      }
-    } else {
-      // 검색어가 없으면 검색 관련 파라미터 제거
-      newFilterParams.keyword = "";
-      newFilterParams.searchType = "all";
-    }
 
     setFilterParams(newFilterParams);
   };
@@ -631,14 +555,6 @@ const InstructionList = () => {
     { value: "취소", label: "취소" },
   ];
 
-  const priorityOptions = [
-    { value: "", label: "모든 우선순위" },
-    ...Object.entries(PRIORITY_MAP).map(([value, { label }]) => ({
-      value,
-      label,
-    })),
-  ];
-
   const columnOptions = allColumns.map((column) => ({
     value: column.accessorKey,
     label: column.header,
@@ -783,14 +699,8 @@ const InstructionList = () => {
   const resetFilters = () => {
     const defaultFilters = {
       status: "",
-      manager: "",
-      name: "",
-      branchName: "",
-      startDate: null,
-      endDate: null,
-      searchType: "all",
-      search: "",
-      dateField: "orderDate",
+      center: "",
+      orderIdKeyword: "",
     };
 
     // 필터 상태 초기화
@@ -801,32 +711,19 @@ const InstructionList = () => {
 
     // API 호출 파라미터 초기화
     setFilterParams({
-      ...filterParams,
       status: "",
-      name: "",
-      manager: "",
-      startDate: "",
-      endDate: "",
-      branchName: "",
+      center: "",
+      keyword: "",
       page: 1,
+      size: filterParams.size,
     });
   };
 
-  // 날짜 범위 선택 핸들러
-  const handleDateRangeChange = (dates) => {
-    const [start, end] = dates;
-    setFilters({
-      ...filters,
-      startDate: start,
-      endDate: end,
-    });
-  };
+  // filterParams 변경 감지 로그 추가
+  useEffect(() => {}, [filterParams]);
 
   return (
     <div className="min-h-screen px-4 py-6 mx-auto bg-gray-50">
-      {/* DatePicker 스타일 오버라이드 */}
-      <style>{customDatePickerStyle}</style>
-
       {/* 헤더 영역 */}
       <div className="p-6 mb-6 bg-white rounded-lg shadow-sm">
         <div className="flex items-center justify-between mb-4">
@@ -871,64 +768,44 @@ const InstructionList = () => {
         {/* 새로운 간소화된 필터 - 한 줄로 배치 */}
         <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
           <div className="flex flex-wrap items-start justify-between w-full gap-4">
-            {/* 지점 필터 */}
+            {/* 센터 필터 (기존 지점 필터 변경) */}
             <div className="flex-1 min-w-[180px]">
               <label
-                htmlFor="branchName-filter"
+                htmlFor="center-filter"
                 className="block mb-1 text-xs font-medium text-gray-700"
               >
-                지점
+                센터
               </label>
               <FormSelect
-                id="branchName-filter"
-                name="branchName"
-                value={filters.branchName}
+                id="center-filter"
+                name="center"
+                value={filters.center}
                 onChange={handleFilterChange}
                 options={[
-                  { value: "1번지점", label: "1번지점" },
-                  { value: "2번지점", label: "2번지점" },
+                  { value: "강동", label: "강동" },
+                  { value: "성북", label: "성북" },
                 ]}
                 className="h-10 py-0 text-sm"
                 fullWidth={true}
               />
             </div>
 
-            {/* 제목 필터 */}
+            {/* 지시 ID 필터 (기존 제목 필터 변경) */}
             <div className="flex-1 min-w-[180px]">
               <label className="block mb-1 text-xs font-medium text-gray-700">
-                제목
+                지시 ID
               </label>
               <div className="relative">
                 <input
                   type="text"
-                  name="name"
-                  value={filters.name}
+                  name="orderIdKeyword"
+                  value={filters.orderIdKeyword}
                   onChange={handleFilterChange}
-                  placeholder="제목으로 검색"
+                  placeholder="지시 ID로 검색"
                   className="w-full h-10 px-3 py-2 pl-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
                 />
                 <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
                   <Search className="w-4 h-4 text-gray-400" />
-                </div>
-              </div>
-            </div>
-
-            {/* 관리자 필터 - 드롭다운에서 입력 필드로 변경 */}
-            <div className="flex-1 min-w-[150px]">
-              <label className="block mb-1 text-xs font-medium text-gray-700">
-                관리자
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  name="manager"
-                  value={filters.manager}
-                  onChange={handleFilterChange}
-                  placeholder="관리자명 입력"
-                  className="w-full h-10 px-3 py-2 pl-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-                />
-                <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
-                  <User className="w-4 h-4 text-gray-400" />
                 </div>
               </div>
             </div>
@@ -947,30 +824,6 @@ const InstructionList = () => {
                 className="h-10 py-0 text-sm"
                 fullWidth={true}
               />
-            </div>
-
-            {/* 지시일자 필터 - DateRangePicker 사용 */}
-            <div className="flex-1 min-w-[220px]">
-              <label className="block mb-1 text-xs font-medium text-gray-700">
-                지시일자 범위
-              </label>
-              <div className="relative w-full">
-                <DatePicker
-                  selected={filters.startDate}
-                  onChange={handleDateRangeChange}
-                  startDate={filters.startDate}
-                  endDate={filters.endDate}
-                  selectsRange
-                  dateFormat="yyyy-MM-dd"
-                  placeholderText="시작일 ~ 종료일"
-                  className="w-full h-10 px-3 py-2 pl-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
-                  isClearable
-                  wrapperClassName="w-full"
-                />
-                <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
-                  <Calendar className="w-4 h-4 text-gray-400" />
-                </div>
-              </div>
             </div>
 
             {/* 버튼 그룹 */}
