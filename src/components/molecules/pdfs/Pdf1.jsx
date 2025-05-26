@@ -2,39 +2,42 @@ import React from "react";
 import { Page, Text, View } from "@react-pdf/renderer";
 
 export default function Pdf1({
-  styles,
+  pageStyle,
+  contentStyles,
+  data,
   recipient = "서울주택도시공사 성북주거안정통합센터",
   sender = "주식회사 중앙종합학안전기술연구원",
   subject = "시설물 보수확인서 제출",
-  instructionDate = "2025.02.11",
-  instructionId = "3033727",
-  additionalInfo = "컨셉2025-단기 -0194",
-  prtId = "HMFMQB0201R03",
   pageInfo = "1/1",
-  printDate = "2025.03.21 09:19",
-  workItems = [
-    {
-      code: "3101050",
-      type: "건축-수장-단열층",
-      facility: "다가구매입임대(경북구) 0121 - 0502",
-      designatedDate: "2025.02.24",
-    },
-    {
-      code: "3101051",
-      type: "건축-수장-도배",
-      facility: "다가구매입임대(경북구) 0121 - 0502",
-      designatedDate: "2025.02.24",
-    },
-  ],
 }) {
-  // 긴 텍스트를 지정된 길이로 분할하는 함수
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = (now.getMonth() + 1).toString().padStart(2, "0");
+  const day = now.getDate().toString().padStart(2, "0");
+  const hours = now.getHours().toString().padStart(2, "0");
+  const minutes = now.getMinutes().toString().padStart(2, "0");
+  const printDate = `${year}.${month}.${day} ${hours}:${minutes}`;
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "날짜 미정";
+    return dateStr.includes("-") ? dateStr.replace(/-/g, ".") : dateStr;
+  };
+
+  const instructionDate = formatDate(data?.orderDate);
+  const instructionId = data?.orderId || "ID 미정";
+  const additionalInfo = data?.orderNumber || "번호 미정";
+  const prtId = data?.orderNumber
+    ? `HMFM${data.orderNumber.replace(/-/g, "")}`
+    : "PRT-ID 미정";
+
+  const structureName = data?.structure || "시설물 정보 없음";
+  const mainTitle = data?.name || "제목 없음";
+
   const splitText = (text, maxLength) => {
     if (!text || text.length <= maxLength) return text;
-
-    const words = text.split(" ");
+    const words = String(text).split(" ");
     const lines = [];
     let currentLine = "";
-
     words.forEach((word) => {
       if (currentLine.length + word.length + 1 <= maxLength) {
         currentLine += (currentLine ? " " : "") + word;
@@ -43,17 +46,15 @@ export default function Pdf1({
         currentLine = word;
       }
     });
-
     if (currentLine) lines.push(currentLine);
     return lines.join("\n");
   };
 
   return (
-    <Page size="A4" style={styles.page}>
-      {/* 문서 제목 */}
+    <Page size="A4" style={pageStyle}>
       <Text
         style={[
-          styles.title,
+          contentStyles.title,
           {
             fontSize: 18,
             fontWeight: "bold",
@@ -65,7 +66,6 @@ export default function Pdf1({
         보수확인서
       </Text>
 
-      {/* 상단 정보 영역 */}
       <View
         style={{
           flexDirection: "row",
@@ -73,7 +73,6 @@ export default function Pdf1({
           marginBottom: 20,
         }}
       >
-        {/* 좌측 정보 */}
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: "row", marginBottom: 8 }}>
             <Text style={{ width: 80, fontSize: 12 }}>수</Text>
@@ -104,7 +103,6 @@ export default function Pdf1({
           </View>
         </View>
 
-        {/* 우측 정보박스 */}
         <View
           style={{
             width: 150,
@@ -126,7 +124,6 @@ export default function Pdf1({
             <Text style={{ fontSize: 10 }}>{printDate}</Text>
           </View>
 
-          {/* 확인란 테이블 */}
           <View style={{ marginTop: 8, border: "1pt solid black" }}>
             <View
               style={{ flexDirection: "row", borderBottom: "1pt solid black" }}
@@ -190,12 +187,10 @@ export default function Pdf1({
         </View>
       </View>
 
-      {/* 안내 텍스트 */}
       <Text style={{ fontSize: 10, marginBottom: 15, textAlign: "center" }}>
         호에 의거 보수공사를 완료하고 아래와 같이 확인서를 제출합니다.
       </Text>
 
-      {/* 메인 테이블 헤더 */}
       <View
         style={{
           flexDirection: "row",
@@ -237,21 +232,15 @@ export default function Pdf1({
           시설물
         </Text>
         <Text
-          style={{
-            fontSize: 10,
-            textAlign: "center",
-            width: 80,
-            padding: 8,
-          }}
+          style={{ fontSize: 10, textAlign: "center", width: 80, padding: 8 }}
         >
-          보수지정일
+          보수처리일
         </Text>
       </View>
 
-      {/* 메인 테이블 데이터 */}
-      {workItems.map((item, index) => (
+      {(data?.processes || []).map((process, index) => (
         <View
-          key={index}
+          key={`process-${index}`}
           style={{
             flexDirection: "row",
             border: "1pt solid black",
@@ -269,13 +258,8 @@ export default function Pdf1({
               overflow: "hidden",
             }}
           >
-            <Text
-              style={{
-                fontSize: 10,
-                textAlign: "center",
-              }}
-            >
-              {item.code}
+            <Text style={{ fontSize: 10, textAlign: "center" }}>
+              {process.processId || "미정"}
             </Text>
           </View>
           <View
@@ -287,13 +271,8 @@ export default function Pdf1({
               overflow: "hidden",
             }}
           >
-            <Text
-              style={{
-                fontSize: 9,
-                textAlign: "left",
-              }}
-            >
-              {splitText(item.type, 15)}
+            <Text style={{ fontSize: 9, textAlign: "left" }}>
+              {splitText(process.processName, 15)}
             </Text>
           </View>
           <View
@@ -305,13 +284,8 @@ export default function Pdf1({
               overflow: "hidden",
             }}
           >
-            <Text
-              style={{
-                fontSize: 8,
-                textAlign: "left",
-              }}
-            >
-              {splitText(item.facility, 40)}
+            <Text style={{ fontSize: 8, textAlign: "left" }}>
+              {splitText(structureName, 40)}
             </Text>
           </View>
           <View
@@ -323,25 +297,47 @@ export default function Pdf1({
               overflow: "hidden",
             }}
           >
-            <Text
-              style={{
-                fontSize: 10,
-                textAlign: "center",
-              }}
-            >
-              {item.designatedDate}
+            <Text style={{ fontSize: 10, textAlign: "center" }}>
+              {formatDate(process.endDate)}
             </Text>
           </View>
         </View>
       ))}
+      {(data?.processes?.length || 0) === 0 && (
+        <View
+          style={{
+            flexDirection: "row",
+            border: "1pt solid black",
+            borderTop: "none",
+            minHeight: 30,
+          }}
+        >
+          <View
+            style={{ width: 80, padding: 6, borderRight: "1pt solid black" }}
+          >
+            <Text> </Text>
+          </View>
+          <View
+            style={{ width: 120, padding: 6, borderRight: "1pt solid black" }}
+          >
+            <Text> </Text>
+          </View>
+          <View
+            style={{ width: 250, padding: 6, borderRight: "1pt solid black" }}
+          >
+            <Text> </Text>
+          </View>
+          <View style={{ width: 80, padding: 6 }}>
+            <Text> </Text>
+          </View>
+        </View>
+      )}
 
-      {/* 물량내역 총 목록 섹션 */}
       <View style={{ marginTop: 30 }}>
         <Text style={{ fontSize: 12, fontWeight: "bold", marginBottom: 10 }}>
           ● 물량내역 총 목록
         </Text>
 
-        {/* 물량내역 테이블 헤더 */}
         <View
           style={{
             flexDirection: "row",
@@ -369,7 +365,7 @@ export default function Pdf1({
               borderRight: "1pt solid black",
             }}
           >
-            단가내역명
+            단가내역 공종명
           </Text>
           <Text
             style={{
@@ -412,44 +408,138 @@ export default function Pdf1({
               padding: 6,
             }}
           >
-            효과
+            효과 (코드)
           </Text>
         </View>
 
-        {/* 물량내역 빈 행들 */}
-        <View
-          style={{
-            flexDirection: "row",
-            border: "1pt solid black",
-            borderTop: "none",
-            height: 25,
-          }}
-        >
-          <View style={{ width: 120, borderRight: "1pt solid black" }}></View>
-          <View style={{ width: 120, borderRight: "1pt solid black" }}></View>
-          <View style={{ width: 80, borderRight: "1pt solid black" }}></View>
-          <View style={{ width: 50, borderRight: "1pt solid black" }}></View>
-          <View style={{ width: 50, borderRight: "1pt solid black" }}></View>
-          <View style={{ width: 100 }}></View>
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            border: "1pt solid black",
-            borderTop: "none",
-            height: 25,
-          }}
-        >
-          <View style={{ width: 120, borderRight: "1pt solid black" }}></View>
-          <View style={{ width: 120, borderRight: "1pt solid black" }}></View>
-          <View style={{ width: 80, borderRight: "1pt solid black" }}></View>
-          <View style={{ width: 50, borderRight: "1pt solid black" }}></View>
-          <View style={{ width: 50, borderRight: "1pt solid black" }}></View>
-          <View style={{ width: 100 }}></View>
-        </View>
+        {(data?.processes || []).flatMap((process, pIndex) =>
+          (process.tasks || []).map((task, tIndex) => (
+            <View
+              key={`task-${pIndex}-${tIndex}`}
+              style={{
+                flexDirection: "row",
+                border: "1pt solid black",
+                borderTop: "none",
+                minHeight: 25,
+              }}
+            >
+              <View
+                style={{
+                  width: 120,
+                  padding: 4,
+                  borderRight: "1pt solid black",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                }}
+              >
+                <Text style={{ fontSize: 8, textAlign: "left" }}>
+                  {splitText(mainTitle, 18)}
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 120,
+                  padding: 4,
+                  borderRight: "1pt solid black",
+                  justifyContent: "center",
+                  overflow: "hidden",
+                }}
+              >
+                <Text style={{ fontSize: 8, textAlign: "left" }}>
+                  {splitText(task.name, 18)}
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 80,
+                  padding: 4,
+                  borderRight: "1pt solid black",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  overflow: "hidden",
+                }}
+              >
+                <Text style={{ fontSize: 8, textAlign: "center" }}>
+                  {splitText(task.spec, 10)}
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 50,
+                  padding: 4,
+                  borderRight: "1pt solid black",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  overflow: "hidden",
+                }}
+              >
+                <Text style={{ fontSize: 8, textAlign: "center" }}>
+                  {task.unit}
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 50,
+                  padding: 4,
+                  borderRight: "1pt solid black",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  overflow: "hidden",
+                }}
+              >
+                <Text style={{ fontSize: 8, textAlign: "center" }}>
+                  {task.unitCount}
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 100,
+                  padding: 4,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  overflow: "hidden",
+                }}
+              >
+                <Text style={{ fontSize: 8, textAlign: "center" }}>
+                  {task.code}
+                </Text>
+              </View>
+            </View>
+          ))
+        )}
+        {!(data?.processes || []).some(
+          (p) => p.tasks && p.tasks.length > 0
+        ) && (
+          <View
+            style={{
+              flexDirection: "row",
+              border: "1pt solid black",
+              borderTop: "none",
+              height: 25,
+            }}
+          >
+            <View style={{ width: 120, borderRight: "1pt solid black" }}>
+              <Text> </Text>
+            </View>
+            <View style={{ width: 120, borderRight: "1pt solid black" }}>
+              <Text> </Text>
+            </View>
+            <View style={{ width: 80, borderRight: "1pt solid black" }}>
+              <Text> </Text>
+            </View>
+            <View style={{ width: 50, borderRight: "1pt solid black" }}>
+              <Text> </Text>
+            </View>
+            <View style={{ width: 50, borderRight: "1pt solid black" }}>
+              <Text> </Text>
+            </View>
+            <View style={{ width: 100 }}>
+              <Text> </Text>
+            </View>
+          </View>
+        )}
       </View>
 
-      {/* 하단 정보 */}
       <View style={{ marginTop: 30 }}>
         <Text style={{ fontSize: 10, marginBottom: 8 }}>
           첨부: 1. 물량산출내역 1부.

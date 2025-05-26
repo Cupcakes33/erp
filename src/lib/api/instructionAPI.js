@@ -66,11 +66,8 @@ export const fetchInstructionDetail = async (id) => {
       throw new axios.Cancel('Operation canceled by the user.');
     }
     
-    // 임시로 id를 2로 고정
-    const requestId = 2; // id 대신 고정값 사용
-    
-    // 실제 API 호출
-    const response = await api.get(`/instruction/${requestId}/detail`, { signal });
+    // 실제 전달받은 ID 사용
+    const response = await api.get(`/instruction/${id}/detail`, { signal });
     
     // AbortController 반환하여 컴포넌트에서 요청 취소 가능하도록 함
     return {
@@ -484,133 +481,42 @@ export const uploadCsvBulkInstructions = async (csvFile) => {
 /**
  * 보수확인서 데이터를 조회하는 API
  * @param {Array<number>} ids 지시 ID 배열
- * @returns {Promise<Object>} 보수확인서 데이터
+ * @returns {Promise<Array<Object>>} 각 지시에 대한 상세 데이터 객체의 배열 (성공한 요청들만 해당)
  */
 export const fetchBosuConfirmationData = async (ids) => {
+  if (!Array.isArray(ids) || ids.length === 0) {
+    console.warn('fetchBosuConfirmationData: 유효한 ID 배열이 제공되지 않았습니다.');
+    return [];
+  }
+
   try {
-    // API 요청 대신 더미 데이터 반환
-    console.log('선택된 지시 ID 목록:', ids);
-    
-    // 더미 데이터 생성 - BosuConfirmationPDF 컴포넌트에 맞게 조정
-    const dummyData = {
-      data: ids.map((id, index) => ({
-        id: id.toString(),
-        orderNumber: `경북2025-단가-${1000 + index}`,
-        orderDate: "2025.02.11",
-        name: `우이동 21-${16 + index} ${500 + index}호 방 창가 단열불량 보수`,
-        structure: "철근콘크리트조",
-        processes: [
-          {
-            processName: "건축-수장공사",
-            endDate: "2025.02.24",
-            tasks: [
-              {
-                code: `3101${50 + index}`,
-                name: "실크벽지 도배바탕(합판,석고보드면)",
-                spec: "벽면",
-                unit: "M2",
-                unitCount: 1.5 + index,
-                calculationDetails: "보수부위 면적산출",
-                unitPriceId: "AB12C",
-                materialCost: 15000 + index * 1000,
-                materialPrice: 18000 + index * 1200,
-                laborCost: 25000 + index * 800,
-                laborPrice: 30000 + index * 1000,
-                expense: 5000 + index * 300,
-                expensePrice: 6000 + index * 400,
-                totalCost: 45000 + index * 2100,
-                totalPrice: 54000 + index * 2600
-              },
-              {
-                code: `3101${60 + index}`,
-                name: "열반사단열재",
-                spec: "20mm",
-                unit: "M2",
-                unitCount: 2.0 + index * 0.5,
-                calculationDetails: "단열보강 부위",
-                unitPriceId: "CD34E",
-                materialCost: 22000 + index * 1500,
-                materialPrice: 26400 + index * 1800,
-                laborCost: 18000 + index * 1200,
-                laborPrice: 21600 + index * 1440,
-                expense: 4000 + index * 300,
-                expensePrice: 4800 + index * 360, 
-                totalCost: 44000 + index * 3000,
-                totalPrice: 52800 + index * 3600
-              }
-            ]
-          },
-          {
-            processName: "마감보수공사",
-            endDate: "2025.02.26",
-            tasks: [
-              {
-                code: `3102${70 + index}`,
-                name: "걸레받이 설치",
-                spec: "목재 12mm",
-                unit: "M",
-                unitCount: 3.0 + index * 0.3,
-                calculationDetails: "벽체 하단부",
-                unitPriceId: "EF56G",
-                materialCost: 12000 + index * 800,
-                materialPrice: 14400 + index * 960,
-                laborCost: 15000 + index * 1000,
-                laborPrice: 18000 + index * 1200,
-                expense: 3000 + index * 200,
-                expensePrice: 3600 + index * 240,
-                totalCost: 30000 + index * 2000,
-                totalPrice: 36000 + index * 2400
-              }
-            ]
-          }
-        ],
-        // RepairConfirmationPDF용 데이터도 유지
-        title: "시설물 보수확인서 제출",
-        receiver: "서울주택도시공사 성북주거안심센터장",
-        sender: "주식회사 종합종합안전기술연구원",
-        repairItems: [
-          {
-            code: `3101${50 + index}`,
-            category: "건축-수장-단열층",
-            facility: `다가구매입임대(강북구) 01${20 + index} - 0${500 + index}`,
-            repairDate: "2025.02.24",
-          },
-          {
-            code: `3101${60 + index}`,
-            category: "건축-수장-도배",
-            facility: `다가구매입임대(강북구) 01${20 + index} - 0${500 + index}`,
-            repairDate: "2025.02.24",
-          },
-        ],
-        quantityItems: [
-          {
-            title: `우이동 21-${16 + index} ${500 + index}호 방 창가 단열불량 보수`,
-            workName: "실크벽지 도배바탕(합판,석고보드면)-불가포함,초배지미실",
-            specification: "벽면",
-            unit: "M2",
-            quantity: 1 + index,
-            marker: "건축No.9",
-          },
-          {
-            title: "",
-            workName: "열반사단열재",
-            specification: "20mm",
-            unit: "M2",
-            quantity: 1 + index,
-            marker: "노원도봉1신7",
-          },
-        ],
-        printDate: "2025.03.21 09:19",
-      })),
-      message: "보수확인서 데이터 조회 성공"
-    };
-    
-    console.log('더미 데이터 생성됨:', dummyData);
-    
-    return dummyData;
+    const requests = ids.map(id =>
+      api.get(`/instruction/${id}/detail`).catch(error => {
+        // 개별 요청 실패 시 에러를 로깅하고 null 또는 특정 에러 객체를 반환하여 Promise.allSettled와 유사하게 처리
+        console.error(`Error fetching detail for instruction ID ${id}:`, error);
+        return { error, id, status: 'failed' }; // 실패 상태와 ID를 함께 반환
+      })
+    );
+
+    const results = await Promise.all(requests);
+
+    const successfulData = [];
+    results.forEach(result => {
+      // 성공적인 응답이고, API 응답 구조에 data.data가 있다고 가정
+      if (result && result.data && result.data.data && result.status !== 'failed') {
+        successfulData.push(result.data.data);
+      } else if (result && result.status === 'failed') {
+        // 이미 위에서 에러 로깅됨, 추가 작업이 필요하면 여기에 구현
+        console.warn(`Skipping data for instruction ID ${result.id} due to fetch failure.`);
+      }
+    });
+
+    return successfulData; // 성공적으로 가져온 데이터의 배열만 반환
+
   } catch (error) {
-    console.error('보수확인서 데이터 조회 실패:', error);
-    throw error;
+    // Promise.all 자체에서 발생하는 예외 (네트워크 문제 등 전체 프로미스 체인 실패 시)
+    console.error('Error in fetchBosuConfirmationData during Promise.all:', error);
+    throw error; // 또는 빈 배열 반환 등 에러 정책에 따라 처리
   }
 }
 

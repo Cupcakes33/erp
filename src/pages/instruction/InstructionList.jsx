@@ -369,31 +369,46 @@ const InstructionList = () => {
     setIsGeneratingPDF(true);
 
     try {
-      // 선택된 ID 목록으로 API 호출하여 보수확인서 데이터 가져오기
-      const response = await fetchBosuConfirmationData(selectedInstructions);
-      const confirmationData = response.data;
+      // selectedInstructions는 ID 목록이어야 합니다.
+      const detailedConfirmationData = await fetchBosuConfirmationData(
+        selectedInstructions
+      );
+
+      if (!detailedConfirmationData || detailedConfirmationData.length === 0) {
+        showError(
+          "선택된 지시에 대한 상세 데이터를 가져오지 못했거나, 모든 데이터 조회에 실패했습니다."
+        );
+        setIsGeneratingPDF(false);
+        return;
+      }
 
       // 각 데이터별로 PDF 생성
-      for (let i = 0; i < confirmationData.length; i++) {
-        const data = confirmationData[i];
-        const fileName = `보수확인서_${data.orderNumber || data.id}.pdf`;
+      for (let i = 0; i < detailedConfirmationData.length; i++) {
+        const dataForPDF = detailedConfirmationData[i]; // 실제 데이터 객체
+
+        // 파일 이름 생성 시 orderNumber, id 순으로 사용하고, 둘 다 없으면 인덱스 기반으로 생성
+        const orderIdentifier =
+          dataForPDF.orderNumber || dataForPDF.id || `item_${i + 1}`;
+        const fileName = `보수확인서_${orderIdentifier}.pdf`;
 
         // PDF 생성 및 다운로드
-        await generateBosuConfirmationPDF(data, fileName);
+        await generateBosuConfirmationPDF(dataForPDF, fileName);
 
         // 여러 PDF 생성 시 약간의 딜레이 추가
-        if (i < confirmationData.length - 1) {
-          await new Promise((resolve) => setTimeout(resolve, 500));
+        if (i < detailedConfirmationData.length - 1) {
+          await new Promise((resolve) => setTimeout(resolve, 200));
         }
       }
 
       showSuccess(
-        `${confirmationData.length}개의 보수확인서가 생성되었습니다.`
+        `${detailedConfirmationData.length}개의 보수확인서가 생성되었습니다.`
       );
     } catch (error) {
       console.error("PDF 생성 중 오류 발생:", error);
-      console.error("에러 상세 정보:", error.response?.data || error.message);
-      showError("PDF 생성 중 오류가 발생했습니다.");
+      // showError에 error.message를 포함하여 사용자에게 좀 더 자세한 정보 제공
+      showError(
+        `PDF 생성 중 오류가 발생했습니다: ${error.message || "알 수 없는 오류"}`
+      );
     } finally {
       setIsGeneratingPDF(false);
     }

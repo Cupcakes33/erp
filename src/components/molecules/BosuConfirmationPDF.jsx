@@ -21,14 +21,16 @@ Font.register({
 });
 
 // 스타일 정의 (페이지, 텍스트, 표, 셀 등)
-const styles = StyleSheet.create({
-  // 페이지 기본 스타일: A4용지 크기, 여백, 기본 폰트 적용
+const pageStyles = StyleSheet.create({
   page: {
     padding: 20, // 페이지 여백 (모든 방향 20pt)
     fontFamily: "NanumGothic",
     fontSize: 10, // 기본 폰트 크기 10pt (원본 양식 기준)
     lineHeight: 1.2, // 줄 간격 조절 (필요 시 조정)
   },
+});
+
+const contentStyles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: "bold",
@@ -250,16 +252,12 @@ const BosuConfirmationDocument = ({ data }) => {
   return (
     <Document>
       <Pdf1
-        styles={styles}
+        pageStyle={pageStyles.page}
+        contentStyles={contentStyles}
+        data={data}
         recipient="서울주택도시공사 성북주거안정통합센터"
         sender="주식회사 중앙종합학안전기술연구원"
         subject="시설물 보수확인서 제출"
-        instructionDate={orderDate}
-        instructionId={orderNumber}
-        additionalInfo={`${structure} 보수작업`}
-        prtId={`HMFM${orderNumber.replace(/-/g, "")}`}
-        pageInfo="1/1"
-        printDate={printDateTime}
         workItems={workItems}
       />
       {(page2Rows.length > 0 ||
@@ -267,22 +265,16 @@ const BosuConfirmationDocument = ({ data }) => {
           remainingRows.length >
             0)) /* edge case for exactly MAX_ROWS_PER_PAGE on page 1 */ && (
         <Pdf2
-          styles={styles}
-          instructionNumber={`${structure} 보수`}
-          instructionName={`${name} ${structure} 보수`}
-          prtId={`HMFM${orderNumber.replace(/-/g, "")}R04`}
-          pageInfo="1/1"
-          printDate={printDateTime}
+          pageStyle={pageStyles.page}
+          contentStyles={contentStyles}
+          data={data}
           quantityItems={quantityItems}
         />
       )}
       <Pdf3
-        styles={styles}
-        instructionNumber={structure}
-        instructionName={`${name} ${structure} 보수`}
-        prtId={`HMFM${orderNumber.replace(/-/g, "")}R05`}
-        pageInfo="1/1"
-        printDate={printDateTime}
+        pageStyle={pageStyles.page}
+        contentStyles={contentStyles}
+        data={data}
         detailItems={detailItems}
         totalMaterialAmount={formatNumber(totalMaterialAmount)}
         totalLaborAmount={formatNumber(totalLaborAmount)}

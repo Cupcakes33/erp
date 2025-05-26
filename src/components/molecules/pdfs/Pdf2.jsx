@@ -2,45 +2,34 @@ import React from "react";
 import { Page, Text, View } from "@react-pdf/renderer";
 
 export default function Pdf2({
-  styles,
-  instructionNumber = "컨셉2025-단기-0194",
-  instructionName = "우이동 21-16 502호 방 창가 단열물탈 보수",
-  prtId = "HMFMQB0201R04",
+  pageStyle,
+  contentStyles,
+  data,
   pageInfo = "1/1",
-  printDate = "2025.03.21 09:18",
-  quantityItems = [
-    {
-      code: "3101050",
-      typeName: "건축-수장-단열층 (3101050)",
-      facility: "다가구매입임대(경북구) 0121 - 0502",
-      workName: "절곡막지 도매비롤(황밸, 석고보드면)-절거포함, 초마지시설",
-      spec: "20mm",
-      unit: "M2",
-      quantity: "1",
-      calculation: "노원도북시설",
-      effect: "",
-    },
-    {
-      code: "3101051",
-      typeName: "건축-수장-도배 (3101051)",
-      facility: "",
-      workName: "실크벽지 도매비롤(황밸, 석고보드면)-절거포함, 초마지시설",
-      spec: "벽면",
-      unit: "M2",
-      quantity: "1",
-      calculation: "",
-      effect: "건축No.9",
-    },
-  ],
 }) {
+  // 현재 날짜/시간 생성 (YYYY.MM.DD HH:MM 형식)
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = (now.getMonth() + 1).toString().padStart(2, "0");
+  const day = now.getDate().toString().padStart(2, "0");
+  const hours = now.getHours().toString().padStart(2, "0");
+  const minutes = now.getMinutes().toString().padStart(2, "0");
+  const printDate = `${year}.${month}.${day} ${hours}:${minutes}`;
+
+  // data에서 필요한 정보 추출
+  const instructionNumber = data?.orderNumber || "번호 미정";
+  const instructionName = data?.name || "이름 미정";
+  const prtId = data?.orderNumber
+    ? `HMFM${data.orderNumber.replace(/-/g, "")}R04`
+    : "PRT-ID 미정";
+  const structureName = data?.structure || "시설물 정보 없음";
+
   // 긴 텍스트를 지정된 길이로 분할하는 함수
   const splitText = (text, maxLength) => {
     if (!text || text.length <= maxLength) return text;
-
-    const words = text.split(" ");
+    const words = String(text).split(" ");
     const lines = [];
     let currentLine = "";
-
     words.forEach((word) => {
       if (currentLine.length + word.length + 1 <= maxLength) {
         currentLine += (currentLine ? " " : "") + word;
@@ -49,13 +38,12 @@ export default function Pdf2({
         currentLine = word;
       }
     });
-
     if (currentLine) lines.push(currentLine);
     return lines.join("\n");
   };
 
   return (
-    <Page size="A4" style={styles.page}>
+    <Page size="A4" style={pageStyle}>
       {/* 문서 제목 */}
       <View
         style={{
@@ -67,7 +55,7 @@ export default function Pdf2({
       >
         <Text
           style={[
-            styles.title,
+            contentStyles.title,
             { fontSize: 18, fontWeight: "bold", flex: 1, textAlign: "center" },
           ]}
         >
@@ -209,21 +197,151 @@ export default function Pdf2({
           산출내역
         </Text>
         <Text
-          style={{
-            fontSize: 9,
-            textAlign: "center",
-            width: 60,
-            padding: 6,
-          }}
+          style={{ fontSize: 9, textAlign: "center", width: 60, padding: 6 }}
         >
-          효과
+          효과 (코드)
         </Text>
       </View>
 
       {/* 메인 테이블 데이터 */}
-      {quantityItems.map((item, index) => (
+      {(data?.processes || []).flatMap((process, pIndex) =>
+        (process.tasks || []).map((task, tIndex) => (
+          <View
+            key={`task-${pIndex}-${tIndex}`}
+            style={{
+              flexDirection: "row",
+              border: "1pt solid black",
+              borderTop: "none",
+              minHeight: 35,
+            }}
+          >
+            <View
+              style={{
+                width: 60,
+                padding: 4,
+                borderRight: "1pt solid black",
+                justifyContent: "center",
+                alignItems: "center",
+                overflow: "hidden",
+              }}
+            >
+              <Text style={{ fontSize: 9, textAlign: "center" }}>
+                {process.processId || "미정"}
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 80,
+                padding: 4,
+                borderRight: "1pt solid black",
+                justifyContent: "center",
+                overflow: "hidden",
+              }}
+            >
+              <Text style={{ fontSize: 8, textAlign: "left" }}>
+                {splitText(process.processName, 12)}
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 80,
+                padding: 4,
+                borderRight: "1pt solid black",
+                justifyContent: "center",
+                overflow: "hidden",
+              }}
+            >
+              <Text style={{ fontSize: 8, textAlign: "left" }}>
+                {splitText(structureName, 12)}
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 120,
+                padding: 4,
+                borderRight: "1pt solid black",
+                justifyContent: "center",
+                overflow: "hidden",
+              }}
+            >
+              <Text style={{ fontSize: 7, textAlign: "left" }}>
+                {splitText(task.name, 20)}
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 50,
+                padding: 4,
+                borderRight: "1pt solid black",
+                justifyContent: "center",
+                alignItems: "center",
+                overflow: "hidden",
+              }}
+            >
+              <Text style={{ fontSize: 9, textAlign: "center" }}>
+                {task.spec}
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 40,
+                padding: 4,
+                borderRight: "1pt solid black",
+                justifyContent: "center",
+                alignItems: "center",
+                overflow: "hidden",
+              }}
+            >
+              <Text style={{ fontSize: 9, textAlign: "center" }}>
+                {task.unit}
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 40,
+                padding: 4,
+                borderRight: "1pt solid black",
+                justifyContent: "center",
+                alignItems: "center",
+                overflow: "hidden",
+              }}
+            >
+              <Text style={{ fontSize: 9, textAlign: "center" }}>
+                {task.unitCount}
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 80,
+                padding: 4,
+                borderRight: "1pt solid black",
+                justifyContent: "center",
+                overflow: "hidden",
+              }}
+            >
+              <Text style={{ fontSize: 8, textAlign: "left" }}>
+                {splitText(task.calculationDetails, 12)}
+              </Text>
+            </View>
+            <View
+              style={{
+                width: 60,
+                padding: 4,
+                justifyContent: "center",
+                alignItems: "center",
+                overflow: "hidden",
+              }}
+            >
+              <Text style={{ fontSize: 8, textAlign: "center" }}>
+                {splitText(task.code, 8)}
+              </Text>
+            </View>
+          </View>
+        ))
+      )}
+      {/* 물량 내역이 없을 경우 빈 행 표시 (선택적) */}
+      {!(data?.processes || []).some((p) => p.tasks && p.tasks.length > 0) && (
         <View
-          key={index}
           style={{
             flexDirection: "row",
             border: "1pt solid black",
@@ -232,128 +350,50 @@ export default function Pdf2({
           }}
         >
           <View
-            style={{
-              width: 60,
-              padding: 4,
-              borderRight: "1pt solid black",
-              justifyContent: "center",
-              alignItems: "center",
-              overflow: "hidden",
-            }}
+            style={{ width: 60, padding: 4, borderRight: "1pt solid black" }}
           >
-            <Text style={{ fontSize: 9, textAlign: "center" }}>
-              {item.code}
-            </Text>
+            <Text> </Text>
           </View>
           <View
-            style={{
-              width: 80,
-              padding: 4,
-              borderRight: "1pt solid black",
-              justifyContent: "center",
-              overflow: "hidden",
-            }}
+            style={{ width: 80, padding: 4, borderRight: "1pt solid black" }}
           >
-            <Text style={{ fontSize: 8, textAlign: "left" }}>
-              {splitText(item.typeName, 12)}
-            </Text>
+            <Text> </Text>
           </View>
           <View
-            style={{
-              width: 80,
-              padding: 4,
-              borderRight: "1pt solid black",
-              justifyContent: "center",
-              overflow: "hidden",
-            }}
+            style={{ width: 80, padding: 4, borderRight: "1pt solid black" }}
           >
-            <Text style={{ fontSize: 8, textAlign: "left" }}>
-              {splitText(item.facility, 12)}
-            </Text>
+            <Text> </Text>
           </View>
           <View
-            style={{
-              width: 120,
-              padding: 4,
-              borderRight: "1pt solid black",
-              justifyContent: "center",
-              overflow: "hidden",
-            }}
+            style={{ width: 120, padding: 4, borderRight: "1pt solid black" }}
           >
-            <Text style={{ fontSize: 7, textAlign: "left" }}>
-              {splitText(item.workName, 20)}
-            </Text>
+            <Text> </Text>
           </View>
           <View
-            style={{
-              width: 50,
-              padding: 4,
-              borderRight: "1pt solid black",
-              justifyContent: "center",
-              alignItems: "center",
-              overflow: "hidden",
-            }}
+            style={{ width: 50, padding: 4, borderRight: "1pt solid black" }}
           >
-            <Text style={{ fontSize: 9, textAlign: "center" }}>
-              {item.spec}
-            </Text>
+            <Text> </Text>
           </View>
           <View
-            style={{
-              width: 40,
-              padding: 4,
-              borderRight: "1pt solid black",
-              justifyContent: "center",
-              alignItems: "center",
-              overflow: "hidden",
-            }}
+            style={{ width: 40, padding: 4, borderRight: "1pt solid black" }}
           >
-            <Text style={{ fontSize: 9, textAlign: "center" }}>
-              {item.unit}
-            </Text>
+            <Text> </Text>
           </View>
           <View
-            style={{
-              width: 40,
-              padding: 4,
-              borderRight: "1pt solid black",
-              justifyContent: "center",
-              alignItems: "center",
-              overflow: "hidden",
-            }}
+            style={{ width: 40, padding: 4, borderRight: "1pt solid black" }}
           >
-            <Text style={{ fontSize: 9, textAlign: "center" }}>
-              {item.quantity}
-            </Text>
+            <Text> </Text>
           </View>
           <View
-            style={{
-              width: 80,
-              padding: 4,
-              borderRight: "1pt solid black",
-              justifyContent: "center",
-              overflow: "hidden",
-            }}
+            style={{ width: 80, padding: 4, borderRight: "1pt solid black" }}
           >
-            <Text style={{ fontSize: 8, textAlign: "left" }}>
-              {splitText(item.calculation, 12)}
-            </Text>
+            <Text> </Text>
           </View>
-          <View
-            style={{
-              width: 60,
-              padding: 4,
-              justifyContent: "center",
-              alignItems: "center",
-              overflow: "hidden",
-            }}
-          >
-            <Text style={{ fontSize: 8, textAlign: "center" }}>
-              {splitText(item.effect, 8)}
-            </Text>
+          <View style={{ width: 60, padding: 4 }}>
+            <Text> </Text>
           </View>
         </View>
-      ))}
+      )}
     </Page>
   );
 }
