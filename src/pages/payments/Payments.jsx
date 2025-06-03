@@ -62,21 +62,30 @@ export default function Payments() {
   }, [filters.branchName]);
 
   // API 데이터 조회
-  const { data: contractsData, error: contractsError } = useGetContracts({
+  const {
+    data: contractsData,
+    error: contractsError,
+    isLoading: contractsLoading,
+  } = useGetContracts({
     center: filterParams.branchName || undefined,
   });
 
-  const { data: paymentsData, error: paymentsError } = useGetPayments(
+  const {
+    data: paymentsData,
+    error: paymentsError,
+    isLoading: paymentsLoading,
+  } = useGetPayments(
     { contractId: selectedContractId },
     { enabled: !!selectedContractId }
   );
 
-  const { data: workOrdersData, error: workOrdersError } = useGetPaymentDetail(
-    selectedPaymentId,
-    {
-      enabled: !!selectedPaymentId,
-    }
-  );
+  const {
+    data: workOrdersData,
+    error: workOrdersError,
+    isLoading: workOrdersLoading,
+  } = useGetPaymentDetail(selectedPaymentId, {
+    enabled: !!selectedPaymentId,
+  });
 
   // 필터 변경 핸들러
   const handleFilterChange = (e) => {
@@ -111,12 +120,12 @@ export default function Payments() {
     {
       accessorKey: "currentAmount",
       header: "기성금액",
-      cell: (info) => info.getValue()?.toLocaleString() ?? "-", // 숫자 포맷팅
+      cell: (info) => info.getValue()?.toLocaleString() ?? "-",
     },
     {
       accessorKey: "cumulativeAmount",
       header: "누계금액",
-      cell: (info) => info.getValue()?.toLocaleString() ?? "-", // 숫자 포맷팅
+      cell: (info) => info.getValue()?.toLocaleString() ?? "-",
     },
     {
       accessorKey: "status",
@@ -124,11 +133,11 @@ export default function Payments() {
       cell: (info) => (
         <span
           className={`px-2 py-1 text-xs font-semibold rounded-full ${
-            info.getValue() === "기성합격 선정" || info.getValue() === "승인" // 스키마 변경에 따른 조건 수정
+            info.getValue() === "기성합격 선정" || info.getValue() === "승인"
               ? "bg-green-100 text-green-800"
               : info.getValue() === "작성중"
               ? "bg-blue-100 text-blue-800"
-              : "bg-yellow-100 text-yellow-800" // 기본값 또는 기타 상태
+              : "bg-yellow-100 text-yellow-800"
           }`}
         >
           {info.getValue() ?? "-"}
@@ -202,20 +211,8 @@ export default function Payments() {
     console.log("보수지시 행 클릭:", rowData);
   };
 
-  // isLoading 변수들을 명시적으로 선언 (useQuery에서 반환되는 값을 사용하지 않으므로)
-  const contractsLoading = useGetContracts({
-    center: filterParams.branchName || undefined,
-  }).isLoading;
-  const paymentsLoading = useGetPayments(
-    { contractId: selectedContractId },
-    { enabled: !!selectedContractId }
-  ).isLoading;
-  const workOrdersLoading = useGetPaymentDetail(selectedPaymentId, {
-    enabled: !!selectedPaymentId,
-  }).isLoading;
-
   return (
-    <div className="flex flex-col min-h-screen px-4 py-6 mx-auto bg-gray-50">
+    <div className="flex flex-col px-4 py-6 mx-auto bg-gray-50">
       {/* 헤더 영역 - 지점 필터만 포함 */}
       <div className="p-6 mb-6 bg-white rounded-lg shadow-sm">
         <div className="flex items-center justify-between">
@@ -257,11 +254,12 @@ export default function Payments() {
                 </div>
               </div>
             </div>
-            <div className="flex-grow overflow-y-auto">
+            <div className="h-64 overflow-hidden">
               <DataTable
                 columns={contractColumns}
                 data={contractsData || []}
                 loading={false}
+                className="h-full overflow-y-auto"
                 emptyMessage={
                   contractsError ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -301,11 +299,12 @@ export default function Payments() {
                 </div>
               </div>
             </div>
-            <div className="flex-grow overflow-y-auto">
+            <div className="h-64 overflow-hidden">
               <DataTable
                 columns={paymentColumns}
                 data={paymentsData || []}
                 loading={false}
+                className="h-full overflow-y-auto"
                 emptyMessage={
                   !selectedContractId ? (
                     <div className="flex flex-col items-center justify-center h-full text-gray-500">
@@ -360,11 +359,12 @@ export default function Payments() {
               </div>
             </div>
           </div>
-          <div className="flex-grow overflow-y-auto">
+          <div className="h-64 overflow-hidden">
             <DataTable
               columns={workOrderColumns}
               data={workOrdersData || []}
               loading={false}
+              className="h-full overflow-y-auto"
               emptyMessage={
                 !selectedPaymentId ? (
                   <div className="flex flex-col items-center justify-center h-full text-gray-500">
