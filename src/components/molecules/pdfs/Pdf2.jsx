@@ -215,6 +215,7 @@ export default function Pdf2({
               minHeight: 35,
             }}
           >
+            {/* 공종번호 - 해당 process의 첫 번째 task일 때만 표시 */}
             <View
               style={{
                 width: 60,
@@ -225,10 +226,15 @@ export default function Pdf2({
                 overflow: "hidden",
               }}
             >
-              <Text style={{ fontSize: 9, textAlign: "center" }}>
-                {process.processId || "미정"}
-              </Text>
+              {tIndex === 0 ? (
+                <Text style={{ fontSize: 9, textAlign: "center" }}>
+                  {process.processId || "미정"}
+                </Text>
+              ) : (
+                <Text style={{ fontSize: 9, textAlign: "center" }}> </Text> // 빈 공간으로 표시
+              )}
             </View>
+            {/* 공종명 - 해당 process의 첫 번째 task일 때만 표시 */}
             <View
               style={{
                 width: 80,
@@ -238,10 +244,15 @@ export default function Pdf2({
                 overflow: "hidden",
               }}
             >
-              <Text style={{ fontSize: 8, textAlign: "left" }}>
-                {splitText(process.processName, 12)}
-              </Text>
+              {tIndex === 0 ? (
+                <Text style={{ fontSize: 8, textAlign: "left" }}>
+                  {splitText(process.processName, 12)}
+                </Text>
+              ) : (
+                <Text style={{ fontSize: 8, textAlign: "left" }}> </Text> // 빈 공간으로 표시
+              )}
             </View>
+            {/* 나머지 셀들은 기존과 동일하게 task 데이터를 표시 */}
             <View
               style={{
                 width: 80,
