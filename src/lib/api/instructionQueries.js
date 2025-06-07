@@ -153,7 +153,7 @@ export const useUpdateInstruction = () => {
   const queryClient = useQueryClient();
   
   return useMutation({
-    mutationFn: ({ id, ...instructionData }) => updateInstruction(id, instructionData),
+    mutationFn: ({ id, instructionData }) => updateInstruction(id, instructionData),
     onSuccess: (data, variables) => {
       // 지시 목록 및 상세 정보 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: [INSTRUCTIONS_QUERY_KEY] });

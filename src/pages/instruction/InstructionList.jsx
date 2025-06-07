@@ -748,7 +748,7 @@ const InstructionList = () => {
           </h1>
           <div className="flex space-x-2">
             {/* PDF 생성 버튼 추가 */}
-            <FormButton
+            {/* <FormButton
               variant="outline"
               onClick={handleCreatePDF}
               disabled={selectedInstructions.length === 0 || isGeneratingPDF}
@@ -760,7 +760,7 @@ const InstructionList = () => {
             >
               <FileText className="w-4 h-4 mr-1" />
               보수확인서 PDF ({selectedInstructions.length})
-            </FormButton>
+            </FormButton> */}
             <FormButton
               variant="outline"
               onClick={handleImportClick}
