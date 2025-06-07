@@ -50,7 +50,10 @@ import {
   useUnitPrices,
   useTasksByInstructionId,
 } from "../../lib/api/instructionQueries";
-import { fetchAllProcesses } from "../../lib/api/instructionAPI";
+import {
+  fetchAllProcesses,
+  fetchContractsByCenter,
+} from "../../lib/api/instructionAPI";
 import { Input } from "../../components/ui/input";
 import { formatDateTime } from "../../lib/utils/dateUtils";
 
@@ -479,6 +482,33 @@ const InstructionDetail = () => {
 
 // 상세 정보 탭 컴포넌트
 const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
+  const [contractName, setContractName] = useState("");
+  const [isLoadingContract, setIsLoadingContract] = useState(false);
+
+  useEffect(() => {
+    if (instruction?.center && instruction?.contractId) {
+      const fetchContractName = async () => {
+        setIsLoadingContract(true);
+        try {
+          const contractsResponse = await fetchContractsByCenter(
+            instruction.center
+          );
+          const contracts = contractsResponse.data || [];
+          const contract = contracts.find(
+            (c) => c.id === instruction.contractId
+          );
+          setContractName(contract?.name || `ID: ${instruction.contractId}`);
+        } catch (error) {
+          console.error("계약 정보 조회 실패:", error);
+          setContractName(`ID: ${instruction.contractId}`);
+        } finally {
+          setIsLoadingContract(false);
+        }
+      };
+      fetchContractName();
+    }
+  }, [instruction]);
+
   // 날짜 포맷팅 함수
   const formatDate = (dateString) => {
     if (!dateString) return "-";
@@ -543,7 +573,7 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-6">
           <div className="space-y-1">
             <p className="text-sm font-medium text-gray-500">상태</p>
             <span
@@ -563,6 +593,20 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
                 )
               ]?.label || instruction?.status}
             </span>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">센터</p>
+            <p className="font-medium">{instruction?.center || "-"}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">계약</p>
+            <p className="font-medium">
+              {isLoadingContract ? "로딩 중..." : contractName || "-"}
+            </p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-sm font-medium text-gray-500">회차</p>
+            <p className="font-medium">{instruction?.round ?? "-"}</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium text-gray-500">지시번호</p>
