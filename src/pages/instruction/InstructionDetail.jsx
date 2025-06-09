@@ -368,7 +368,7 @@ const InstructionDetail = () => {
 
           <div className="flex space-x-2">
             {/* 출력 드롭다운 버튼 */}
-            <div className="relative" ref={printDropdownRef}>
+            {/* <div className="relative" ref={printDropdownRef}>
               <FormButton
                 variant="outline"
                 size="sm"
@@ -392,7 +392,7 @@ const InstructionDetail = () => {
                   <path d="m6 9 6 6 6-6" />
                 </svg>
               </FormButton>
-            </div>
+            </div> */}
 
             {canComplete && (
               <FormButton
@@ -600,13 +600,11 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium text-gray-500">계약</p>
-            <p className="font-medium">
-              {isLoadingContract ? "로딩 중..." : contractName || "-"}
-            </p>
+            <p className="font-medium">{instruction?.contactName ?? "-"}</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium text-gray-500">회차</p>
-            <p className="font-medium">{instruction?.round ?? "-"}</p>
+            <p className="font-medium">{instruction?.roundNumber ?? "-"}</p>
           </div>
           <div className="space-y-1">
             <p className="text-sm font-medium text-gray-500">지시번호</p>

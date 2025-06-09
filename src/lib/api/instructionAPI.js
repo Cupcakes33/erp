@@ -540,12 +540,19 @@ export const fetchContractsByCenter = async (center) => {
  * @param {number} contractId - 계약 ID
  * @returns {Promise<Object>} 회차 목록
  */
-export const fetchPaymentsByContract = async (contractId) => {
-  try {
-    const response = await api.get(`/payment/${contractId}`);
-    return response.data;
-  } catch (error) {
-    console.error(`계약 ID [${contractId}] 회차 목록 조회 실패:`, error);
-    throw error;
-  }
-}
+export const getPaymentsByContract = (contractId) => {
+  return api.get(`/payment?contractId=${contractId}`);
+};
+
+/**
+ * 모든 결제 정보 가져오기 (이름 변경 및 수정)
+ * @returns {Promise<Object>} 모든 결제 정보
+ */
+export const getAllPayments = () => api.get("/payment");
+
+/**
+ * 계약(회차) 정보 가져오기 (단일)
+ * @param {number} id 결제 ID
+ * @returns {Promise<Object>} 결제 정보
+ */
+export const getPayment = (id) => api.get(`/payment/${id}`);

@@ -6,7 +6,7 @@ import {
 } from "../../lib/api/instructionQueries";
 import {
   fetchContractsByCenter,
-  fetchPaymentsByContract,
+  getPaymentsByContract,
 } from "../../lib/api/instructionAPI";
 import {
   FormButton,
@@ -55,34 +55,26 @@ const InstructionEdit = () => {
     contact1: "",
     contact2: "",
     contact3: "",
-    round: "",
   });
 
   const [selectedCenter, setSelectedCenter] = useState("");
   const [contracts, setContracts] = useState([]);
   const [selectedContractId, setSelectedContractId] = useState("");
-  const [rounds, setRounds] = useState([]);
-  const [selectedRound, setSelectedRound] = useState("");
-
-  const [initialCenter, setInitialCenter] = useState("");
-  const [initialContractId, setInitialContractId] = useState("");
-  const [initialRound, setInitialRound] = useState("");
+  const [payments, setPayments] = useState([]);
+  const [selectedPaymentId, setSelectedPaymentId] = useState("");
 
   const [isContractsLoading, setIsContractsLoading] = useState(false);
-  const [isRoundsLoading, setIsRoundsLoading] = useState(false);
-  const [isInitialBinding, setIsInitialBinding] = useState(true);
+  const [isPaymentsLoading, setIsPaymentsLoading] = useState(false);
 
   const [errors, setErrors] = useState({});
 
-  // 1. 초기 데이터 바인딩을 위한 마스터 useEffect
   useEffect(() => {
     const bindInitialData = async () => {
       if (!instructionData) return;
-      setIsInitialBinding(true);
 
       const instruction = instructionData;
 
-      // 1-A. 폼 데이터 설정
+      // 1. 폼 데이터 설정
       setFormData({
         orderId: instruction.orderId || 0,
         orderNumber: instruction.orderNumber || "",
@@ -101,24 +93,17 @@ const InstructionEdit = () => {
         contact1: instruction.contact1 || "",
         contact2: instruction.contact2 || "",
         contact3: instruction.contact3 || "",
-        round: instruction.round || "",
       });
 
-      // 1-B. 센터 설정
+      // 2. 센터 설정
       const centerFromServer = instruction.center;
-      if (!centerFromServer) {
-        setIsInitialBinding(false);
-        return;
-      }
+      if (!centerFromServer) return;
       setSelectedCenter(centerFromServer);
 
-      // 1-C. 계약 설정
+      // 3. 계약 정보 가져오기 및 설정
       const contractIdFromServer = instruction.contractId?.toString();
-      if (!contractIdFromServer) {
-        setIsInitialBinding(false);
-        return;
-      }
-      // fetchContractsByCenter 호출 및 contracts 상태 설정
+      if (!contractIdFromServer) return;
+
       setIsContractsLoading(true);
       const contractsResponse = await fetchContractsByCenter(centerFromServer);
       const fetchedContracts =
@@ -129,111 +114,88 @@ const InstructionEdit = () => {
       setContracts(fetchedContracts);
       setIsContractsLoading(false);
 
-      // 계약 ID가 존재하면 선택
       if (fetchedContracts.some((c) => c.value === contractIdFromServer)) {
         setSelectedContractId(contractIdFromServer);
 
-        // 1-D. 회차 설정
-        const roundFromServer = instruction.round?.toString();
-        if (roundFromServer !== undefined) {
-          setIsRoundsLoading(true);
-          const paymentsResponse = await fetchPaymentsByContract(
-            contractIdFromServer
-          );
-          const paymentsData = paymentsResponse.data || [];
-          const uniqueRoundsMap = new Map();
-          paymentsData.forEach((p) => {
-            if (p && p.round != null)
-              uniqueRoundsMap.set(p.round.toString(), p);
-          });
-          const fetchedRounds = Array.from(uniqueRoundsMap.values()).map(
-            (p) => ({
-              value: p.round.toString(),
-              label: `${p.round} - ${
-                p.orderName || p.orderNumber || "이름 없음"
-              }`,
-            })
-          );
-          setRounds(fetchedRounds);
-          setIsRoundsLoading(false);
+        // 4. 회차 정보 가져오기 및 설정
+        const roundNumberFromServer = instruction.roundNumber;
+        if (roundNumberFromServer !== undefined) {
+          setIsPaymentsLoading(true);
+          try {
+            const paymentsResponse = await getPaymentsByContract(
+              contractIdFromServer
+            );
+            // API 응답이 { data: [...] } 형태일 수 있으므로 안전하게 배열 추출
+            const paymentsData = paymentsResponse.data?.data || [];
+            const validPayments = paymentsData.filter((p) => p && p.id != null);
+            setPayments(validPayments);
 
-          if (fetchedRounds.some((r) => r.value === roundFromServer)) {
-            setSelectedRound(roundFromServer);
+            const initialPayment = validPayments.find(
+              (p) => p.round === roundNumberFromServer
+            );
+            if (initialPayment) {
+              setSelectedPaymentId(initialPayment.id.toString());
+            }
+          } catch (error) {
+            console.error("회차 정보 로드 실패:", error);
+            setErrors((prev) => ({
+              ...prev,
+              payments: "회차 정보를 불러오는 데 실패했습니다.",
+            }));
+          } finally {
+            setIsPaymentsLoading(false);
           }
         }
       }
-
-      setIsInitialBinding(false);
     };
 
     bindInitialData();
   }, [instructionData]);
 
-  // 2. 사용자 입력에 의한 '센터' 변경 처리
-  useEffect(() => {
-    if (isInitialBinding || !selectedCenter) return;
-
-    const fetchRelatedContracts = async () => {
-      setIsContractsLoading(true);
-      const contractsResponse = await fetchContractsByCenter(selectedCenter);
-      const fetchedContracts =
-        contractsResponse.data?.map((c) => ({
-          value: c.id.toString(),
-          label: c.name || `계약 ID: ${c.id}`,
-        })) || [];
-      setContracts(fetchedContracts);
-      setIsContractsLoading(false);
-    };
-
-    fetchRelatedContracts();
-  }, [selectedCenter, isInitialBinding]);
-
-  // 3. 사용자 입력에 의한 '계약' 변경 처리
-  useEffect(() => {
-    if (isInitialBinding || !selectedContractId) return;
-
-    const fetchRelatedRounds = async () => {
-      setIsRoundsLoading(true);
-      const paymentsResponse = await fetchPaymentsByContract(
-        selectedContractId
-      );
-      const paymentsData = paymentsResponse.data || [];
-      const uniqueRoundsMap = new Map();
-      paymentsData.forEach((p) => {
-        if (p && p.round != null) uniqueRoundsMap.set(p.round.toString(), p);
-      });
-      const fetchedRounds = Array.from(uniqueRoundsMap.values()).map((p) => ({
-        value: p.round.toString(),
-        label: `${p.round} - ${p.orderName || p.orderNumber || "이름 없음"}`,
-      }));
-      setRounds(fetchedRounds);
-      setIsRoundsLoading(false);
-    };
-
-    fetchRelatedRounds();
-  }, [selectedContractId, isInitialBinding]);
-
-  // 4. 간단한 handleChange 함수
-  const handleChange = (e) => {
+  const handleChange = async (e) => {
     const { name, value } = e.target;
 
     switch (name) {
       case "center":
         setSelectedCenter(value);
-        // 하위 상태 초기화
         setSelectedContractId("");
-        setSelectedRound("");
         setContracts([]);
-        setRounds([]);
+        setSelectedPaymentId("");
+        setPayments([]);
+        if (value) {
+          setIsContractsLoading(true);
+          try {
+            const res = await fetchContractsByCenter(value);
+            const fetched =
+              res.data?.map((c) => ({
+                value: c.id.toString(),
+                label: c.name || `계약 ID: ${c.id}`,
+              })) || [];
+            setContracts(fetched);
+          } finally {
+            setIsContractsLoading(false);
+          }
+        }
         break;
       case "contractId":
         setSelectedContractId(value);
-        // 하위 상태 초기화
-        setSelectedRound("");
-        setRounds([]);
+        setSelectedPaymentId("");
+        setPayments([]);
+        if (value) {
+          setIsPaymentsLoading(true);
+          try {
+            const res = await getPaymentsByContract(value);
+            // API 응답이 { data: [...] } 형태일 수 있으므로 안전하게 배열 추출
+            const paymentsData = res.data?.data || [];
+            const validPayments = paymentsData.filter((p) => p && p.id != null);
+            setPayments(validPayments);
+          } finally {
+            setIsPaymentsLoading(false);
+          }
+        }
         break;
-      case "round":
-        setSelectedRound(value);
+      case "paymentId":
+        setSelectedPaymentId(value);
         break;
       default:
         setFormData((prev) => ({ ...prev, [name]: value }));
@@ -250,7 +212,7 @@ const InstructionEdit = () => {
     if (!formData.name.trim()) newErrors.name = "제목을 입력해주세요";
     if (!selectedCenter) newErrors.center = "센터를 선택해주세요.";
     if (!selectedContractId) newErrors.contractId = "계약을 선택해주세요.";
-    if (!selectedRound) newErrors.round = "회차를 선택해주세요.";
+    if (!selectedPaymentId) newErrors.paymentId = "회차를 선택해주세요.";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -264,7 +226,7 @@ const InstructionEdit = () => {
       const payload = {
         ...formData,
         center: selectedCenter,
-        round: selectedRound ? Number(selectedRound) : null,
+        round: selectedPaymentId ? Number(selectedPaymentId) : null,
       };
 
       // contractId는 payload에 포함하지 않음
@@ -297,7 +259,7 @@ const InstructionEdit = () => {
   };
 
   const contractSelectOptions = [...contracts];
-  const roundSelectOptions = [...rounds];
+  const paymentSelectOptions = [...payments];
 
   if (isInstructionLoading) return <Loading />;
   if (instructionError) {
@@ -361,15 +323,18 @@ const InstructionEdit = () => {
             </div>
             <div>
               <FormSelect
-                id="round"
-                name="round"
+                id="paymentId"
+                name="paymentId"
                 label="회차"
-                value={selectedRound}
+                value={selectedPaymentId}
                 onChange={handleChange}
-                options={roundSelectOptions}
-                isLoading={isRoundsLoading}
-                disabled={!selectedContractId || isRoundsLoading}
-                error={errors.round}
+                options={payments.map((p) => ({
+                  value: p.id.toString(),
+                  label: `${p.round}회차`,
+                }))}
+                isLoading={isPaymentsLoading}
+                disabled={!selectedContractId || isPaymentsLoading}
+                error={errors.paymentId}
                 required
               />
             </div>
@@ -581,7 +546,7 @@ const InstructionEdit = () => {
                 updateInstructionMutation.isPending ||
                 isInstructionLoading ||
                 isContractsLoading ||
-                isRoundsLoading
+                isPaymentsLoading
               }
               loading={updateInstructionMutation.isPending}
               className="flex items-center"

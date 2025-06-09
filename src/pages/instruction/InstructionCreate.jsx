@@ -6,7 +6,7 @@ import {
 } from "../../lib/api/instructionQueries";
 import {
   fetchContractsByCenter, // 추가
-  fetchPaymentsByContract, // 추가
+  getPaymentsByContract, // 수정
 } from "../../lib/api/instructionAPI"; // 추가
 import {
   FormButton,
@@ -71,11 +71,11 @@ const InstructionCreate = () => {
   const [selectedCenter, setSelectedCenter] = useState("");
   const [contracts, setContracts] = useState([]);
   const [selectedContractId, setSelectedContractId] = useState("");
-  const [payments, setPayments] = useState([]);
-  const [selectedPaymentId, setSelectedPaymentId] = useState(""); // 생성 시 사용 안함
+  const [payments, setPayments] = useState([]); // 'rounds'에서 'payments'로 이름 변경
+  const [selectedPaymentId, setSelectedPaymentId] = useState(""); // 'selectedRound'에서 이름 변경 및 ID 저장용
 
   const [isContractsLoading, setIsContractsLoading] = useState(false);
-  const [isPaymentsLoading, setIsPaymentsLoading] = useState(false);
+  const [isPaymentsLoading, setIsPaymentsLoading] = useState(false); // 'isRoundsLoading'에서 이름 변경
 
   const [errors, setErrors] = useState({});
 
@@ -84,18 +84,16 @@ const InstructionCreate = () => {
     if (selectedCenter) {
       const fetchContracts = async () => {
         setIsContractsLoading(true);
-        setContracts([]); // 이전 계약 목록 초기화
-        setSelectedContractId(""); // 이전 선택된 계약 ID 초기화
-        setPayments([]); // 이전 회차 목록 초기화
-        setSelectedPaymentId(""); // 이전 선택된 회차 ID 초기화
+        setContracts([]);
+        setSelectedContractId("");
+        setPayments([]); // 초기화
+        setSelectedPaymentId(""); // 초기화
         try {
-          const data = await fetchContractsByCenter(selectedCenter);
-          // API 응답 형식이 { data: [{id: 1, name: '계약1'}, ...] } 와 같다고 가정
-          // 실제 API 응답에 맞게 key (id, name) 수정 필요
+          const res = await fetchContractsByCenter(selectedCenter);
           setContracts(
-            data.data
-              ? data.data.map((c) => ({
-                  value: c.id,
+            res.data
+              ? res.data.map((c) => ({
+                  value: c.id.toString(),
                   label: c.name || `계약 ID: ${c.id}`,
                 }))
               : []
@@ -124,20 +122,13 @@ const InstructionCreate = () => {
     if (selectedContractId) {
       const fetchPayments = async () => {
         setIsPaymentsLoading(true);
-        setPayments([]); // 이전 회차 목록 초기화
-        setSelectedPaymentId(""); // 이전 선택된 회차 ID 초기화
+        setPayments([]);
+        setSelectedPaymentId("");
         try {
-          const data = await fetchPaymentsByContract(selectedContractId);
-          // API 응답 형식이 { data: [{id: 1, round: 1, name: '1회차'}, ...] } 와 같다고 가정
-          // 실제 API 응답에 맞게 key (id, round, name) 수정 필요
-          setPayments(
-            data.data
-              ? data.data.map((p) => ({
-                  value: p.id,
-                  label: p.name || `회차 ID: ${p.id} (Round: ${p.round})`,
-                }))
-              : []
-          );
+          const res = await getPaymentsByContract(selectedContractId);
+          const paymentsData = res.data?.data || [];
+          const validPayments = paymentsData.filter((p) => p && p.id != null);
+          setPayments(validPayments);
         } catch (error) {
           console.error("회차 목록 조회 실패:", error);
           setErrors((prev) => ({
@@ -158,10 +149,8 @@ const InstructionCreate = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
 
-    // 센터, 계약, 회차 선택 핸들링
     if (name === "center") {
       setSelectedCenter(value);
-      // 센터 변경 시 하위 선택 초기화
       setSelectedContractId("");
       setContracts([]);
       setSelectedPaymentId("");
@@ -171,7 +160,6 @@ const InstructionCreate = () => {
       }
     } else if (name === "contractId") {
       setSelectedContractId(value);
-      // 계약 변경 시 하위 선택 초기화
       setSelectedPaymentId("");
       setPayments([]);
       if (errors.contractId) {
@@ -179,6 +167,9 @@ const InstructionCreate = () => {
       }
     } else if (name === "paymentId") {
       setSelectedPaymentId(value);
+      if (errors.paymentId) {
+        setErrors((prev) => ({ ...prev, paymentId: "" }));
+      }
     } else {
       setFormData({
         ...formData,
@@ -186,7 +177,6 @@ const InstructionCreate = () => {
       });
     }
 
-    // 입력 시 해당 필드의 오류 메시지 삭제
     if (errors[name] && name !== "center" && name !== "contractId") {
       setErrors({
         ...errors,
@@ -202,10 +192,14 @@ const InstructionCreate = () => {
       newErrors.name = "제목을 입력해주세요";
     }
     if (!selectedCenter) {
-      // 센터 선택 유효성 검사 추가
       newErrors.center = "센터를 선택해주세요.";
     }
-    // 생성 시에는 계약/회차 선택이 필수는 아닐 수 있으므로, 필요에 따라 유효성 검사 추가
+    if (!selectedContractId) {
+      newErrors.contractId = "계약을 선택해주세요.";
+    }
+    if (!selectedPaymentId) {
+      newErrors.paymentId = "회차를 선택해주세요.";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -219,49 +213,45 @@ const InstructionCreate = () => {
     }
 
     try {
-      // 새 스키마에 맞게 데이터 형식 변환
-      const payload = {
-        ...formData, // 기본 formData 복사
-        center: selectedCenter, // 선택된 센터 추가
-        status: "접수", // 기본 상태
-        // processId는 제거되었으므로 payload에서 제외
-        // paymentId는 생성 시에는 보내지 않음
-      };
-      // orderId가 문자열로 전달될 수 있으므로 숫자로 변환 (혹은 초기값을 null, 빈문자열로 하고 조건부로 넣기)
-      if (
-        payload.orderId !== "" &&
-        payload.orderId !== null &&
-        payload.orderId !== undefined
-      ) {
-        payload.orderId = Number(payload.orderId);
-      } else {
-        delete payload.orderId; // 혹은 0 또는 null로 서버 요구사항에 맞게 설정
+      // 선택된 paymentId로 payment 객체를 찾고, 거기서 round 번호를 추출
+      const selectedPayment = payments.find(
+        (p) => p.id.toString() === selectedPaymentId
+      );
+      const roundToSubmit = selectedPayment ? selectedPayment.round : null;
+
+      if (roundToSubmit === null) {
+        setErrors((prev) => ({
+          ...prev,
+          paymentId: "유효한 회차를 선택해주세요.",
+        }));
+        return;
       }
 
-      // 기존 processId 관련 부분 제거
-      // if (formData.processId) {
-      //   payload.processId = Number(formData.processId);
-      // } else {
-      //   delete payload.processId; // processId가 없으면 필드 자체를 보내지 않음
-      // }
+      const payload = {
+        ...formData,
+        center: selectedCenter,
+        contractId: Number(selectedContractId),
+        paymentId: Number(selectedPaymentId),
+        round: Number(roundToSubmit), // 'round' 번호를 제출
+        status: "접수",
+      };
+
+      if (payload.orderId === 0 || payload.orderId === "") {
+        delete payload.orderId;
+      } else {
+        payload.orderId = Number(payload.orderId);
+      }
 
       await createInstructionMutation.mutateAsync(payload);
       showSuccess("지시가 성공적으로 생성되었습니다.");
       navigate("/instructions");
     } catch (error) {
       console.error("지시 생성 실패:", error);
-      // API 에러 메시지 처리 개선 (필요시)
-      let submitError = "지시를 생성하는 중 오류가 발생했습니다.";
-      if (
-        error.response &&
-        error.response.data &&
-        error.response.data.message
-      ) {
+      let submitError = "지시 생성 중 오류가 발생했습니다.";
+      if (error.response?.data?.message) {
         submitError = error.response.data.message;
       }
-      setErrors({
-        submit: submitError,
-      });
+      setErrors({ submit: submitError });
     }
   };
 
@@ -269,15 +259,9 @@ const InstructionCreate = () => {
     navigate("/instructions");
   };
 
-  // 계약 선택 옵션
-  const contractSelectOptions = [...contracts];
-
-  // 회차 선택 옵션
-  const paymentSelectOptions = [...payments];
-
   return (
     <div className="px-4 py-6 mx-auto">
-      <h1 className="mb-6 text-2xl font-bold">새 지시 등록</h1>
+      <h1 className="mb-6 text-2xl font-bold">지시 등록</h1>
 
       <FormCard>
         <form onSubmit={handleSubmit}>
@@ -287,7 +271,6 @@ const InstructionCreate = () => {
             </div>
           )}
 
-          {/* 센터, 계약, 회차 선택 UI를 최상단으로 이동 */}
           <div className="grid grid-cols-1 gap-6 mb-6 md:grid-cols-3">
             <div>
               <FormSelect
@@ -297,8 +280,8 @@ const InstructionCreate = () => {
                 value={selectedCenter}
                 onChange={handleChange}
                 options={CENTER_OPTIONS}
-                error={errors.center} // 에러 메시지 표시
-                required // 센터 선택 필수
+                error={errors.center}
+                required
               />
             </div>
             <div>
@@ -308,23 +291,28 @@ const InstructionCreate = () => {
                 label="계약"
                 value={selectedContractId}
                 onChange={handleChange}
-                options={contractSelectOptions} // contractSelectOptions 사용
+                options={contracts}
                 isLoading={isContractsLoading}
-                disabled={!selectedCenter || isContractsLoading} // 센터가 선택되지 않았거나 로딩 중일 때 비활성화
-                // error={errors.contractId} // 필요시 에러 메시지 표시
+                disabled={!selectedCenter || isContractsLoading}
+                error={errors.contractId}
+                required
               />
             </div>
             <div>
               <FormSelect
                 id="paymentId"
                 name="paymentId"
-                label="회차 (생성 시 선택 안 함)" // 생성 시에는 선택 안 함을 명시
+                label="회차"
                 value={selectedPaymentId}
                 onChange={handleChange}
-                options={paymentSelectOptions} // paymentSelectOptions 사용
+                options={payments.map((p) => ({
+                  value: p.id.toString(),
+                  label: `${p.round}회차`,
+                }))}
                 isLoading={isPaymentsLoading}
-                disabled // 생성 시에는 항상 비활성화
-                // error={errors.paymentId} // 필요시 에러 메시지 표시
+                disabled={!selectedContractId || isPaymentsLoading}
+                error={errors.paymentId}
+                required
               />
             </div>
           </div>
@@ -504,22 +492,20 @@ const InstructionCreate = () => {
             />
           </div>
 
-          <div className="flex justify-end mt-8 space-x-4">
-            <FormButton
-              type="button"
-              className="w-32"
-              onClick={() => navigate(-1)}
-              outline
-            >
+          <div className="flex items-center justify-end mt-8 space-x-3">
+            <FormButton type="button" onClick={handleCancel} variant="outline">
               취소
             </FormButton>
             <FormButton
               type="submit"
-              className="w-32"
-              disabled={createInstructionMutation.isPending}
+              disabled={
+                createInstructionMutation.isPending ||
+                isContractsLoading ||
+                isPaymentsLoading
+              }
               loading={createInstructionMutation.isPending}
             >
-              저장
+              생성
             </FormButton>
           </div>
         </form>
