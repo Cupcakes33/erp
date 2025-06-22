@@ -55,9 +55,6 @@ const InstructionCreate = () => {
     manager: "",
     delegator: "",
     channel: "",
-    district: "",
-    dong: "",
-    lotNumber: "",
     detailAddress: "",
     structure: "",
     memo: "",
@@ -435,48 +432,26 @@ const InstructionCreate = () => {
           </div>
 
           <h2 className="mt-6 mb-4 text-lg font-semibold">위치 정보</h2>
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <FormInput
-              id="district"
-              name="district"
-              label="시/군/구"
-              placeholder="시/군/구를 입력하세요"
-              value={formData.district}
-              onChange={handleChange}
-            />
-            <FormInput
-              id="dong"
-              name="dong"
-              label="동/읍/면"
-              placeholder="동/읍/면을 입력하세요"
-              value={formData.dong}
-              onChange={handleChange}
-            />
-            <FormInput
-              id="lotNumber"
-              name="lotNumber"
-              label="지번"
-              placeholder="지번을 입력하세요"
-              value={formData.lotNumber}
-              onChange={handleChange}
-            />
-          </div>
-          <div className="grid grid-cols-2 gap-6 mt-6">
-            <FormInput
-              id="detailAddress"
-              name="detailAddress"
-              label="상세주소"
-              placeholder="상세주소를 입력하세요"
-              value={formData.detailAddress}
-              onChange={handleChange}
-            />
-            <FormInput
+              label="구조물"
               id="structure"
               name="structure"
-              label="건물구조"
-              placeholder="건물구조를 입력하세요"
               value={formData.structure}
               onChange={handleChange}
+              placeholder="예: 맨홀, 관로 등"
+            />
+          </div>
+
+          {/* 주소 입력 필드 */}
+          <div className="col-span-1 md:col-span-2">
+            <FormInput
+              label="주소"
+              id="detailAddress"
+              name="detailAddress"
+              value={formData.detailAddress}
+              onChange={handleChange}
+              placeholder="전체 주소를 입력해주세요"
             />
           </div>
 

@@ -22,7 +22,7 @@ const FormInput = ({
   ...props
 }) => {
   return (
-    <div className={`mb-4 ${fullWidth ? "w-full" : ""}`}>
+    <div className={`${fullWidth ? "w-full" : ""}`}>
       {label && (
         <Label htmlFor={id} className="mb-1 block">
           {label}

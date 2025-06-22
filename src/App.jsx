@@ -30,6 +30,8 @@ import WorkCreate from "./pages/work/WorkCreate";
 // 인사 관련 페이지
 import PersonnelList from "./pages/personnel/PersonnelList";
 import Payments from "./pages/payments/Payments";
+import PersonnelSales from "./pages/personnel/PersonnelSales";
+import PaymentsByTrade from "./pages/payments/PaymentsByTrade";
 
 // 인증 상태 확인 컴포넌트
 const PrivateRoute = ({ children }) => {
@@ -82,9 +84,11 @@ const App = () => {
 
           {/* 인사 관련 라우트 */}
           <Route path="personnel" element={<PersonnelList />} />
+          <Route path="personnel/sales" element={<PersonnelSales />} />
 
           {/* 기성 관련 라우트 */}
           <Route path="payments" element={<Payments />} />
+          <Route path="payments/by-trade" element={<PaymentsByTrade />} />
         </Route>
 
         <Route path="*" element={<NotFound />} />

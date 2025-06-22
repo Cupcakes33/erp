@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { fetchWorkers, createWorker, updateWorker } from "./personnelAPI"
+import {
+  fetchWorkers,
+  createWorker,
+  updateWorker,
+  getWorkerSales,
+} from "./personnelAPI"
 
 // 쿼리 키 상수
 const WORKERS_QUERY_KEY = "workers"
@@ -53,5 +58,17 @@ export const useUpdateWorker = () => {
         queryKey: [WORKERS_QUERY_KEY, variables.id],
       })
     },
+    onError: (error) => {
+      showError(`작업자 정보 수정 실패: ${error.message}`);
+    },
   })
 }
+
+// 작업자 매출 조회
+export const useWorkerSales = (params) => {
+  return useQuery({
+    queryKey: ["workerSales", params],
+    queryFn: () => getWorkerSales(params),
+    staleTime: 5 * 60 * 1000, // 5분
+  });
+};

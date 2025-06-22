@@ -275,10 +275,10 @@ const InstructionDetail = () => {
   if (error) {
     return (
       <div className="px-4 py-6 mx-auto bg-gray-50">
-        <div className="px-6 py-4 text-red-700 bg-red-100 border border-red-400 rounded-lg shadow">
+        <div className="px-6 py-4 text-red-700 bg-red-100 rounded-lg border border-red-400 shadow">
           <p className="mb-2">지시 정보를 불러오는 중 오류가 발생했습니다.</p>
           <FormButton onClick={handleBack} variant="outline" className="mt-2">
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="mr-2 w-4 h-4" />
             목록으로 돌아가기
           </FormButton>
         </div>
@@ -289,10 +289,10 @@ const InstructionDetail = () => {
   if (!instruction) {
     return (
       <div className="px-4 py-6 mx-auto bg-gray-50">
-        <div className="px-6 py-4 text-yellow-700 bg-yellow-100 border border-yellow-400 rounded-lg shadow">
+        <div className="px-6 py-4 text-yellow-700 bg-yellow-100 rounded-lg border border-yellow-400 shadow">
           <p className="mb-2">지시 정보를 찾을 수 없습니다.</p>
           <FormButton onClick={handleBack} variant="outline" className="mt-2">
-            <ArrowLeft className="w-4 h-4 mr-2" />
+            <ArrowLeft className="mr-2 w-4 h-4" />
             목록으로 돌아가기
           </FormButton>
         </div>
@@ -342,7 +342,7 @@ const InstructionDetail = () => {
   };
 
   return (
-    <div className="min-h-screen px-4 py-6 mx-auto bg-gray-50">
+    <div className="px-4 py-6 mx-auto min-h-screen bg-gray-50">
       <div className="p-6 mb-6 bg-white rounded-lg shadow">
         <div className="flex flex-col gap-4 mb-6 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center">
@@ -350,13 +350,13 @@ const InstructionDetail = () => {
               variant="outline"
               size="sm"
               onClick={handleBack}
-              className="h-10 mr-4"
+              className="mr-4 h-10"
             >
-              <ArrowLeft className="w-4 h-4 mr-2" />
+              <ArrowLeft className="mr-2 w-4 h-4" />
               목록으로
             </FormButton>
             <h1 className="flex items-center text-2xl font-bold text-gray-800">
-              <FileText className="w-6 h-6 mr-2 text-blue-600" />
+              <FileText className="mr-2 w-6 h-6 text-blue-600" />
               {instruction?.name}
               {isEnded && (
                 <span className="px-2 py-1 ml-3 text-xs font-medium text-purple-800 bg-purple-100 rounded-full">
@@ -375,7 +375,7 @@ const InstructionDetail = () => {
                 onClick={() => setShowPrintDropdown(!showPrintDropdown)}
                 className="flex items-center"
               >
-                <Printer className="w-4 h-4 mr-2" />
+                <Printer className="mr-2 w-4 h-4" />
                 출력하기
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -387,7 +387,7 @@ const InstructionDetail = () => {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="w-4 h-4 ml-2"
+                  className="ml-2 w-4 h-4"
                 >
                   <path d="m6 9 6 6 6-6" />
                 </svg>
@@ -401,7 +401,7 @@ const InstructionDetail = () => {
                 size="sm"
                 className="flex items-center"
               >
-                <CheckCircle className="w-4 h-4 mr-2" />
+                <CheckCircle className="mr-2 w-4 h-4" />
                 종료 처리
               </FormButton>
             )}
@@ -412,7 +412,7 @@ const InstructionDetail = () => {
                 size="sm"
                 className="flex items-center text-purple-600 border-purple-300 hover:bg-purple-50"
               >
-                <FileCheck className="w-4 h-4 mr-2" />
+                <FileCheck className="mr-2 w-4 h-4" />
                 확정
               </FormButton>
             )}
@@ -424,7 +424,7 @@ const InstructionDetail = () => {
                   size="sm"
                   className="flex items-center"
                 >
-                  <Edit className="w-4 h-4 mr-2" />
+                  <Edit className="mr-2 w-4 h-4" />
                   수정
                 </FormButton>
                 <FormButton
@@ -433,7 +433,7 @@ const InstructionDetail = () => {
                   size="sm"
                   className="flex items-center"
                 >
-                  <Trash className="w-4 h-4 mr-2" />
+                  <Trash className="mr-2 w-4 h-4" />
                   삭제
                 </FormButton>
               </>
@@ -453,7 +453,7 @@ const InstructionDetail = () => {
               }`}
             >
               <div className="flex items-center">
-                <Info className="w-4 h-4 mr-2" />
+                <Info className="mr-2 w-4 h-4" />
                 상세정보
               </div>
             </button>
@@ -466,7 +466,7 @@ const InstructionDetail = () => {
               }`}
             >
               <div className="flex items-center">
-                <Layout className="w-4 h-4 mr-2" />
+                <Layout className="mr-2 w-4 h-4" />
                 공종/작업 관리
               </div>
             </button>
@@ -525,15 +525,15 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
   return (
     <div className="p-6 mt-6 bg-white rounded-lg shadow">
       <h2 className="flex items-center mb-4 text-lg font-medium">
-        <Info className="w-5 h-5 mr-2 text-blue-600" />
+        <Info className="mr-2 w-5 h-5 text-blue-600" />
         상세 정보
       </h2>
 
       <div className="space-y-6">
         {isEnded && (
-          <div className="p-4 border border-purple-200 rounded-lg bg-purple-50">
+          <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
             <h3 className="flex items-center mb-2 font-medium text-purple-800 text-md">
-              <CheckCircle className="w-5 h-5 mr-2 text-purple-600" />이 지시는
+              <CheckCircle className="mr-2 w-5 h-5 text-purple-600" />이 지시는
               종료 처리되었습니다
             </h3>
             <p className="text-sm text-purple-700">
@@ -543,9 +543,9 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
         )}
 
         {canEdit && (
-          <div className="p-4 rounded-lg bg-gray-50">
+          <div className="p-4 bg-gray-50 rounded-lg">
             <h3 className="flex items-center mb-4 font-medium text-md">
-              <Activity className="w-5 h-5 mr-2 text-blue-600" />
+              <Activity className="mr-2 w-5 h-5 text-blue-600" />
               상태 변경
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -654,23 +654,18 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
           </div>
         </div>
 
-        <div className="pt-4 border-t border-gray-100">
-          <p className="mb-2 text-sm font-medium text-gray-500">위치 정보</p>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-500">시/군/구</p>
-              <p className="font-medium">{instruction?.district || "-"}</p>
+        {/* 위치 정보 */}
+        <div className="pt-4 border-t border-gray-200">
+          <h3 className="mb-3 text-sm font-semibold text-gray-500">
+            위치 정보
+          </h3>
+          <div className="grid grid-cols-1 gap-y-4 sm:grid-cols-2">
+            <div>
+              <p className="text-xs text-gray-500">구조물</p>
+              <p className="font-medium">{instruction?.structure || "-"}</p>
             </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-500">동/읍/면</p>
-              <p className="font-medium">{instruction?.dong || "-"}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-500">지번</p>
-              <p className="font-medium">{instruction?.lotNumber || "-"}</p>
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-medium text-gray-500">상세주소</p>
+            <div className="sm:col-span-2">
+              <p className="text-xs text-gray-500">주소</p>
               <p className="font-medium">{instruction?.detailAddress || "-"}</p>
             </div>
           </div>
@@ -679,7 +674,7 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
         <div className="pt-4 border-t border-gray-100">
           <div className="space-y-1">
             <p className="text-sm font-medium text-gray-500">비고</p>
-            <p className="p-3 rounded-md bg-gray-50">
+            <p className="p-3 bg-gray-50 rounded-md">
               {instruction?.memo || "-"}
             </p>
           </div>
@@ -748,7 +743,7 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
     isLoading,
     isError,
     error,
-  } = useProcessesByInstruction(instructionId);
+  } = useProcessesByInstruction(instructionId, { size: 9999 });
 
   // 모든 공종의 작업 목록을 관리하기 위한 상태
   const [allTasks, setAllTasks] = useState([]);
@@ -761,9 +756,7 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
     error: tasksError,
   } = useTasksByInstructionId(
     instructionId,
-    {
-      /* size: 9999 */
-    }, // size 파라미터 제거 또는 주석 처리
+    { size: 9999 },
     { enabled: !!instructionId }
   );
 
@@ -978,7 +971,7 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
     return (
       <div className="p-6 mt-6 bg-white rounded-lg shadow">
         <h2 className="flex items-center mb-4 text-lg font-medium">
-          <Layout className="w-5 h-5 mr-2 text-blue-600" />
+          <Layout className="mr-2 w-5 h-5 text-blue-600" />
           공종 목록
         </h2>
         <Loading />
@@ -990,10 +983,10 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
     return (
       <div className="p-6 mt-6 bg-white rounded-lg shadow">
         <h2 className="flex items-center mb-4 text-lg font-medium">
-          <Layout className="w-5 h-5 mr-2 text-blue-600" />
+          <Layout className="mr-2 w-5 h-5 text-blue-600" />
           공종 목록
         </h2>
-        <div className="p-4 text-center text-red-500 rounded-md bg-red-50">
+        <div className="p-4 text-center text-red-500 bg-red-50 rounded-md">
           공종 정보를 불러오는 중 오류가 발생했습니다.
         </div>
       </div>
@@ -1011,7 +1004,7 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
       header: "No.",
       size: 60,
       cell: ({ row }) => (
-        <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium text-blue-700">
+        <span className="inline-flex justify-center items-center w-6 h-6 text-xs font-medium text-blue-700">
           {row.index + 1}
         </span>
       ),
@@ -1085,7 +1078,7 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
       header: "No.",
       size: 60,
       cell: ({ row }) => (
-        <span className="inline-flex items-center justify-center w-6 h-6 text-xs font-medium text-blue-700">
+        <span className="inline-flex justify-center items-center w-6 h-6 text-xs font-medium text-blue-700">
           {row.index + 1}
         </span>
       ),
@@ -1165,9 +1158,9 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
 
   return (
     <div className="p-6 mt-6 bg-white rounded-lg shadow">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex justify-between items-center mb-4">
         <h2 className="flex items-center text-lg font-medium">
-          <Layout className="w-5 h-5 mr-2 text-blue-600" />
+          <Layout className="mr-2 w-5 h-5 text-blue-600" />
           공종 목록
         </h2>
         {canEdit && (
@@ -1183,7 +1176,7 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
       </div>
 
       {/* 공종 필터링 UI 추가 */}
-      <div className="p-4 mb-4 border rounded-lg bg-gray-50">
+      <div className="p-4 mb-4 bg-gray-50 rounded-lg border">
         <h3 className="mb-3 text-sm font-medium text-gray-700">공종 필터</h3>
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div>
@@ -1195,7 +1188,7 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
               name="query"
               value={processFilters.query}
               onChange={handleProcessFilterChange}
-              className="w-full px-3 py-2 text-sm border rounded-md border-input bg-background"
+              className="px-3 py-2 w-full text-sm rounded-md border border-input bg-background"
               placeholder="공종명 또는 작업자 검색..."
             />
           </div>
@@ -1205,7 +1198,7 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
               name="status"
               value={processFilters.status}
               onChange={handleProcessFilterChange}
-              className="w-full px-3 py-2 text-sm border rounded-md border-input bg-background"
+              className="px-3 py-2 w-full text-sm rounded-md border border-input bg-background"
             >
               <option value="">전체</option>
               {Object.values(PROCESS_STATUSES).map((status) => (
@@ -1229,13 +1222,16 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
         emptyMessage="등록된 공종이 없습니다. 위의 '공종 추가' 버튼을 클릭하여 새 공종을 추가하세요."
         className="w-full"
         densePadding={true}
+        pageSize={10}
+        enablePagination={true}
+        manualPagination={true}
       />
 
       {/* 통합된 작업 목록 */}
       <div className="pt-6 mt-8 border-t">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex justify-between items-center mb-4">
           <h2 className="flex items-center text-lg font-medium">
-            <Layout className="w-5 h-5 mr-2 text-indigo-600" />
+            <Layout className="mr-2 w-5 h-5 text-indigo-600" />
             작업 목록
           </h2>
           {canEdit && (
@@ -1251,7 +1247,7 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
         </div>
 
         {/* 작업 필터 추가 */}
-        <div className="p-4 mb-4 border rounded-lg bg-gray-50">
+        <div className="p-4 mb-4 bg-gray-50 rounded-lg border">
           <h3 className="mb-3 text-sm font-medium text-gray-700">작업 필터</h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div>
@@ -1262,7 +1258,7 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
                 name="processId"
                 value={taskFilter.processId}
                 onChange={handleTaskFilterChange}
-                className="w-full px-3 py-2 text-sm border rounded-md border-input bg-background"
+                className="px-3 py-2 w-full text-sm rounded-md border border-input bg-background"
               >
                 <option value="">모든 공종</option>
                 {processesData?.processes?.map((process) => (
@@ -1284,6 +1280,8 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
             data={filteredTasks}
             pageSize={10}
             isLoading={tasksLoadingHook}
+            enablePagination={true}
+            manualPagination={true}
           />
         )}
         {filteredTasks.length === 0 && !tasksLoadingHook && (
@@ -1378,7 +1376,7 @@ const ProcessFormModal = ({ process, isOpen, onClose, onSave }) => {
         isOpen ? "" : "hidden"
       }`}
     >
-      <div className="w-full max-w-lg p-6 mx-4 bg-white rounded-lg">
+      <div className="p-6 mx-4 w-full max-w-lg bg-white rounded-lg">
         <h2 className="mb-4 text-xl font-semibold">
           {process ? "공종 수정" : "공종 추가"}
         </h2>
@@ -1397,7 +1395,7 @@ const ProcessFormModal = ({ process, isOpen, onClose, onSave }) => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="px-3 py-2 w-full rounded-md border border-gray-300"
                 required
               />
             </div>
@@ -1414,7 +1412,7 @@ const ProcessFormModal = ({ process, isOpen, onClose, onSave }) => {
                 name="worker"
                 value={formData.worker}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="px-3 py-2 w-full rounded-md border border-gray-300"
               />
             </div>
             <div>
@@ -1430,7 +1428,7 @@ const ProcessFormModal = ({ process, isOpen, onClose, onSave }) => {
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="px-3 py-2 w-full rounded-md border border-gray-300"
               />
             </div>
             <div>
@@ -1445,7 +1443,7 @@ const ProcessFormModal = ({ process, isOpen, onClose, onSave }) => {
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="px-3 py-2 w-full rounded-md border border-gray-300"
               >
                 {PROCESS_STATUS_OPTIONS.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -1576,7 +1574,7 @@ const TaskFormModal = ({
                   name="processId"
                   value={formData.processId}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="px-3 py-2 w-full rounded-md border border-gray-300"
                   required
                 >
                   <option value="">공종 선택</option>
@@ -1600,7 +1598,7 @@ const TaskFormModal = ({
                 <div className="relative">
                   <div className="flex items-center mb-2">
                     <div className="relative w-full">
-                      <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                      <div className="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
                         <Search className="w-4 h-4 text-gray-500" />
                       </div>
                       <Input
@@ -1608,11 +1606,11 @@ const TaskFormModal = ({
                         value={searchKeyword}
                         onChange={handleSearchChange}
                         onFocus={() => setShowUnitPriceSearch(true)}
-                        className="w-full pl-10"
+                        className="pl-10 w-full"
                       />
                       {selectedUnitPrice && (
                         <div
-                          className="absolute inset-y-0 right-0 flex items-center pr-3 text-green-600"
+                          className="flex absolute inset-y-0 right-0 items-center pr-3 text-green-600"
                           title={selectedUnitPrice.name}
                         >
                           <Check className="w-4 h-4" />
@@ -1622,7 +1620,7 @@ const TaskFormModal = ({
                   </div>
 
                   {showUnitPriceSearch && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg">
+                    <div className="absolute z-10 mt-1 w-full bg-white rounded-md border border-gray-300 shadow-lg">
                       <div className="overflow-y-auto max-h-64">
                         {isUnitPricesLoading ? (
                           <div className="p-4 text-center">
@@ -1636,7 +1634,7 @@ const TaskFormModal = ({
                                 className="px-3 py-2 cursor-pointer hover:bg-gray-100"
                                 onClick={() => handleSelectUnitPrice(unitPrice)}
                               >
-                                <div className="flex items-center justify-between">
+                                <div className="flex justify-between items-center">
                                   <div>
                                     <div className="font-medium">
                                       {unitPrice.name}
@@ -1674,7 +1672,7 @@ const TaskFormModal = ({
                           size="sm"
                           onClick={() => setShowUnitPriceSearch(false)}
                         >
-                          <X className="w-4 h-4 mr-1" />
+                          <X className="mr-1 w-4 h-4" />
                           닫기
                         </Button>
                       </div>
@@ -1683,9 +1681,9 @@ const TaskFormModal = ({
                 </div>
 
                 {selectedUnitPrice && (
-                  <div className="p-2 mt-2 text-sm text-blue-800 rounded-md bg-blue-50">
+                  <div className="p-2 mt-2 text-sm text-blue-800 bg-blue-50 rounded-md">
                     <div className="flex items-center font-medium">
-                      <Check className="w-4 h-4 mr-1 text-blue-600" />
+                      <Check className="mr-1 w-4 h-4 text-blue-600" />
                       {selectedUnitPrice.name} 선택됨
                     </div>
                     <div className="mt-1 text-xs">
@@ -1723,7 +1721,7 @@ const TaskFormModal = ({
                   name="count"
                   value={formData.count}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="px-3 py-2 w-full rounded-md border border-gray-300"
                   min="0"
                   step="0.01"
                   required
@@ -1743,13 +1741,13 @@ const TaskFormModal = ({
                   name="totalCost"
                   value={formData.totalCost}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="px-3 py-2 w-full rounded-md border border-gray-300"
                   min="0"
                 />
               </div>
             </div>
 
-            <div className="p-3 rounded-md bg-gray-50">
+            <div className="p-3 bg-gray-50 rounded-md">
               <p className="text-sm font-medium text-gray-900">
                 <span className="font-medium">총 금액:</span>{" "}
                 {(formData.count * formData.totalCost).toLocaleString()}원
@@ -1768,7 +1766,7 @@ const TaskFormModal = ({
                 name="calculationDetails"
                 value={formData.calculationDetails}
                 onChange={handleChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                className="px-3 py-2 w-full rounded-md border border-gray-300"
                 rows={3}
               ></textarea>
             </div>

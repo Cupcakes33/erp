@@ -186,10 +186,7 @@ export const excelUtils = {
         manager: "관리자명",
         delegator: "위임자명",
         channel: "전화",
-        district: "서울시 강남구",
-        dong: "삼성동",
-        lotNumber: "123-45",
-        detailAddress: "상세주소",
+        detailAddress: "서울시 강남구 삼성동 123-45 상세주소",
         structure: "건물명",
         memo: "비고 사항",
         round: 1

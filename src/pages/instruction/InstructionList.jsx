@@ -209,14 +209,12 @@ const InstructionList = () => {
     "orderNumber",
     "name",
     "status",
-    "district",
-    "dong",
-    "lotNumber",
     "manager",
     "orderDate",
     "round",
     "memo",
     "modifier",
+    "detailAddress",
   ]);
 
   // 필터 변경 핸들러
@@ -471,24 +469,9 @@ const InstructionList = () => {
       cell: ({ row }) => truncateText(row.getValue("channel"), 10),
     },
     {
-      accessorKey: "district",
-      header: "지역",
-      cell: ({ row }) => truncateText(row.getValue("district"), 15),
-    },
-    {
-      accessorKey: "dong",
-      header: "동",
-      cell: ({ row }) => row.getValue("dong") || "-",
-    },
-    {
-      accessorKey: "lotNumber",
-      header: "지번",
-      cell: ({ row }) => row.getValue("lotNumber") || "-",
-    },
-    {
       accessorKey: "detailAddress",
-      header: "상세주소",
-      cell: ({ row }) => truncateText(row.getValue("detailAddress"), 20),
+      header: "주소",
+      cell: ({ row }) => truncateText(row.getValue("detailAddress"), 30),
     },
     {
       accessorKey: "structure",
@@ -600,7 +583,7 @@ const InstructionList = () => {
     },
     {
       title: "위치 정보",
-      columns: ["district", "dong", "lotNumber", "detailAddress", "structure"],
+      columns: ["detailAddress", "structure"],
     },
     {
       title: "담당자",

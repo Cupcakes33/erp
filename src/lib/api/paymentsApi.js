@@ -41,4 +41,41 @@ export const getPaymentDetail = async (id) => {
   // 사용자의 세 번째 curl 예시 ('GET /api/payment/0')에 따르면
   // response.data.data는 orderId, materialCost 등을 포함하는 객체들의 배열입니다.
   return response.data.data;
+};
+
+export const getPaymentDocumentData = async (paymentId) => {
+  const { data } = await api.get(`/payments/${paymentId}/documents`);
+  return data;
+};
+
+// 공종별 금액 조회
+export const getPaymentsByTrade = async (params) => {
+  console.log("Fetching payments by trade with params:", params);
+
+  const mockData = [
+    { id: 1, type: "재료비", code: "MAT-001", tradeName: "시멘트", unitPriceSum: 500000, cumulative: 2500000 },
+    { id: 2, type: "노무비", code: "LAB-001", tradeName: "보통인부", unitPriceSum: 1200000, cumulative: 10200000 },
+    { id: 3, type: "경비", code: "EXP-001", tradeName: "운반비", unitPriceSum: 150000, cumulative: 800000 },
+    { id: 4, type: "재료비", code: "MAT-002", tradeName: "모래", unitPriceSum: 300000, cumulative: 1500000 },
+    { id: 5, type: "노무비", code: "LAB-002", tradeName: "특별인부", unitPriceSum: 1800000, cumulative: 15000000 },
+  ];
+
+  let filteredData = mockData;
+  if (params?.tradeName) {
+    filteredData = filteredData.filter(item => item.tradeName.includes(params.tradeName));
+  }
+  if (params?.type && params.type !== "all") {
+    // Assuming type is '재료비', '노무비', '경비'
+    const typeMap = { material: "재료비", labor: "노무비", expense: "경비" };
+    filteredData = filteredData.filter(item => item.type === typeMap[params.type]);
+  }
+
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  return {
+    data: filteredData,
+    totalCount: filteredData.length,
+    totalPage: 1,
+    currentPage: 1,
+  };
 }; 

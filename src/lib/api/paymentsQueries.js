@@ -3,6 +3,8 @@ import {
   getContracts,
   getPayments,
   getPaymentDetail,
+  getPaymentDocumentData,
+  getPaymentsByTrade,
 } from "./paymentsApi"; // 경로 수정: 동일 디렉토리 내의 paymentsApi.js를 참조
 
 // 쿼리 키 정의
@@ -54,4 +56,27 @@ export const useGetPaymentDetail = (id, options) => {
     enabled: !!id, // id가 있을 때만 쿼리 실행
     ...options,
   });
-}; 
+};
+
+/**
+ * 공종별 금액 조회
+ * @param {object} params - API 요청 파라미터 (예: { paymentId: 1 })
+ * @param {object} options - React Query 옵션
+ */
+export const useGetPaymentDocumentData = (params, options) =>
+  useQuery({
+    queryKey: ["paymentDocumentData", params],
+    queryFn: () => getPaymentDocumentData(params.paymentId),
+    ...options,
+  });
+
+/**
+ * 공종별 금액 조회
+ * @param {object} params - API 요청 파라미터 (예: { paymentId: 1 })
+ * @param {object} options - React Query 옵션
+ */
+export const useGetPaymentsByTrade = (params) =>
+  useQuery({
+    queryKey: ["paymentsByTrade", params],
+    queryFn: () => getPaymentsByTrade(params),
+  }); 

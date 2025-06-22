@@ -45,3 +45,32 @@ export const updateWorker = async (id, workerData) => {
     throw error
   }
 }
+
+// 작업자 매출 조회 (mock)
+export const getWorkerSales = async (params) => {
+  console.log("Fetching worker sales with params:", params)
+  // Mock data
+  const mockData = [
+    { id: 1, name: "홍길동", sales: 1200000 },
+    { id: 2, name: "김철수", sales: 2500000 },
+    { id: 3, name: "이영희", sales: 850000 },
+    { id: 4, name: "박보검", sales: 3100000 },
+    { id: 5, name: "송혜교", sales: 1750000 },
+  ];
+
+  // Mock filtering
+  let filteredData = mockData;
+  if (params?.name) {
+    filteredData = filteredData.filter(item => item.name.includes(params.name));
+  }
+  
+  // Mock API delay
+  await new Promise(resolve => setTimeout(resolve, 500));
+
+  return {
+    data: filteredData,
+    totalCount: filteredData.length,
+    totalPage: 1,
+    currentPage: 1,
+  };
+};
