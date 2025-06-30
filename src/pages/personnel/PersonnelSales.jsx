@@ -8,12 +8,31 @@ import { formatNumberKR } from "@/lib/utils/formatterUtils";
  * 작업자 매출 조회 페이지
  */
 const PersonnelSales = () => {
+  // 이번달 1일과 오늘 날짜 구하기
+  const getMonthRange = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const today = now;
+    return {
+      start: firstDay.toISOString().slice(0, 10),
+      end: today.toISOString().slice(0, 10),
+    };
+  };
+
+  const defaultRange = getMonthRange();
+
   const [filters, setFilters] = useState({
     name: "",
-    startDate: "",
-    endDate: "",
+    startDate: defaultRange.start,
+    endDate: defaultRange.end,
   });
-  const [filterParams, setFilterParams] = useState(filters);
+  const [filterParams, setFilterParams] = useState({
+    name: "",
+    startDate: defaultRange.start,
+    endDate: defaultRange.end,
+  });
 
   const {
     data: salesData,
@@ -28,13 +47,22 @@ const PersonnelSales = () => {
   };
 
   const handleApplyFilter = () => {
-    setFilterParams(filters);
+    const { startDate, endDate, name } = filters;
+    setFilterParams({ name, start: startDate, end: endDate });
   };
 
   const resetFilters = () => {
-    const defaultFilters = { name: "", startDate: "", endDate: "" };
+    const defaultFilters = {
+      name: "",
+      startDate: defaultRange.start,
+      endDate: defaultRange.end,
+    };
     setFilters(defaultFilters);
-    setFilterParams(defaultFilters);
+    setFilterParams({
+      name: "",
+      start: defaultRange.start,
+      end: defaultRange.end,
+    });
   };
 
   const columns = [

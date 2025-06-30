@@ -189,9 +189,11 @@ export const deleteInstruction = async (id) => {
 /**
  * 지시 확정(기성에 반영) API
  * @param {number} id 지시 ID
+ * @param {string} completedBy 완료자(종료처리자) 이름
  * @returns {Promise<Object>} 확정 결과
  */
 export const confirmInstruction = async (id) => {
+  console.log(id)
   try {
     const response = await api.post(`/instruction/${id}/confirm`);
     return response.data;
@@ -556,3 +558,20 @@ export const getAllPayments = () => api.get("/payment");
  * @returns {Promise<Object>} 결제 정보
  */
 export const getPayment = (id) => api.get(`/payment/${id}`);
+
+/**
+ * 작업자 목록 조회 API
+ * @param {Object} params - 쿼리 파라미터 (예: { active: true })
+ * @returns {Promise<Object>} 작업자 목록
+ */
+export const fetchWorkers = async (params = {}) => {
+  try {
+    const query = new URLSearchParams();
+    if (typeof params.active !== 'undefined') query.append('active', params.active);
+    const response = await api.get(`/worker${query.toString() ? `?${query.toString()}` : ''}`);
+    return response.data;
+  } catch (error) {
+    console.error('작업자 목록 조회 실패:', error);
+    throw error;
+  }
+};

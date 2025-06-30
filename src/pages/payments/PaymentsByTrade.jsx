@@ -13,13 +13,33 @@ import { formatNumberKR } from "@/lib/utils/formatterUtils";
  * 공종별 금액 조회 페이지
  */
 const PaymentsByTrade = () => {
+  // 이번달 1일과 오늘 날짜 구하기
+  const getMonthRange = () => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const today = now;
+    return {
+      start: firstDay.toISOString().slice(0, 10),
+      end: today.toISOString().slice(0, 10),
+    };
+  };
+
+  const defaultRange = getMonthRange();
+
   const [filters, setFilters] = useState({
     type: "all",
     tradeName: "",
-    startDate: "",
-    endDate: "",
+    startDate: defaultRange.start,
+    endDate: defaultRange.end,
   });
-  const [filterParams, setFilterParams] = useState(filters);
+  const [filterParams, setFilterParams] = useState({
+    type: "all",
+    tradeName: "",
+    startDate: defaultRange.start,
+    endDate: defaultRange.end,
+  });
 
   const {
     data: tradeData,
@@ -34,57 +54,63 @@ const PaymentsByTrade = () => {
   };
 
   const handleApplyFilter = () => {
-    setFilterParams(filters);
+    const { startDate, endDate, ...rest } = filters;
+    setFilterParams({ ...rest, start: startDate, end: endDate });
   };
 
   const resetFilters = () => {
     const defaultFilters = {
       type: "all",
       tradeName: "",
-      startDate: "",
-      endDate: "",
+      startDate: defaultRange.start,
+      endDate: defaultRange.end,
     };
     setFilters(defaultFilters);
-    setFilterParams(defaultFilters);
+    setFilterParams({
+      type: "all",
+      tradeName: "",
+      start: defaultRange.start,
+      end: defaultRange.end,
+    });
   };
 
   const columns = [
     { accessorKey: "type", header: "구분", className: "px-2" },
     { accessorKey: "code", header: "코드", className: "px-2" },
-    { accessorKey: "tradeName", header: "공종명", className: "px-2" },
+    { accessorKey: "name", header: "공종명", className: "px-2" },
     {
-      accessorKey: "unitPriceSum",
-      header: "단가 합계",
+      accessorKey: "cost",
+      header: "단가",
       className: "px-2 text-right",
-      cell: ({ row }) => formatNumberKR(row.original.unitPriceSum),
+      cell: ({ row }) => formatNumberKR(row.original.cost),
     },
     {
-      accessorKey: "cumulative",
-      header: "누계",
+      accessorKey: "totalPrice",
+      header: "금액",
       className: "px-2 text-right",
-      cell: ({ row }) => formatNumberKR(row.original.cumulative),
+      cell: ({ row }) => formatNumberKR(row.original.totalPrice),
     },
   ];
 
   const typeOptions = [
-    { value: "material", label: "재료비" },
-    { value: "labor", label: "노무비" },
-    { value: "expense", label: "경비" },
+    { value: "건축", label: "건축" },
+    { value: "조경", label: "조경" },
+    { value: "기계", label: "기계" },
   ];
 
   return (
-    <div className="min-h-screen px-4 py-6 mx-auto bg-gray-50">
+    <div className="px-4 py-6 mx-auto min-h-screen bg-gray-50">
       <div className="p-6 mb-6 bg-white rounded-lg shadow-sm">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex justify-between items-center mb-4">
           <h1 className="flex items-center text-2xl font-bold text-gray-800">
-            <ListFilter className="w-6 h-6 mr-2 text-blue-600" />
+            <ListFilter className="mr-2 w-6 h-6 text-blue-600" />
             기성 관리
           </h1>
           <p className="text-gray-600">공종별 금액 조회</p>
         </div>
 
-        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-          <div className="flex flex-wrap items-end justify-start w-full gap-4">
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex flex-wrap gap-4 justify-start items-end w-full">
             <div className="flex-1 min-w-[150px]">
               <label className="block mb-1 text-xs font-medium text-gray-700">
                 타입 선택
@@ -132,7 +158,7 @@ const PaymentsByTrade = () => {
                   value={filters.tradeName}
                   onChange={handleFilterChange}
                 />
-                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <div className="flex absolute inset-y-0 left-0 items-center pl-3 pointer-events-none">
                   <Search className="w-5 h-5 text-gray-400" />
                 </div>
               </div>
@@ -144,7 +170,7 @@ const PaymentsByTrade = () => {
                 onClick={handleApplyFilter}
                 className="flex items-center"
               >
-                <Filter className="w-4 h-4 mr-1" />
+                <Filter className="mr-1 w-4 h-4" />
                 조회
               </FormButton>
               <FormButton
@@ -153,7 +179,7 @@ const PaymentsByTrade = () => {
                 onClick={resetFilters}
                 className="flex items-center text-red-600 border-red-300 hover:bg-red-50"
               >
-                <X className="w-4 h-4 mr-1" />
+                <X className="mr-1 w-4 h-4" />
                 초기화
               </FormButton>
             </div>

@@ -53,6 +53,7 @@ import {
 import {
   fetchAllProcesses,
   fetchContractsByCenter,
+  fetchWorkers,
 } from "../../lib/api/instructionAPI";
 import { Input } from "../../components/ui/input";
 import { formatDateTime } from "../../lib/utils/dateUtils";
@@ -213,24 +214,6 @@ const InstructionDetail = () => {
         showSuccess("지시가 종료 처리되었습니다.");
       } catch (error) {
         console.error("지시 종료 처리 실패:", error);
-      }
-    }
-  };
-
-  const handleConfirm = async () => {
-    const result = await showConfirm({
-      title: "지시 확정",
-      message: "이 지시를 확정하시겠습니까? 확정된 지시는 기성에 반영됩니다.",
-      confirmText: "확정",
-      icon: "question",
-    });
-
-    if (result.isConfirmed) {
-      try {
-        await confirmInstructionMutation.mutateAsync(id);
-        showSuccess("지시가 확정되었습니다.");
-      } catch (error) {
-        console.error("지시 확정 실패:", error);
       }
     }
   };
@@ -407,7 +390,7 @@ const InstructionDetail = () => {
             )}
             {isCompleted && !isConfirmed && (
               <FormButton
-                onClick={handleConfirm}
+                onClick={handleComplete}
                 variant="secondary"
                 size="sm"
                 className="flex items-center text-purple-600 border-purple-300 hover:bg-purple-50"
@@ -539,6 +522,11 @@ const DetailTab = ({ instruction, canEdit, onStatusChange }) => {
             <p className="text-sm text-purple-700">
               종료된 지시는 더 이상 수정하거나 상태를 변경할 수 없습니다.
             </p>
+            {instruction?.completedBy && (
+              <div className="mt-2 text-sm font-semibold text-purple-700">
+                종료처리 : {instruction.completedBy}
+              </div>
+            )}
           </div>
         )}
 
@@ -967,6 +955,30 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
     }
   };
 
+  // 작업자 검색 및 선택 상태
+  const [workerSearch, setWorkerSearch] = useState("");
+  const [showWorkerSearch, setShowWorkerSearch] = useState(false);
+  const [workerList, setWorkerList] = useState([]);
+  const [isWorkerLoading, setIsWorkerLoading] = useState(false);
+
+  // 작업자 목록 불러오기 (처음 열릴 때 1회)
+  useEffect(() => {
+    const fetchAllWorkers = async () => {
+      setIsWorkerLoading(true);
+      try {
+        const res = await fetchWorkers();
+        setWorkerList(res.data || []);
+      } catch (e) {
+        setWorkerList([]);
+      } finally {
+        setIsWorkerLoading(false);
+      }
+    };
+    if (showWorkerSearch && workerList.length === 0) {
+      fetchAllWorkers();
+    }
+  }, [showWorkerSearch]);
+
   if (isLoading) {
     return (
       <div className="p-6 mt-6 bg-white rounded-lg shadow">
@@ -1093,6 +1105,11 @@ const ProcessesTab = ({ instructionId, instruction, canEdit }) => {
         );
         return process ? process.name : "-";
       },
+    },
+    {
+      accessorKey: "worker",
+      header: "작업자",
+      cell: ({ row }) => row.original.worker || "-",
     },
     {
       accessorKey: "name",
@@ -1484,7 +1501,10 @@ const TaskFormModal = ({
     totalCost: task?.totalCost || task?.price || task?.unitPrice?.price || 0,
     totalPrice: task?.totalPrice || 0,
     calculationDetails: task?.calculationDetails || "",
+    worker: task?.worker || "",
+    workerId: task?.workerId || null,
   });
+  const [workerError, setWorkerError] = useState("");
 
   // 일위대가 검색을 위한 상태
   const [searchKeyword, setSearchKeyword] = useState("");
@@ -1498,6 +1518,30 @@ const TaskFormModal = ({
     });
 
   const unitPrices = unitPricesData?.unitPrices || [];
+
+  // 작업자 검색 및 선택 상태
+  const [workerSearch, setWorkerSearch] = useState("");
+  const [showWorkerSearch, setShowWorkerSearch] = useState(false);
+  const [workerList, setWorkerList] = useState([]);
+  const [isWorkerLoading, setIsWorkerLoading] = useState(false);
+
+  // 작업자 목록 불러오기 (처음 열릴 때 1회)
+  useEffect(() => {
+    const fetchAllWorkers = async () => {
+      setIsWorkerLoading(true);
+      try {
+        const res = await fetchWorkers();
+        setWorkerList(res.data || []);
+      } catch (e) {
+        setWorkerList([]);
+      } finally {
+        setIsWorkerLoading(false);
+      }
+    };
+    if (showWorkerSearch && workerList.length === 0) {
+      fetchAllWorkers();
+    }
+  }, [showWorkerSearch]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -1515,6 +1559,10 @@ const TaskFormModal = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.workerId) {
+      setWorkerError("작업자를 선택하세요.");
+      return;
+    }
     // API 형식에 맞게 데이터 구성
     const apiData = {
       processId: formData.processId,
@@ -1524,6 +1572,7 @@ const TaskFormModal = ({
       totalPrice: formData.count * formData.totalCost,
       calculationDetails: formData.calculationDetails,
       name: formData.name,
+      workerId: formData.workerId,
     };
     onSave(apiData);
   };
@@ -1705,6 +1754,93 @@ const TaskFormModal = ({
                   </div>
                 )}
               </div>
+            )}
+
+            <div>
+              <label
+                htmlFor="worker"
+                className="block mb-1 text-sm font-medium text-gray-700"
+              >
+                작업자
+              </label>
+              <div className="relative">
+                <Input
+                  placeholder="작업자 검색..."
+                  value={workerSearch || formData.worker}
+                  onChange={(e) => setWorkerSearch(e.target.value)}
+                  onFocus={() => setShowWorkerSearch(true)}
+                  className="w-full"
+                />
+                {formData.worker && (
+                  <div className="flex absolute inset-y-0 right-0 items-center pr-3 text-green-600">
+                    <Check className="w-4 h-4" />
+                  </div>
+                )}
+                {showWorkerSearch && (
+                  <div className="absolute z-10 mt-1 w-full bg-white rounded-md border border-gray-300 shadow-lg">
+                    <div className="overflow-y-auto max-h-64">
+                      {isWorkerLoading ? (
+                        <div className="p-4 text-center">
+                          <Loading />
+                        </div>
+                      ) : workerList.length > 0 ? (
+                        <ul className="py-1">
+                          {workerList
+                            .filter(
+                              (w) =>
+                                !workerSearch || w.name.includes(workerSearch)
+                            )
+                            .map((worker) => (
+                              <li
+                                key={worker.id}
+                                className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                                onClick={() => {
+                                  setFormData({
+                                    ...formData,
+                                    worker: worker.name,
+                                    workerId: worker.id,
+                                  });
+                                  setWorkerSearch(worker.name);
+                                  setShowWorkerSearch(false);
+                                  setWorkerError("");
+                                }}
+                              >
+                                <span
+                                  className={
+                                    worker.active
+                                      ? "text-blue-700"
+                                      : "text-gray-400"
+                                  }
+                                >
+                                  {worker.name}
+                                  {!worker.active && " (비활성)"}
+                                </span>
+                              </li>
+                            ))}
+                        </ul>
+                      ) : (
+                        <div className="p-4 text-center text-gray-500">
+                          검색 결과가 없습니다.
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-2 text-right border-t">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowWorkerSearch(false)}
+                      >
+                        <X className="mr-1 w-4 h-4" /> 닫기
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {workerError && (
+              <div className="mt-1 text-xs text-red-600">{workerError}</div>
             )}
 
             <div className="grid grid-cols-2 gap-4">

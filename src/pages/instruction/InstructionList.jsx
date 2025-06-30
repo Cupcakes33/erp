@@ -546,11 +546,9 @@ const InstructionList = () => {
 
   const statusOptions = [
     { value: "접수", label: "접수" },
-    { value: "작업중", label: "작업중" },
-    { value: "작업완료", label: "작업완료" },
+    { value: "진행중", label: "진행중" },
     { value: "결재중", label: "결재중" },
-    { value: "완료", label: "완료" },
-    { value: "취소", label: "취소" },
+    { value: "작업완료", label: "작업완료" },
   ];
 
   const columnOptions = allColumns.map((column) => ({
@@ -630,7 +628,7 @@ const InstructionList = () => {
           }`}
         >
           <span className="sr-only">첫 페이지</span>
-          <ChevronsLeft className="w-4 h-4 mx-auto" />
+          <ChevronsLeft className="mx-auto w-4 h-4" />
         </button>
 
         {/* 이전 페이지 버튼 */}
@@ -644,7 +642,7 @@ const InstructionList = () => {
           }`}
         >
           <span className="sr-only">이전 페이지</span>
-          <ChevronLeft className="w-4 h-4 mx-auto" />
+          <ChevronLeft className="mx-auto w-4 h-4" />
         </button>
 
         {/* 페이지 번호 버튼들 */}
@@ -673,7 +671,7 @@ const InstructionList = () => {
           }`}
         >
           <span className="sr-only">다음 페이지</span>
-          <ChevronRight className="w-4 h-4 mx-auto" />
+          <ChevronRight className="mx-auto w-4 h-4" />
         </button>
 
         {/* 마지막 페이지 버튼 */}
@@ -687,7 +685,7 @@ const InstructionList = () => {
           }`}
         >
           <span className="sr-only">마지막 페이지</span>
-          <ChevronsRight className="w-4 h-4 mx-auto" />
+          <ChevronsRight className="mx-auto w-4 h-4" />
         </button>
       </div>
     );
@@ -721,12 +719,12 @@ const InstructionList = () => {
   useEffect(() => {}, [filterParams]);
 
   return (
-    <div className="min-h-screen px-4 py-6 mx-auto bg-gray-50">
+    <div className="px-4 py-6 mx-auto min-h-screen bg-gray-50">
       {/* 헤더 영역 */}
       <div className="p-6 mb-6 bg-white rounded-lg shadow-sm">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex justify-between items-center mb-4">
           <h1 className="flex items-center text-2xl font-bold text-gray-800">
-            <ListFilter className="w-6 h-6 mr-2 text-blue-600" />
+            <ListFilter className="mr-2 w-6 h-6 text-blue-600" />
             지시 목록
           </h1>
           <div className="flex space-x-2">
@@ -741,7 +739,7 @@ const InstructionList = () => {
                   : "text-gray-400 border-gray-200"
               }`}
             >
-              <FileText className="w-4 h-4 mr-1" />
+              <FileText className="mr-1 w-4 h-4" />
               보수확인서 PDF ({selectedInstructions.length})
             </FormButton> */}
             <FormButton
@@ -749,7 +747,7 @@ const InstructionList = () => {
               onClick={handleImportClick}
               className="flex items-center h-9"
             >
-              <FileUp className="w-4 h-4 mr-1" />
+              <FileUp className="mr-1 w-4 h-4" />
               일괄등록
             </FormButton>
             <FormButton
@@ -757,15 +755,15 @@ const InstructionList = () => {
               onClick={handleAddClick}
               className="flex items-center h-9"
             >
-              <PlusCircle className="w-4 h-4 mr-1" />
+              <PlusCircle className="mr-1 w-4 h-4" />
               지시 등록
             </FormButton>
           </div>
         </div>
 
         {/* 새로운 간소화된 필터 - 한 줄로 배치 */}
-        <div className="p-4 border border-gray-200 rounded-lg bg-gray-50">
-          <div className="flex flex-wrap items-start justify-between w-full gap-4">
+        <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="flex flex-wrap gap-4 justify-between items-start w-full">
             {/* 센터 필터 (기존 지점 필터 변경) */}
             <div className="flex-1 min-w-[180px]">
               <label
@@ -783,7 +781,7 @@ const InstructionList = () => {
                   { value: "강동", label: "강동" },
                   { value: "성북", label: "성북" },
                 ]}
-                className="h-10 py-0 text-sm"
+                className="py-0 h-10 text-sm"
                 fullWidth={true}
               />
             </div>
@@ -800,9 +798,9 @@ const InstructionList = () => {
                   value={filters.orderIdKeyword}
                   onChange={handleFilterChange}
                   placeholder="지시 ID로 검색"
-                  className="w-full h-10 px-3 py-2 pl-8 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+                  className="px-3 py-2 pl-8 w-full h-10 text-sm rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
                 />
-                <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                <div className="flex absolute inset-y-0 left-0 items-center pl-2 pointer-events-none">
                   <Search className="w-4 h-4 text-gray-400" />
                 </div>
               </div>
@@ -819,7 +817,7 @@ const InstructionList = () => {
                 value={filters.status}
                 onChange={handleStatusChange}
                 options={statusOptions}
-                className="h-10 py-0 text-sm"
+                className="py-0 h-10 text-sm"
                 fullWidth={true}
               />
             </div>
@@ -830,9 +828,9 @@ const InstructionList = () => {
               <FormButton
                 variant="primary"
                 onClick={handleApplyFilter}
-                className="flex items-center h-10 px-4"
+                className="flex items-center px-4 h-10"
               >
-                <Filter className="w-4 h-4 mr-1" />
+                <Filter className="mr-1 w-4 h-4" />
                 적용
               </FormButton>
 
@@ -840,9 +838,9 @@ const InstructionList = () => {
               <FormButton
                 variant="outline"
                 onClick={resetFilters}
-                className="flex items-center h-10 px-4 text-red-600 border-red-300 hover:bg-red-50"
+                className="flex items-center px-4 h-10 text-red-600 border-red-300 hover:bg-red-50"
               >
-                <X className="w-4 h-4 mr-1" />
+                <X className="mr-1 w-4 h-4" />
                 초기화
               </FormButton>
             </div>
@@ -853,9 +851,9 @@ const InstructionList = () => {
       {/* 데이터 테이블 카드 */}
       <div className="overflow-hidden bg-white rounded-lg shadow-sm">
         <div className="px-5 py-3 border-b border-gray-200">
-          <div className="flex items-center justify-between">
+          <div className="flex justify-between items-center">
             <h2 className="flex items-center text-lg font-medium text-gray-800">
-              <File className="w-5 h-5 mr-2 text-blue-600" />
+              <File className="mr-2 w-5 h-5 text-blue-600" />
               지시 데이터
             </h2>
             <div className="flex items-center space-x-3">
@@ -875,15 +873,15 @@ const InstructionList = () => {
                   placeholder="검색어 입력..."
                   value={globalFilter || ""}
                   onChange={(e) => handleGlobalFilterChange(e.target.value)}
-                  className="px-8 py-2 text-sm border rounded-md w-72 focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
+                  className="px-8 py-2 w-72 text-sm rounded-md border focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300"
                 />
-                <div className="absolute inset-y-0 left-0 flex items-center pl-2 pointer-events-none">
+                <div className="flex absolute inset-y-0 left-0 items-center pl-2 pointer-events-none">
                   <Search className="w-4 h-4 text-gray-400" />
                 </div>
                 {globalFilter && (
                   <button
                     onClick={() => handleGlobalFilterChange("")}
-                    className="absolute inset-y-0 right-0 flex items-center pr-2 text-gray-400 hover:text-gray-600"
+                    className="flex absolute inset-y-0 right-0 items-center pr-2 text-gray-400 hover:text-gray-600"
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -893,7 +891,7 @@ const InstructionList = () => {
               {/* 페이지 사이즈 선택 */}
               <div className="flex items-center">
                 <select
-                  className="px-2 py-2 text-sm border rounded-md"
+                  className="px-2 py-2 text-sm rounded-md border"
                   value={filterParams.size}
                   onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                 >
@@ -910,7 +908,7 @@ const InstructionList = () => {
                 onClick={() => setShowColumnModal(true)}
                 className="flex items-center h-9"
               >
-                <Table className="w-4 h-4 mr-1" />
+                <Table className="mr-1 w-4 h-4" />
                 컬럼 설정
               </FormButton>
             </div>
@@ -960,11 +958,11 @@ const InstructionList = () => {
 
       {/* 컬럼 설정 모달 */}
       {showColumnModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-3xl p-6 bg-white rounded-lg shadow-xl">
-            <div className="flex items-center justify-between mb-4">
+        <div className="flex fixed inset-0 z-50 justify-center items-center bg-black bg-opacity-50">
+          <div className="p-6 w-full max-w-3xl bg-white rounded-lg shadow-xl">
+            <div className="flex justify-between items-center mb-4">
               <h2 className="flex items-center text-xl font-semibold">
-                <Table className="w-5 h-5 mr-2 text-blue-600" />
+                <Table className="mr-2 w-5 h-5 text-blue-600" />
                 표시할 컬럼 설정
               </h2>
               <button

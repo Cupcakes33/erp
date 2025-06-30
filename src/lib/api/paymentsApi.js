@@ -48,34 +48,26 @@ export const getPaymentDocumentData = async (paymentId) => {
   return data;
 };
 
-// 공종별 금액 조회
+// 공종별 금액 조회 (API 연동)
 export const getPaymentsByTrade = async (params) => {
-  console.log("Fetching payments by trade with params:", params);
+  // params: { start, end, unit, type } 또는 { startDate, endDate, ... }
+  // start, end 보정
+  let start = params?.start;
+  let end = params?.end;
+  if (!start && params?.startDate) start = params.startDate;
+  if (!end && params?.endDate) end = params.endDate;
+  const query = new URLSearchParams();
+  if (start) query.append('start', start);
+  if (end) query.append('end', end);
+  if (params?.unit) query.append('unit', params.unit);
+  if (params?.type) query.append('type', params.type);
 
-  const mockData = [
-    { id: 1, type: "재료비", code: "MAT-001", tradeName: "시멘트", unitPriceSum: 500000, cumulative: 2500000 },
-    { id: 2, type: "노무비", code: "LAB-001", tradeName: "보통인부", unitPriceSum: 1200000, cumulative: 10200000 },
-    { id: 3, type: "경비", code: "EXP-001", tradeName: "운반비", unitPriceSum: 150000, cumulative: 800000 },
-    { id: 4, type: "재료비", code: "MAT-002", tradeName: "모래", unitPriceSum: 300000, cumulative: 1500000 },
-    { id: 5, type: "노무비", code: "LAB-002", tradeName: "특별인부", unitPriceSum: 1800000, cumulative: 15000000 },
-  ];
-
-  let filteredData = mockData;
-  if (params?.tradeName) {
-    filteredData = filteredData.filter(item => item.tradeName.includes(params.tradeName));
-  }
-  if (params?.type && params.type !== "all") {
-    // Assuming type is '재료비', '노무비', '경비'
-    const typeMap = { material: "재료비", labor: "노무비", expense: "경비" };
-    filteredData = filteredData.filter(item => item.type === typeMap[params.type]);
-  }
-
-  await new Promise(resolve => setTimeout(resolve, 500));
-
+  const response = await api.get(`/payment/unitprice?${query.toString()}`);
+  // API 응답 구조에 따라 아래를 조정하세요
   return {
-    data: filteredData,
-    totalCount: filteredData.length,
-    totalPage: 1,
-    currentPage: 1,
+    data: response.data?.data || [],
+    totalCount: response.data?.totalCount || 0,
+    totalPage: response.data?.totalPage || 1,
+    currentPage: response.data?.currentPage || 1,
   };
 }; 

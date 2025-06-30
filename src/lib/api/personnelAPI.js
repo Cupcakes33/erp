@@ -46,31 +46,25 @@ export const updateWorker = async (id, workerData) => {
   }
 }
 
-// 작업자 매출 조회 (mock)
+// 작업자 매출 조회 (API 연동)
 export const getWorkerSales = async (params) => {
-  console.log("Fetching worker sales with params:", params)
-  // Mock data
-  const mockData = [
-    { id: 1, name: "홍길동", sales: 1200000 },
-    { id: 2, name: "김철수", sales: 2500000 },
-    { id: 3, name: "이영희", sales: 850000 },
-    { id: 4, name: "박보검", sales: 3100000 },
-    { id: 5, name: "송혜교", sales: 1750000 },
-  ];
+  // params: { start, end, worker } 또는 { startDate, endDate, ... }
+  // start, end 보정
+  let start = params?.start;
+  let end = params?.end;
+  if (!start && params?.startDate) start = params.startDate;
+  if (!end && params?.endDate) end = params.endDate;
+  const query = new URLSearchParams();
+  if (start) query.append('start', start);
+  if (end) query.append('end', end);
+  if (params?.worker) query.append('worker', params.worker);
 
-  // Mock filtering
-  let filteredData = mockData;
-  if (params?.name) {
-    filteredData = filteredData.filter(item => item.name.includes(params.name));
-  }
-  
-  // Mock API delay
-  await new Promise(resolve => setTimeout(resolve, 500));
-
+  const response = await api.get(`/payment/worker?${query.toString()}`);
+  // API 응답 구조에 따라 아래를 조정하세요
   return {
-    data: filteredData,
-    totalCount: filteredData.length,
-    totalPage: 1,
-    currentPage: 1,
+    data: response.data?.data || [],
+    totalCount: response.data?.totalCount || 0,
+    totalPage: response.data?.totalPage || 1,
+    currentPage: response.data?.currentPage || 1,
   };
 };

@@ -225,7 +225,7 @@ export const useConfirmInstruction = () => {
     onSuccess: (data, variables) => {
       // 지시 목록 및 상세 정보 쿼리 무효화
       queryClient.invalidateQueries({ queryKey: [INSTRUCTIONS_QUERY_KEY] });
-      queryClient.invalidateQueries({ queryKey: [INSTRUCTION_DETAIL_QUERY_KEY, variables] });
+      queryClient.invalidateQueries({ queryKey: [INSTRUCTION_DETAIL_QUERY_KEY, variables.id] });
     }
   });
 };
